@@ -30,7 +30,7 @@ export default function OnboardingScreen() {
   };
 
   const handleSubmit = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/home');
   };
 
   return (

@@ -1,15 +1,38 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { CATEGORY_LABELS, QUESTIONS } from './data/manualData';
+import { useEffect, useState } from 'react';
+
+const API_BASE = 'https://ilaw-backend.up.railway.app';
+
+const SLUG_TO_NAME: Record<string, string> = {
+  'finance': '금융(빚 사기 도박)',
+  'labor': '노동',
+  'sexual-violence': '성폭력 데이트폭력 성착취',
+  'child-abuse': '아동학대',
+  'online-violence': '온라인폭력',
+  'birth-and-parenting': '출생과 양육',
+  'parental-rights': '친권 미성년후견',
+};
+
+type Article = { id: number; question: string; summary: string | null; order: number };
 
 export default function ManualListScreen() {
   const router = useRouter();
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categoryLabel = CATEGORY_LABELS[categoryId] ?? '매뉴얼';
-  const questions = QUESTIONS[categoryId] ?? [];
+  useEffect(() => {
+    fetch(`${API_BASE}/manual/categories/${categoryId}/articles`)
+      .then(r => r.json())
+      .then(data => setArticles(Array.isArray(data) ? data : []))
+      .catch(() => setArticles([]))
+      .finally(() => setLoading(false));
+  }, [categoryId]);
+
+  const categoryLabel = SLUG_TO_NAME[categoryId ?? ''] ?? '매뉴얼';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,20 +43,32 @@ export default function ManualListScreen() {
         <Text style={styles.headerTitle}>{categoryLabel}</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {questions.map((q, index) => (
-          <TouchableOpacity
-            key={q.id}
-            style={styles.questionItem}
-            activeOpacity={0.7}
-            onPress={() => router.push(`/manual-detail?questionId=${q.id}`)}
-          >
-            <Text style={styles.questionNumber}>Q{index + 1}.</Text>
-            <Text style={styles.questionText}>{q.question}</Text>
-            <Ionicons name="chevron-forward" size={18} color="#bbb" />
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          {articles.length === 0 ? (
+            <View style={styles.center}>
+              <Text style={styles.emptyText}>아직 등록된 내용이 없어요.</Text>
+            </View>
+          ) : (
+            articles.map((article, index) => (
+              <TouchableOpacity
+                key={article.id}
+                style={styles.questionItem}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/manual-detail?articleId=${article.id}`)}
+              >
+                <Text style={styles.questionNumber}>Q{index + 1}.</Text>
+                <Text style={styles.questionText}>{article.question}</Text>
+                <Ionicons name="chevron-forward" size={18} color="#bbb" />
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      )}
 
       <View style={styles.floatingContainer} pointerEvents="box-none">
         <TouchableOpacity
@@ -62,6 +97,8 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
   content: { paddingBottom: 100 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+  emptyText: { fontSize: 15, color: '#999' },
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -73,13 +110,7 @@ const styles = StyleSheet.create({
   },
   questionNumber: { fontSize: 15, fontWeight: '700', color: '#4CAF50', minWidth: 28 },
   questionText: { flex: 1, fontSize: 15, color: '#1a1a1a', lineHeight: 22 },
-  floatingContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
+  floatingContainer: { position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' },
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',

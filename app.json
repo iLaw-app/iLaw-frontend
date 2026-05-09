@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "iraw-app",
-    "slug": "iraw-app",
+    "name": "iLaw-app",
+    "slug": "iLaw-app",
     "version": "1.0.0",
     "scheme": "ilaw",
     "main": "expo-router/entry",

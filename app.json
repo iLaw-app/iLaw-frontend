@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "airo-app",
-    "slug": "airo-app",
+    "name": "iraw-app",
+    "slug": "iraw-app",
     "version": "1.0.0",
     "scheme": "ilaw",
     "main": "expo-router/entry",
@@ -23,7 +23,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.anonymous.irawapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

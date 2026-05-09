@@ -1,17 +1,65 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-// 카테고리 목록
 const categories = [
-  { id: 1, emoji: '🛡️', label: '아동학대/가정폭력', color: '#FF6B6B', bg: '#FFF0F0' },
-  { id: 2, emoji: '💼', label: '노동', color: '#FF9500', bg: '#FFF4E6' },
-  { id: 3, emoji: '💵', label: '금융(빚,사기)', color: '#4CAF50', bg: '#F0FAF4' },
-  { id: 4, emoji: '⚠️', label: '성착취', color: '#FF6B9D', bg: '#FFF0F6' },
-  { id: 5, emoji: '💜', label: '성폭력,데이트폭력', color: '#9B59B6', bg: '#F8F0FF' },
-  { id: 6, emoji: '📡', label: '온라인폭력\n(명예훼손,모욕)', color: '#00BCD4', bg: '#F0FAFE' },
-  { id: 7, emoji: '👶', label: '출생신고,입양,양육비', color: '#FF9800', bg: '#FFF8F0' },
-  { id: 8, emoji: '⚖️', label: '친권,미성년후견', color: '#4CAF50', bg: '#F0FAF4' },
+  {
+    id: 'child-abuse',
+    emoji: '🛡️',
+    label: '아동학대/가정폭력',
+    desc: '가정 내 폭력, 보호방법',
+    color: '#FF6B6B',
+    bg: '#FFF0F0',
+  },
+  {
+    id: 'labor',
+    emoji: '💼',
+    label: '노동',
+    desc: '아르바이트, 임금, 근로계약',
+    color: '#FF9500',
+    bg: '#FFF4E6',
+  },
+  {
+    id: 'finance',
+    emoji: '💵',
+    label: '금융',
+    desc: '빚, 사기, 금융 문제 해결',
+    color: '#4CAF50',
+    bg: '#F0FAF4',
+  },
+  {
+    id: 'sexual-violence',
+    emoji: '💜',
+    label: '성폭력',
+    desc: '성착취, 성폭력, 신고방법',
+    color: '#9B59B6',
+    bg: '#F8F0FF',
+  },
+  {
+    id: 'online-violence',
+    emoji: '📡',
+    label: '온라인폭력',
+    desc: '사이버 괴롭힘, 악플, 신고',
+    color: '#00BCD4',
+    bg: '#F0FAFE',
+  },
+  {
+    id: 'birth-adoption',
+    emoji: '👶',
+    label: '출생·양육',
+    desc: '출생신고, 입양, 양육비',
+    color: '#FF9800',
+    bg: '#FFF8F0',
+  },
+  {
+    id: 'guardianship',
+    emoji: '⚖️',
+    label: '법정대리인',
+    desc: '친권, 후견, 보호제도',
+    color: '#607D8B',
+    bg: '#F5F7FA',
+  },
 ];
 
 export default function ManualScreen() {
@@ -21,23 +69,26 @@ export default function ManualScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>법률 매뉴얼</Text>
-          <Text style={styles.subtitle}>필요한 카테고리를 선택해주세요</Text>
+          <Text style={styles.title}>어떤 도움이 필요하신가요?</Text>
+          <Text style={styles.subtitle}>상황에 맞는 법률 정보를 확인해보세요</Text>
         </View>
 
-        <View style={styles.grid}>
+        <View style={styles.list}>
           {categories.map((cat) => (
             <TouchableOpacity
               key={cat.id}
-              style={[styles.card, { backgroundColor: cat.bg }]}
-              activeOpacity={0.85}
-              onPress={() => {
-                // 나중에 카테고리별 상세 페이지로 이동
-                console.log('선택한 카테고리:', cat.label);
-              }}
+              style={styles.card}
+              activeOpacity={0.75}
+              onPress={() => router.push(`/manual-list?categoryId=${cat.id}`)}
             >
-              <Text style={styles.emoji}>{cat.emoji}</Text>
-              <Text style={[styles.cardLabel, { color: cat.color }]}>{cat.label}</Text>
+              <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
+                <Text style={styles.emoji}>{cat.emoji}</Text>
+              </View>
+              <View style={styles.cardText}>
+                <Text style={styles.cardLabel}>{cat.label}</Text>
+                <Text style={styles.cardDesc}>{cat.desc}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#bbb" />
             </TouchableOpacity>
           ))}
         </View>
@@ -53,43 +104,52 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1a1a1a',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#888',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  list: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
+    paddingBottom: 24,
   },
   card: {
-    width: '47%',
-    aspectRatio: 1,
-    borderRadius: 20,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 14,
     borderWidth: 1,
     borderColor: '#eee',
   },
-  emoji: {
-    fontSize: 36,
-    marginBottom: 10,
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  emoji: { fontSize: 26 },
+  cardText: { flex: 1 },
   cardLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  cardDesc: {
+    fontSize: 12,
+    color: '#999',
   },
 });

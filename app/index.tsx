@@ -1,44 +1,55 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
   return (
     <View style={styles.container}>
-      <View style={styles.logoCircle}>
-        <Text style={styles.logoEmoji}>⚖️</Text>
+      <View style={styles.textArea}>
+        <Text style={styles.tagline}>아이들을 위한 길,{'\n'}아이들을 위한 LAW</Text>
+        <Text style={styles.appName}>아이로</Text>
       </View>
-      <Text style={styles.appName}>아이로</Text>
-      <Text style={styles.tagline}>아동 법률 매뉴얼 서비스</Text>
+
+      <View style={styles.circleWrapper}>
+        <View style={styles.circle} />
+      </View>
     </View>
   );
 }
 
+const CIRCLE_SIZE = width * 0.85;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0faf4',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoEmoji: {
-    fontSize: 48,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 8,
+  textArea: {
+    paddingTop: height * 0.22,
+    paddingHorizontal: 36,
   },
   tagline: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 16,
+    color: '#5BBB5E',
+    fontWeight: '500',
+    lineHeight: 24,
+    marginBottom: 10,
+  },
+  appName: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -1,
+  },
+  circleWrapper: {
+    position: 'absolute',
+    bottom: -CIRCLE_SIZE * 0.25,
+    right: -CIRCLE_SIZE * 0.1,
+  },
+  circle: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: '#C8E6C9',
   },
 });

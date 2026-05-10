@@ -95,7 +95,7 @@ export default function ManualDetailScreen() {
   useEffect(() => {
     fetch(`${API_BASE}/manual/articles/${articleId}`)
       .then(r => r.json())
-      .then(setArticle)
+      .then(data => setArticle(data?.id ? data : null))
       .catch(() => setArticle(null))
       .finally(() => setLoading(false));
   }, [articleId]);
@@ -126,7 +126,7 @@ export default function ManualDetailScreen() {
             </View>
           )}
 
-          <MarkdownRenderer content={article.content} />
+          <MarkdownRenderer content={article.content ?? ''} />
           <View style={{ height: 80 }} />
         </ScrollView>
       )}

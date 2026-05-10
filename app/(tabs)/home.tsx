@@ -2,60 +2,45 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, FlatList,
+  ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-// ─── 더미 데이터 ───────────────────────────────────────────
-const ALL_CONTENTS = [
-  { id: 1, type: '매뉴얼', category: '노동', title: '알바비를 받지 못했을 때 대처법', desc: '근로기준법에 따라 임금체불 시 신고 및 구제 방법을 안내합니다.', views: 342 },
-  { id: 2, type: 'QnA',   category: '노동', title: '알바비 안주면 어떻게 해야하나요?', desc: '근로감독관에게 신고하거나 소액사건 재판을 통해 해결할 수 있습니다.', views: 289 },
-  { id: 3, type: '매뉴얼', category: '노동', title: '미성년자 근로 시 알아야 할 권리', desc: '미성년자의 근로 시간, 임금, 근로계약서 작성 등에 대해 설명합니다.', views: 215 },
-  { id: 4, type: '매뉴얼', category: '아동학대', title: '아동학대 신고 절차 및 방법', desc: '아동학대/가정폭력 카테고리에 새로운 내용이 추가되었습니다.', views: 256 },
-  { id: 5, type: 'QnA',   category: '학교폭력', title: '학교 단톡방에서 욕을 먹고 있어요', desc: '사이버불링은 학교폭력에 해당하며 신고 및 대처 방법이 있습니다.', views: 198 },
-];
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-const RECOMMENDED = ALL_CONTENTS.slice(0, 3);
-
-type TabType = '전체' | '매뉴얼' | 'QnA';
+type SearchResult = {
+  id: number;
+  question: string;
+  summary: string | null;
+  category: { name: string; slug: string };
+};
 
 // ─── 컴포넌트 ───────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('전체');
-  const hasNotification = true; // 나중에 실제 데이터로 교체
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const hasNotification = true;
 
-  // 검색 실행
   const handleSearch = () => {
-    if (searchQuery.trim()) setIsSearching(true);
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setSearchLoading(true);
+    fetch(`${API_BASE}/manual/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      .then(r => r.json())
+      .then(data => setSearchResults(Array.isArray(data) ? data : []))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearchLoading(false));
   };
 
-  // 검색 초기화
   const handleClearSearch = () => {
     setSearchQuery('');
     setIsSearching(false);
-    setActiveTab('전체');
-  };
-
-  // 탭 필터 적용한 결과
-  const filteredResults = ALL_CONTENTS.filter((item) => {
-    const matchesQuery =
-      item.title.includes(searchQuery) ||
-      item.category.includes(searchQuery) ||
-      item.desc.includes(searchQuery);
-    const matchesTab =
-      activeTab === '전체' || item.type === activeTab;
-    return matchesQuery && matchesTab;
-  });
-
-  // 콘텐츠 클릭 → 탭 이동
-  const handleContentPress = (type: string) => {
-    if (type === '매뉴얼') router.push('/(tabs)/consult');
-    else router.push('/(tabs)/qna');
+    setSearchResults([]);
   };
 
   return (
@@ -114,49 +99,36 @@ export default function HomeScreen() {
               '{searchQuery}'에 대한 검색결과
             </Text>
 
-            {/* 탭 필터 */}
-            <View style={styles.tabRow}>
-              {(['전체', '매뉴얼', 'QnA'] as TabType[]).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
-                  onPress={() => setActiveTab(tab)}
-                >
-                  <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* 결과 목록 */}
-            {filteredResults.length === 0 ? (
+            {searchLoading ? (
+              <ActivityIndicator color="#4CAF50" style={{ marginTop: 40 }} />
+            ) : searchResults.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Ionicons name="search-outline" size={40} color="#ccc" />
                 <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
               </View>
             ) : (
               <View style={styles.card}>
-                {filteredResults.map((item, index) => (
+                {searchResults.map((item, index) => (
                   <View key={item.id}>
                     <TouchableOpacity
                       style={styles.contentItem}
                       activeOpacity={0.7}
-                      onPress={() => handleContentPress(item.type)}
+                      onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
                     >
                       <View style={styles.tagRow}>
-                        <View style={[styles.tag, item.type === 'QnA' ? styles.tagQna : styles.tagManual]}>
-                          <Text style={[styles.tagText, item.type === 'QnA' ? styles.tagTextQna : styles.tagTextManual]}>
-                            {item.type === 'QnA' ? '💬' : '📖'} {item.type}
-                          </Text>
+                        <View style={styles.tagManual}>
+                          <Text style={[styles.tagText, styles.tagTextManual]}>📖 매뉴얼</Text>
                         </View>
-                        <Text style={styles.categoryText}>{item.category}</Text>
+                        <Text style={styles.categoryText}>{item.category.name}</Text>
                       </View>
-                      <Text style={styles.contentTitle}>{item.title}</Text>
-                      <Text style={styles.contentDesc} numberOfLines={2}>{item.desc}</Text>
-                      <Text style={styles.viewCount}>📋 {item.views}</Text>
+                      <Text style={styles.contentTitle}>{item.question}</Text>
+                      {item.summary ? (
+                        <Text style={styles.contentDesc} numberOfLines={2}>
+                          {item.summary.replace(/\*\*(.*?)\*\*/g, '$1')}
+                        </Text>
+                      ) : null}
                     </TouchableOpacity>
-                    {index < filteredResults.length - 1 && <View style={styles.divider} />}
+                    {index < searchResults.length - 1 && <View style={styles.divider} />}
                   </View>
                 ))}
               </View>
@@ -167,31 +139,23 @@ export default function HomeScreen() {
           /* ── 홈 메인 화면 ── */
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>📋 추천 콘텐츠</Text>
-              <TouchableOpacity>
-                <Text style={styles.moreBtn}>더보기</Text>
-              </TouchableOpacity>
+              <Text style={styles.sectionTitle}>📋 자주 찾는 주제</Text>
             </View>
             <View style={styles.card}>
-              {RECOMMENDED.map((item, index) => (
-                <View key={item.id}>
+              {[
+                { label: '알바비 못 받았을 때', slug: 'labor' },
+                { label: '아동학대 신고 방법', slug: 'child-abuse' },
+                { label: '온라인 괴롭힘 대처법', slug: 'online-violence' },
+              ].map((item, index, arr) => (
+                <View key={item.slug}>
                   <TouchableOpacity
                     style={styles.contentItem}
                     activeOpacity={0.7}
-                    onPress={() => handleContentPress(item.type)}
+                    onPress={() => router.push(`/manual-list?categoryId=${item.slug}`)}
                   >
-                    <View style={styles.tagRow}>
-                      <View style={[styles.tag, item.type === 'QnA' ? styles.tagQna : styles.tagManual]}>
-                        <Text style={[styles.tagText, item.type === 'QnA' ? styles.tagTextQna : styles.tagTextManual]}>
-                          {item.type === 'QnA' ? '💬' : '📖'} {item.type}
-                        </Text>
-                      </View>
-                      <Text style={styles.categoryText}>{item.category}</Text>
-                    </View>
-                    <Text style={styles.contentTitle}>{item.title}</Text>
-                    <Text style={styles.viewCount}>📋 {item.views}</Text>
+                    <Text style={styles.contentTitle}>{item.label}</Text>
                   </TouchableOpacity>
-                  {index < RECOMMENDED.length - 1 && <View style={styles.divider} />}
+                  {index < arr.length - 1 && <View style={styles.divider} />}
                 </View>
               ))}
             </View>
@@ -226,12 +190,6 @@ const styles = StyleSheet.create({
   searchExample: { fontSize: 12, color: '#4CAF50', marginBottom: 24, marginLeft: 24 },
   searchResultTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
 
-  // 탭 필터
-  tabRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  tabBtn: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd' },
-  tabBtnActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-  tabText: { fontSize: 13, color: '#888', fontWeight: '600' },
-  tabTextActive: { color: '#fff' },
 
   // 섹션
   section: { paddingHorizontal: 20, marginBottom: 24, marginTop: 8 },
@@ -252,7 +210,6 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 12, color: '#888' },
   contentTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a1a', marginBottom: 4, lineHeight: 22 },
   contentDesc: { fontSize: 13, color: '#666', lineHeight: 19, marginBottom: 6 },
-  viewCount: { fontSize: 12, color: '#aaa' },
   divider: { height: 1, backgroundColor: '#f5f5f5' },
 
   // 빈 결과

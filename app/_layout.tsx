@@ -3,6 +3,8 @@ import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from './context/auth';
 
+const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
+
 export default function RootLayout() {
   return (
     <AuthProvider>
@@ -13,7 +15,7 @@ export default function RootLayout() {
 
 function AppNavigator() {
   const router = useRouter();
-  const { setAccessToken } = useAuth();
+  const { setAccessToken, setUser } = useAuth();
   const splashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -35,11 +37,10 @@ function AppNavigator() {
       const refreshToken = queryParams?.refreshToken as string | undefined;
       if (!accessToken || !refreshToken) return;
 
-      // TODO: 앱 재시작 후 로그인 유지하려면 @react-native-async-storage/async-storage 설치 후 여기서 저장
-      // AsyncStorage.setItem('accessToken', accessToken);
-      // AsyncStorage.setItem('refreshToken', refreshToken);
-
       setAccessToken(accessToken);
+      fetch(`${API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${accessToken}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setUser(data); });
       clearTimeout(splashTimer.current);
       const profileCompleted = queryParams?.profileCompleted === 'true';
       router.replace(profileCompleted ? '/(tabs)/home' : '/onboarding');

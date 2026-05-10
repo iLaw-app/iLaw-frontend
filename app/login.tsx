@@ -9,7 +9,7 @@ const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setAccessToken } = useAuth();
+  const { setAccessToken, setUser } = useAuth();
 
   const handleLogin = async (provider: 'kakao' | 'naver' | 'google') => {
     const appRedirectUri = Linking.createURL('auth');
@@ -21,6 +21,10 @@ export default function LoginScreen() {
       const accessToken = queryParams?.accessToken as string | undefined;
       if (accessToken) {
         setAccessToken(accessToken);
+        const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (userRes.ok) setUser(await userRes.json());
         const profileCompleted = queryParams?.profileCompleted === 'true';
         router.replace(profileCompleted ? '/(tabs)/home' : '/onboarding');
       }

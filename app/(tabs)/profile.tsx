@@ -12,14 +12,27 @@ function MenuItem({ label, onPress, danger }: { label: string; onPress: () => vo
   );
 }
 
+const PROVIDER_LABEL: Record<string, string> = {
+  kakao: '카카오 로그인',
+  naver: '네이버 로그인',
+  google: '구글 로그인',
+};
+
 export default function ProfilePage() {
   const router = useRouter();
-  const { role, setRole } = useAuth();
+  const { role, setRole, user, setAccessToken, setUser } = useAuth();
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
       { text: '취소', style: 'cancel' },
-      { text: '로그아웃', onPress: () => router.replace('/login') },
+      {
+        text: '로그아웃',
+        onPress: () => {
+          setAccessToken(null);
+          setUser(null);
+          router.replace('/login');
+        },
+      },
     ]);
   };
 
@@ -41,9 +54,8 @@ export default function ProfilePage() {
           <Text style={styles.avatarText}>👤</Text>
         </View>
         <View>
-          <Text style={styles.nickname}>닉네임</Text>
-          {/* TODO: 실제 로그인 provider 표시 (kakao/naver/google) */}
-          <Text style={styles.provider}>카카오 로그인</Text>
+          <Text style={styles.nickname}>{user?.nickname ?? '닉네임 없음'}</Text>
+          <Text style={styles.provider}>{user ? (PROVIDER_LABEL[user.provider] ?? user.provider) : ''}</Text>
         </View>
         <TouchableOpacity style={styles.editBtn}>
           <Text style={styles.editBtnText}>수정</Text>

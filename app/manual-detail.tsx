@@ -106,7 +106,7 @@ export default function ManualDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
-        {article && <Text style={s.headerTitle}>{article.category.name}</Text>}
+        {article?.category && <Text style={s.headerTitle}>{article.category.name}</Text>}
       </View>
 
       {loading ? (

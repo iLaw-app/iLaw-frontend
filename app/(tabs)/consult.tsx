@@ -45,7 +45,7 @@ const categories = [
     bg: '#F0FAFE',
   },
   {
-    id: 'birth-adoption',
+    id: 'birth-and-parenting',
     emoji: '👶',
     label: '출생·양육',
     desc: '출생신고, 입양, 양육비',
@@ -53,7 +53,7 @@ const categories = [
     bg: '#FFF8F0',
   },
   {
-    id: 'guardianship',
+    id: 'parental-rights',
     emoji: '⚖️',
     label: '법정대리인',
     desc: '친권, 후견, 보호제도',

@@ -39,7 +39,19 @@ export default function ProfilePage() {
   const handleWithdraw = () => {
     Alert.alert('회원 탈퇴', '정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.', [
       { text: '취소', style: 'cancel' },
-      { text: '탈퇴', style: 'destructive', onPress: () => router.replace('/login') },
+      {
+        text: '탈퇴',
+        style: 'destructive',
+        onPress: async () => {
+          await fetch('https://ilaw-backend.up.railway.app/auth/me', {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          setAccessToken(null);
+          setUser(null);
+          router.replace('/login');
+        },
+      },
     ]);
   };
 

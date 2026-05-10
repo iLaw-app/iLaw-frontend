@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useAuth } from './context/auth';
 
 export default function OnboardingScreen() {
   const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
   const router = useRouter();
+  const { accessToken, setUser } = useAuth();
 
   const [nickname, setNickname] = useState('');
   const [region, setRegion] = useState('');
@@ -29,7 +31,47 @@ export default function OnboardingScreen() {
     setAgreedMarketing(newVal);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!nickname || !region || !birthYear || !gender) {
+      Alert.alert('입력 오류', '닉네임, 지역, 출생연도, 성별을 모두 입력해주세요.');
+      return;
+    }
+    if (!allRequiredAgreed) {
+      Alert.alert('약관 동의', '필수 약관에 모두 동의해주세요.');
+      return;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        nickname,
+        region,
+        birthYear: parseInt(birthYear, 10),
+        gender,
+        agreedTermsOfService: agreedTerms,
+        agreedPrivacyPolicy: agreedPrivacy,
+        agreedAge14,
+        agreedMarketing,
+      }),
+    });
+
+    if (res.status === 409) {
+      Alert.alert('닉네임 중복', '이미 사용 중인 닉네임입니다.');
+      return;
+    }
+    if (!res.ok) {
+      Alert.alert('오류', '프로필 저장에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
+
+    const meRes = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (meRes.ok) setUser(await meRes.json());
     router.replace('/(tabs)/home');
   };
 

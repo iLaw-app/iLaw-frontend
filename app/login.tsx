@@ -44,10 +44,12 @@ export default function LoginScreen() {
       const accessToken = queryParams?.accessToken as string | undefined;
       if (accessToken) {
         setAccessToken(accessToken);
-        const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (userRes.ok) setUser(await userRes.json());
+        try {
+          const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (userRes.ok) setUser(await userRes.json());
+        } catch {}
         const profileCompleted = queryParams?.profileCompleted === 'true';
         router.replace(profileCompleted ? '/(tabs)/home' : '/onboarding');
       }

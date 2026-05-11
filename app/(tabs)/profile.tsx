@@ -20,7 +20,7 @@ const PROVIDER_LABEL: Record<string, string> = {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { role, setRole, user, setAccessToken, setUser } = useAuth();
+  const { role, setRole, user, accessToken, setAccessToken, setUser } = useAuth();
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
@@ -56,7 +56,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>마이페이지</Text>
       </View>
@@ -76,8 +76,8 @@ export default function ProfilePage() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>내 활동</Text>
-        <MenuItem label="내 질문 목록" onPress={() => Alert.alert('준비 중')} />
-        <MenuItem label="스크랩한 매뉴얼" onPress={() => Alert.alert('준비 중')} />
+        <MenuItem label="내 질문 목록" onPress={() => router.push('/my-questions')} />
+        <MenuItem label="스크랩한 매뉴얼" onPress={() => router.push('/my-scraps')} />
         <MenuItem label="스크랩한 Q&A" onPress={() => Alert.alert('준비 중')} />
       </View>
 
@@ -114,7 +114,7 @@ export default function ProfilePage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
   profileCard: {

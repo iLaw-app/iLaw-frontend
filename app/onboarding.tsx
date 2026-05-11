@@ -33,7 +33,7 @@ export default function OnboardingScreen() {
 
   const handleSubmit = async () => {
     if (!nickname || !region || !birthYear || !gender) {
-      Alert.alert('입력 오류', '닉네임, 지역, 출생연도, 성별을 모두 입력해주세요.');
+      Alert.alert('입력 오류', '아이디, 지역, 출생연도, 성별을 모두 입력해주세요.');
       return;
     }
     if (!allRequiredAgreed) {
@@ -60,7 +60,7 @@ export default function OnboardingScreen() {
     });
 
     if (res.status === 409) {
-      Alert.alert('닉네임 중복', '이미 사용 중인 닉네임입니다.');
+      Alert.alert('아이디 중복', '이미 사용 중인 아이디입니다.');
       return;
     }
     if (!res.ok) {
@@ -77,19 +77,17 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-
-        <View style={styles.logoCircle}>
-          <Text style={styles.logoEmoji}>⚖️</Text>
-        </View>
-        <Text style={styles.title}>회원가입</Text>
-        <Text style={styles.subtitle}>아이로와 함께 시작해요</Text>
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.decorCircle} />
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>닉네임</Text>
+          <Text style={styles.label}>아이디</Text>
           <TextInput
             style={styles.input}
-            placeholder="닉네임을 입력하세요"
+            placeholder="아이디를 입력하세요"
             placeholderTextColor="#bbb"
             value={nickname}
             onChangeText={setNickname}
@@ -173,56 +171,99 @@ export default function OnboardingScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>이미 계정이 있으신가요? 로그인</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0faf4' },
-  inner: { paddingHorizontal: 28, paddingVertical: 32, alignItems: 'center' },
-  logoCircle: {
-    width: 70, height: 70, borderRadius: 35,
-    backgroundColor: '#4CAF50', justifyContent: 'center',
-    alignItems: 'center', marginBottom: 12,
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
+  inner: {
+    paddingTop: 48,
+    paddingRight: 56,
+    paddingBottom: 85,
+    paddingLeft: 47,
+    alignItems: 'center',
   },
-  logoEmoji: { fontSize: 32 },
-  title: { fontSize: 24, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#888', marginBottom: 32 },
+  decorCircle: {
+    width: 200,
+    height: 200,
+    borderRadius: 9999,
+    backgroundColor: '#DFEDBE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 36,
+  },
   fieldGroup: { width: '100%', marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
+  label: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3C6802',
+    lineHeight: 20,
+    letterSpacing: -0.15,
+    marginBottom: 6,
+  },
   input: {
-    width: '100%', paddingVertical: 13, paddingHorizontal: 16,
-    borderRadius: 12, borderWidth: 1, borderColor: '#ddd',
-    backgroundColor: '#fff', fontSize: 15, color: '#1a1a1a',
+    width: '100%',
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    fontSize: 15,
+    color: '#1a1a1a',
   },
   genderRow: { flexDirection: 'row', gap: 10 },
   genderBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 12,
-    borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fff',
+    width: 89,
+    paddingVertical: 13,
+    paddingHorizontal: 29,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  genderBtnActive: { borderColor: '#4CAF50', backgroundColor: '#f0faf4' },
+  genderBtnActive: { borderColor: '#B2D36E', backgroundColor: '#f4faed' },
   genderText: { fontSize: 14, color: '#888' },
-  genderTextActive: { color: '#4CAF50', fontWeight: '600' },
+  genderTextActive: { color: '#3C6802', fontWeight: '600' },
   agreeBox: {
-    width: '100%', backgroundColor: '#fff', borderRadius: 16,
-    padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#eee',
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   agreeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   checkbox: {
     width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
     borderColor: '#ddd', marginRight: 10, justifyContent: 'center', alignItems: 'center',
   },
-  checkboxActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
+  checkboxActive: { backgroundColor: '#B2D36E', borderColor: '#B2D36E' },
   checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
   agreeAllText: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
   agreeText: { fontSize: 13, color: '#555' },
   divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 4 },
   submitBtn: {
-    width: '100%', paddingVertical: 16, borderRadius: 30,
-    backgroundColor: '#4CAF50', alignItems: 'center', marginBottom: 16,
+    width: '100%',
+    height: 56,
+    borderRadius: 9999,
+    backgroundColor: '#B2D36E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 4,
   },
   submitText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   backText: { fontSize: 13, color: '#888' },

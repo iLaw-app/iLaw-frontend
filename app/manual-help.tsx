@@ -148,7 +148,7 @@ export default function ManualHelpScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

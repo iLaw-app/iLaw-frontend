@@ -22,24 +22,26 @@ const CIRCLE_SIZE = width * 0.85;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FDFFF8',
   },
   textArea: {
     paddingTop: height * 0.22,
     paddingHorizontal: 36,
   },
   tagline: {
-    fontSize: 16,
-    color: '#5BBB5E',
+    fontSize: 24,
+    color: '#586144',
     fontWeight: '500',
-    lineHeight: 24,
+    lineHeight: 32,
+    letterSpacing: 0.07,
     marginBottom: 10,
   },
   appName: {
-    fontSize: 42,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    letterSpacing: -1,
+    fontSize: 64,
+    fontWeight: '700',
+    color: '#586144',
+    lineHeight: 72,
+    letterSpacing: 0.123,
   },
   circleWrapper: {
     position: 'absolute',
@@ -50,6 +52,11 @@ const styles = StyleSheet.create({
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     borderRadius: CIRCLE_SIZE / 2,
-    backgroundColor: '#C8E6C9',
+    backgroundColor: '#DFEDBE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

@@ -1,8 +1,8 @@
-// app/notifications.tsx
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 
 const NOTIFICATIONS = [
   { id: 1, type: 'qna',    read: false, title: '내 질문에 답변이 달렸습니다', desc: '알바비를 안 주는데 어떻게 해야 하나요?', date: '2026-05-05 10:30' },
@@ -12,6 +12,21 @@ const NOTIFICATIONS = [
 ];
 
 const hasNotifications = NOTIFICATIONS.length > 0;
+
+function EmptyBellIcon() {
+  return (
+    <Svg width={64} height={64} viewBox="0 0 64 64" fill="none">
+      <Path
+        d="M27.3806 55.998C27.8487 56.8087 28.522 57.4819 29.3327 57.95C30.1434 58.418 31.063 58.6644 31.9992 58.6644C32.9353 58.6644 33.8549 58.418 34.6656 57.95C35.4763 57.4819 36.1496 56.8087 36.6177 55.998"
+        stroke="#D1D5DC" strokeWidth="5.33318" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <Path
+        d="M8.69841 40.868C8.35006 41.2498 8.12017 41.7246 8.03671 42.2347C7.95325 42.7447 8.01981 43.2681 8.2283 43.741C8.4368 44.2139 8.77823 44.6161 9.21107 44.8985C9.64392 45.1809 10.1495 45.3315 10.6664 45.3319H53.3318C53.8486 45.3321 54.3543 45.1821 54.7874 44.9002C55.2205 44.6183 55.5624 44.2166 55.7715 43.744C55.9805 43.2714 56.0477 42.7482 55.9649 42.2381C55.8821 41.728 55.6529 41.2529 55.3051 40.8707C51.7585 37.2148 47.9986 33.3296 47.9986 21.3326C47.9986 17.0892 46.313 13.0197 43.3125 10.0192C40.312 7.01867 36.2424 5.33301 31.9991 5.33301C27.7557 5.33301 23.6862 7.01867 20.6857 10.0192C17.6852 13.0197 15.9995 17.0892 15.9995 21.3326C15.9995 33.3296 12.237 37.2148 8.69841 40.868Z"
+        stroke="#D1D5DC" strokeWidth="5.33318" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -28,7 +43,6 @@ export default function NotificationsScreen() {
       </View>
 
       {hasNotifications ? (
-        /* ── 알림 있을 때 ── */
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
           {NOTIFICATIONS.map((noti) => (
             <TouchableOpacity key={noti.id} style={styles.notiCard} activeOpacity={0.7}>
@@ -36,7 +50,7 @@ export default function NotificationsScreen() {
                 <Ionicons
                   name={noti.type === 'qna' ? 'chatbubble-outline' : 'book-outline'}
                   size={18}
-                  color="#555"
+                  color="#586144"
                 />
               </View>
               <View style={styles.notiBody}>
@@ -49,10 +63,9 @@ export default function NotificationsScreen() {
           ))}
         </ScrollView>
       ) : (
-        /* ── 알림 없을 때 ── */
         <View style={styles.emptyWrapper}>
           <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-outline" size={48} color="#C8D9C0" />
+            <EmptyBellIcon />
             <Text style={styles.emptyText}>알림이 없습니다</Text>
           </View>
         </View>
@@ -62,9 +75,8 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0faf4' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
 
-  // 헤더
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -75,22 +87,27 @@ const styles = StyleSheet.create({
   backBtn: { width: 32, height: 32, justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
 
-  // 알림 리스트
   listContent: { paddingHorizontal: 20, paddingTop: 8, gap: 12 },
   notiCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#eee',
+    height: 110,
+    padding: 17.5,
+    borderRadius: 16,
+    borderWidth: 1.544,
+    borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   notiLeft: { marginRight: 12 },
   notiBody: { flex: 1 },
-  notiTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 3 },
-  notiDesc: { fontSize: 13, color: '#666', marginBottom: 4 },
-  notiDate: { fontSize: 11, color: '#aaa' },
+  notiTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 6, lineHeight: 20 },
+  notiDesc: { fontSize: 13, color: '#666', marginBottom: 8, lineHeight: 18 },
+  notiDate: { fontSize: 11, color: '#aaa', lineHeight: 16 },
   unreadDot: {
     width: 8, height: 8, borderRadius: 4,
     backgroundColor: '#F44336',
@@ -99,18 +116,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  // 알림 없을 때
-  emptyWrapper: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 100 },
+  emptyWrapper: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 80 },
   emptyContainer: {
     width: 345,
     height: 202,
-    borderRadius: 24,
-    borderWidth: 1.36,
-    borderColor: '#CCD9BA',
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    padding: 49,
+    flexDirection: 'column',
     justifyContent: 'center',
-    gap: 12,
+    alignItems: 'center',
+    gap: 16,
+    borderRadius: 16,
+    borderWidth: 1.544,
+    borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  emptyText: { fontSize: 14, color: '#aaa' },
+  emptyText: { fontSize: 14, color: '#9CAF88' },
 });

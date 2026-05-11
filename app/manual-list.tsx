@@ -85,7 +85,7 @@ export default function ManualListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

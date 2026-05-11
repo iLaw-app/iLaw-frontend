@@ -2,29 +2,43 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MOCK_QNA } from '../../data/qnaData';
+import { useAuth } from '../../context/auth';
+
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 export default function AnswerPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [answer, setAnswer] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const item = MOCK_QNA.find((q) => q.id === id);
-  if (!item) return (
-    <SafeAreaView style={styles.container}>
-      <Text style={{ padding: 20 }}>질문을 찾을 수 없습니다.</Text>
-    </SafeAreaView>
-  );
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!answer.trim()) {
       Alert.alert('답변 내용을 입력해 주세요.');
       return;
     }
-    // TODO: POST /qna/:id/answer API 연결
-    Alert.alert('답변이 등록되었습니다.', '', [
-      { text: '확인', onPress: () => router.back() },
-    ]);
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/qna/${id}/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ content: answer }),
+      });
+      if (res.status === 409) {
+        Alert.alert('이미 답변된 질문입니다.');
+        router.back();
+        return;
+      }
+      if (!res.ok) throw new Error();
+      Alert.alert('답변이 등록되었습니다.', '', [
+        { text: '확인', onPress: () => router.back() },
+      ]);
+    } catch {
+      Alert.alert('오류', '답변 등록에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -36,18 +50,6 @@ export default function AnswerPage() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.questionBox}>
-          <View style={styles.categoryRow}>
-            {item.categories.map((c) => (
-              <View key={c} style={styles.badge}>
-                <Text style={styles.badgeText}>{c}</Text>
-              </View>
-            ))}
-          </View>
-          <Text style={styles.questionTitle}>{item.title}</Text>
-          <Text style={styles.questionBody}>{item.content}</Text>
-        </View>
-
         <Text style={styles.label}>답변 내용 <Text style={styles.required}>*</Text></Text>
         <TextInput
           style={[styles.input, styles.textarea]}
@@ -63,8 +65,12 @@ export default function AnswerPage() {
           * 신중하게 작성해 주세요.
         </Text>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-          <Text style={styles.submitBtnText}>답변 등록하기</Text>
+        <TouchableOpacity
+          style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          <Text style={styles.submitBtnText}>{submitting ? '등록 중...' : '답변 등록하기'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -72,21 +78,20 @@ export default function AnswerPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   topBar: { paddingHorizontal: 16, paddingVertical: 12 },
-  back: { fontSize: 16, color: '#4CAF50', fontWeight: '600' },
+  back: { fontSize: 16, color: '#3C6802', fontWeight: '600' },
   content: { padding: 20, paddingBottom: 40 },
-  questionBox: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 24 },
-  categoryRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  badge: { backgroundColor: '#e8f5e9', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeText: { fontSize: 11, color: '#4CAF50', fontWeight: '600' },
-  questionTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
-  questionBody: { fontSize: 14, color: '#555', lineHeight: 22 },
-  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '700', color: '#3C6802', marginBottom: 8 },
   required: { color: '#f44336' },
-  input: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 14, borderWidth: 1, borderColor: '#e0e0e0' },
+  input: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 14, borderWidth: 1.5, borderColor: '#CCD9BA' },
   textarea: { height: 200, marginBottom: 8 },
-  notice: { fontSize: 12, color: '#aaa', lineHeight: 20, marginTop: 8 },
-  submitBtn: { backgroundColor: '#4CAF50', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
+  notice: { fontSize: 12, color: '#9CAF88', lineHeight: 20, marginTop: 8 },
+  submitBtn: {
+    backgroundColor: '#B2D36E', borderRadius: 9999, paddingVertical: 16,
+    alignItems: 'center', marginTop: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
+  },
+  submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

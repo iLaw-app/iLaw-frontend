@@ -77,6 +77,8 @@ function AppNavigator() {
       <Stack.Screen name="qna/[id]" />
       <Stack.Screen name="qna/ask" />
       <Stack.Screen name="qna/answer/[id]" />
+      <Stack.Screen name="my-questions" />
+      <Stack.Screen name="my-scraps" />
     </Stack>
   );
 }

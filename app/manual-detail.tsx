@@ -1,8 +1,9 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { useAuth } from './context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -89,8 +90,11 @@ function MarkdownRenderer({ content }: { content: string }) {
 export default function ManualDetailScreen() {
   const router = useRouter();
   const { articleId } = useLocalSearchParams<{ articleId: string }>();
+  const { accessToken } = useAuth();
   const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scrapped, setScrapped] = useState(false);
+  const [scrapCount, setScrapCount] = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/articles/${articleId}`)
@@ -99,6 +103,37 @@ export default function ManualDetailScreen() {
       .catch(() => setArticle(null))
       .finally(() => setLoading(false));
   }, [articleId]);
+
+  useEffect(() => {
+    if (!accessToken || !articleId) return;
+    fetch(`${API_BASE}/manual/articles/${articleId}/scrap`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        setScrapped(data.scrapped);
+        setScrapCount(data.count ?? 0);
+      })
+      .catch(() => {});
+  }, [articleId, accessToken]);
+
+  const handleScrap = async () => {
+    if (!accessToken) {
+      Alert.alert('로그인 필요', '로그인 후 스크랩할 수 있습니다.');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/manual/articles/${articleId}/scrap`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      setScrapped(data.scrapped);
+      setScrapCount(prev => data.scrapped ? prev + 1 : Math.max(0, prev - 1));
+    } catch {
+      Alert.alert('오류', '스크랩 처리에 실패했습니다.');
+    }
+  };
 
   return (
     <SafeAreaView style={s.container}>
@@ -133,12 +168,12 @@ export default function ManualDetailScreen() {
 
       <View style={s.bottomBar}>
         <TouchableOpacity
-          style={s.scrapBtn}
+          style={[s.scrapBtn, scrapped && s.scrapBtnActive]}
           activeOpacity={0.85}
-          onPress={() => Alert.alert('스크랩', '스크랩되었어요!')}
+          onPress={handleScrap}
         >
-          <Ionicons name="bookmark-outline" size={18} color="#fff" />
-          <Text style={s.scrapBtnText}>스크랩하기</Text>
+          <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={18} color="#fff" />
+          <Text style={s.scrapBtnText}>{scrapped ? `스크랩됨 ${scrapCount}` : '스크랩하기'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -146,7 +181,7 @@ export default function ManualDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -196,5 +231,6 @@ const s = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
+  scrapBtnActive: { backgroundColor: '#3C6802' },
   scrapBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
 });

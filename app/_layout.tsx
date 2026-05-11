@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from './context/auth';
@@ -27,8 +28,8 @@ function AppNavigator() {
       if (path !== 'auth') return;
 
       if (queryParams?.error) {
-        // TODO: 로그인 실패 Toast 또는 에러 메시지 표시
         clearTimeout(splashTimer.current);
+        Alert.alert('로그인 실패', '다시 시도해주세요.\n(' + queryParams.error + ')');
         router.replace('/login');
         return;
       }

@@ -14,6 +14,7 @@ type TabType = 'all' | 'manual' | 'qna';
 
 type SearchResult = {
   id: number;
+  type: 'manual' | 'qna';
   question: string;
   summary: string | null;
   category: { name: string; slug: string };
@@ -32,8 +33,10 @@ function ResultCard({ item, onPress }: { item: SearchResult; onPress: () => void
   return (
     <TouchableOpacity style={styles.resultCard} activeOpacity={0.7} onPress={onPress}>
       <View style={styles.resultTopRow}>
-        <View style={styles.tagManual}>
-          <Text style={styles.tagTextManual}>📖 매뉴얼</Text>
+        <View style={item.type === 'qna' ? styles.tagQna : styles.tagManual}>
+          <Text style={item.type === 'qna' ? styles.tagTextQna : styles.tagTextManual}>
+            {item.type === 'qna' ? '💬 QnA' : '📖 매뉴얼'}
+          </Text>
         </View>
         <Text style={styles.categoryText}>{item.category.name}</Text>
         <View style={{ flex: 1 }} />
@@ -79,9 +82,24 @@ export default function HomeScreen() {
     setIsSearching(true);
     setSearchLoading(true);
     setActiveTab('all');
-    fetch(`${API_BASE}/manual/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      .then(r => r.json())
-      .then(data => setSearchResults(Array.isArray(data) ? data : []))
+    const q = encodeURIComponent(searchQuery.trim());
+    Promise.all([
+      fetch(`${API_BASE}/manual/search?q=${q}`).then(r => r.json()),
+      fetch(`${API_BASE}/qna/search?q=${q}`).then(r => r.json()),
+    ])
+      .then(([manualData, qnaData]) => {
+        const manualResults: SearchResult[] = (Array.isArray(manualData) ? manualData : []).map((item: any) => ({
+          ...item, type: 'manual' as const,
+        }));
+        const qnaResults: SearchResult[] = (Array.isArray(qnaData) ? qnaData : []).map((item: any) => ({
+          id: item.id,
+          type: 'qna' as const,
+          question: item.title,
+          summary: null,
+          category: { name: item.category, slug: item.category },
+        }));
+        setSearchResults([...manualResults, ...qnaResults]);
+      })
       .catch(() => setSearchResults([]))
       .finally(() => setSearchLoading(false));
   };
@@ -93,7 +111,9 @@ export default function HomeScreen() {
     setActiveTab('all');
   };
 
-  const filteredResults = activeTab === 'qna' ? [] : searchResults;
+  const filteredResults = activeTab === 'all'
+    ? searchResults
+    : searchResults.filter(r => r.type === activeTab);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -181,16 +201,19 @@ export default function HomeScreen() {
               <View style={styles.emptyBox}>
                 <Ionicons name="search-outline" size={40} color="#CCD9BA" />
                 <Text style={styles.emptyText}>
-                  {activeTab === 'qna' ? 'QnA 검색은 준비 중입니다' : '검색 결과가 없습니다'}
+                  검색 결과가 없습니다
                 </Text>
               </View>
             ) : (
               <View style={styles.resultList}>
                 {filteredResults.map((item) => (
                   <ResultCard
-                    key={item.id}
+                    key={`${item.type}-${item.id}`}
                     item={item}
-                    onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+                    onPress={() => item.type === 'qna'
+                      ? router.push(`/qna/${item.id}`)
+                      : router.push(`/manual-detail?articleId=${item.id}`)
+                    }
                   />
                 ))}
               </View>
@@ -309,6 +332,8 @@ const styles = StyleSheet.create({
   resultTopRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, width: '100%' },
   tagManual: { backgroundColor: '#EDF5E1', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
   tagTextManual: { fontSize: 11, fontWeight: '600', color: '#3C6802' },
+  tagQna: { backgroundColor: '#E8F0FE', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  tagTextQna: { fontSize: 11, fontWeight: '600', color: '#3B5FCC' },
   categoryText: { fontSize: 12, color: '#9CAF88' },
   scrapCount: { fontSize: 12, color: '#9CAF88', marginLeft: 3 },
   resultTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 27, letterSpacing: -0.439, marginBottom: 4 },

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,12 +17,17 @@ const SLUG_TO_NAME: Record<string, string> = {
 };
 
 type Article = { id: number; question: string; summary: string | null; order: number };
+type SearchResult = { id: number; question: string; summary: string | null; category: { name: string; slug: string } };
 
 export default function ManualListScreen() {
   const router = useRouter();
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/categories/${categoryId}/articles`)
@@ -31,6 +36,24 @@ export default function ManualListScreen() {
       .catch(() => setArticles([]))
       .finally(() => setLoading(false));
   }, [categoryId]);
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setSearchLoading(true);
+    const q = encodeURIComponent(searchQuery.trim());
+    fetch(`${API_BASE}/manual/search?q=${q}&categorySlug=${categoryId}`)
+      .then(r => r.json())
+      .then(data => setSearchResults(Array.isArray(data) ? data : []))
+      .catch(() => setSearchResults([]))
+      .finally(() => setSearchLoading(false));
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setIsSearching(false);
+    setSearchResults([]);
+  };
 
   const categoryLabel = SLUG_TO_NAME[categoryId ?? ''] ?? '매뉴얼';
 
@@ -43,10 +66,60 @@ export default function ManualListScreen() {
         <Text style={styles.headerTitle}>{categoryLabel}</Text>
       </View>
 
+      <View style={styles.searchArea}>
+        <View style={styles.searchBox}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="키워드로 검색해보세요!"
+            placeholderTextColor="#9CAF88"
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              if (!text.trim()) handleClearSearch();
+            }}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
+          />
+          {isSearching ? (
+            <TouchableOpacity onPress={handleClearSearch}>
+              <Ionicons name="close-circle" size={18} color="#9CAF88" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleSearch}>
+              <Ionicons name="search" size={18} color="#586144" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#4CAF50" />
         </View>
+      ) : isSearching ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          {searchLoading ? (
+            <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+          ) : searchResults.length === 0 ? (
+            <View style={styles.center}>
+              <Ionicons name="search-outline" size={36} color="#CCD9BA" />
+              <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
+            </View>
+          ) : (
+            searchResults.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.questionItem}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+              >
+                <Ionicons name="search" size={15} color="#9CAF88" />
+                <Text style={styles.questionText}>{item.question}</Text>
+                <Ionicons name="chevron-forward" size={18} color="#bbb" />
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           {articles.length === 0 ? (
@@ -96,9 +169,20 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
+  searchArea: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F4F8EE',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
   content: { paddingBottom: 100 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  emptyText: { fontSize: 15, color: '#999' },
+  center: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+  emptyText: { fontSize: 15, color: '#999', marginTop: 12 },
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',

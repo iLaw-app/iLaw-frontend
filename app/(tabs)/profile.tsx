@@ -73,10 +73,7 @@ export default function ProfilePage() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>👤</Text>
-        </View>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.nickname}>{user?.nickname ?? '닉네임 없음'}</Text>
           <Text style={styles.provider}>{user ? (PROVIDER_LABEL[user.provider] ?? user.provider) : ''}</Text>
         </View>
@@ -137,8 +134,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16,
     padding: 16, marginBottom: 16,
   },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#e8f5e9', justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 24 },
   nickname: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
   provider: { fontSize: 12, color: '#888', marginTop: 2 },
   editBtn: { marginLeft: 'auto', borderWidth: 1, borderColor: '#4CAF50', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

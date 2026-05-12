@@ -255,9 +255,6 @@ export default function OnboardingScreen() {
           <Text style={styles.submitText}>가입하기</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>이미 계정이 있으신가요? 로그인</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <PickerModal
@@ -376,7 +373,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  backText: { fontSize: 13, color: '#888' },
 });
 
 const pickerStyles = StyleSheet.create({

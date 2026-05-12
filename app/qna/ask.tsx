@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -14,7 +15,45 @@ export default function AskPage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [images, setImages] = useState<{ uri: string; type: string; name: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const handlePickImage = async () => {
+    if (images.length >= 3) {
+      Alert.alert('최대 3장까지 첨부할 수 있습니다.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    const ext = asset.uri.split('.').pop() ?? 'jpg';
+    setImages(prev => [...prev, { uri: asset.uri, type: `image/${ext}`, name: `photo.${ext}` }]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const img of images) {
+      const form = new FormData();
+      form.append('image', { uri: img.uri, type: img.type, name: img.name } as any);
+      const res = await fetch(`${API_BASE}/upload/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: form,
+      });
+      if (!res.ok) throw new Error('이미지 업로드 실패');
+      const data = await res.json();
+      urls.push(data.url);
+    }
+    return urls;
+  };
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim() || !selectedCategory) {
@@ -27,10 +66,11 @@ export default function AskPage() {
     }
     setSubmitting(true);
     try {
+      const imageUrls = await uploadImages();
       const res = await fetch(`${API_BASE}/qna`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ title, content, category: selectedCategory }),
+        body: JSON.stringify({ title, content, category: selectedCategory, imageUrls }),
       });
       if (!res.ok) throw new Error();
       Alert.alert('제출 완료!', '빠른 시일 내로 답변 드리겠습니다.', [
@@ -85,6 +125,24 @@ export default function AskPage() {
           textAlignVertical="top"
         />
 
+        <Text style={styles.label}>사진 첨부 <Text style={styles.optional}>(선택, 최대 3장)</Text></Text>
+        <View style={styles.imageRow}>
+          {images.map((img, i) => (
+            <View key={i} style={styles.imageThumbWrap}>
+              <Image source={{ uri: img.uri }} style={styles.imageThumb} />
+              <TouchableOpacity style={styles.imageRemove} onPress={() => handleRemoveImage(i)}>
+                <Text style={styles.imageRemoveText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {images.length < 3 && (
+            <TouchableOpacity style={styles.imageAddBtn} onPress={handlePickImage}>
+              <Text style={styles.imageAddIcon}>+</Text>
+              <Text style={styles.imageAddText}>사진 추가</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <Text style={styles.notice}>
           * 질문은 익명으로 전체 공개됩니다.{'\n'}
           * 답변까지 1~3일 정도 소요됩니다.
@@ -116,6 +174,15 @@ const styles = StyleSheet.create({
   categoryChipSelected: { backgroundColor: '#B2D36E', borderColor: '#B2D36E' },
   categoryChipText: { fontSize: 13, color: '#9CAF88' },
   categoryChipTextSelected: { color: '#fff', fontWeight: '600' },
+  optional: { fontSize: 12, color: '#aaa', fontWeight: '400' },
+  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  imageThumbWrap: { position: 'relative' },
+  imageThumb: { width: 80, height: 80, borderRadius: 10 },
+  imageRemove: { position: 'absolute', top: -6, right: -6, backgroundColor: '#f44336', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
+  imageRemoveText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  imageAddBtn: { width: 80, height: 80, borderRadius: 10, borderWidth: 1.5, borderColor: '#CCD9BA', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fff4' },
+  imageAddIcon: { fontSize: 22, color: '#9CAF88' },
+  imageAddText: { fontSize: 11, color: '#9CAF88', marginTop: 2 },
   notice: { fontSize: 12, color: '#9CAF88', lineHeight: 20, marginTop: 16 },
   submitBtn: { backgroundColor: '#B2D36E', borderRadius: 9999, paddingVertical: 16, alignItems: 'center', marginTop: 24,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 3 },

@@ -11,11 +11,11 @@ export interface UserInfo {
   gender: string | null;
   provider: string;
   profileCompleted: boolean;
+  role: UserRole;
 }
 
 interface AuthState {
   role: UserRole;
-  setRole: (role: UserRole) => void;
   accessToken: string | null;
   setAccessToken: (token: string | null) => void;
   user: UserInfo | null;
@@ -25,12 +25,13 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<UserRole>('user');
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
 
+  const role: UserRole = user?.role ?? 'user';
+
   return (
-    <AuthContext.Provider value={{ role, setRole, accessToken, setAccessToken, user, setUser }}>
+    <AuthContext.Provider value={{ role, accessToken, setAccessToken, user, setUser }}>
       {children}
     </AuthContext.Provider>
   );

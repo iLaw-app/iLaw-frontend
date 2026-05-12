@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
@@ -13,6 +14,7 @@ type QnADetail = {
   category: string;
   status: string;
   createdAt: string;
+  imageUrls: string[];
   author: { nickname: string | null };
   answer: {
     id: number;
@@ -25,17 +27,43 @@ type QnADetail = {
 export default function QnaDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { role } = useAuth();
+  const { role, accessToken } = useAuth();
+
+  const handleScrap = async () => {
+    if (!accessToken) return;
+    setScrapLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/qna/${id}/scrap`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      setScrapped(data.scrapped);
+    } finally {
+      setScrapLoading(false);
+    }
+  };
   const [post, setPost] = useState<QnADetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [scrapped, setScrapped] = useState(false);
+  const [scrapLoading, setScrapLoading] = useState(false);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
     fetch(`${API_BASE}/qna/${id}`)
       .then(r => r.json())
       .then(data => setPost(data?.id ? data : null))
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
-  }, [id]);
+
+    if (accessToken) {
+      fetch(`${API_BASE}/qna/${id}/scrap`, { headers: { Authorization: `Bearer ${accessToken}` } })
+        .then(r => r.json())
+        .then(data => setScrapped(data.scrapped ?? false))
+        .catch(() => {});
+    }
+  }, [id]));
 
   if (loading) {
     return (
@@ -59,6 +87,12 @@ export default function QnaDetailPage() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.back}>{'< QnA'}</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
+          <Text style={styles.scrapIcon}>{scrapped ? '🔖' : '📄'}</Text>
+          <Text style={[styles.scrapText, scrapped && styles.scrapTextActive]}>
+            {scrapped ? '스크랩됨' : '스크랩'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -73,6 +107,22 @@ export default function QnaDetailPage() {
           {post.author.nickname ?? '익명'} · {new Date(post.createdAt).toLocaleDateString('ko-KR')}
         </Text>
         <Text style={styles.body}>{post.content}</Text>
+
+        {post.imageUrls?.length > 0 && (
+          <View style={styles.imageRow}>
+            {post.imageUrls.map((url, i) => (
+              <TouchableOpacity key={i} onPress={() => setSelectedImage(url)}>
+                <Image source={{ uri: url }} style={styles.imageThumb} resizeMode="cover" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
+            <Image source={{ uri: selectedImage! }} style={styles.modalImage} resizeMode="contain" />
+          </TouchableOpacity>
+        </Modal>
 
         <View style={styles.divider} />
 
@@ -111,7 +161,6 @@ export default function QnaDetailPage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  topBar: { paddingHorizontal: 16, paddingVertical: 12 },
   back: { fontSize: 16, color: '#3C6802', fontWeight: '600' },
   content: { padding: 20, paddingBottom: 40 },
   categoryRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
@@ -146,4 +195,13 @@ const styles = StyleSheet.create({
   lawyerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
   lawyerOrg: { fontSize: 12, color: '#9CAF88', marginTop: 2 },
   answerContent: { fontSize: 14, color: '#333', lineHeight: 22 },
+  topBar: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scrapBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  scrapIcon: { fontSize: 18 },
+  scrapText: { fontSize: 13, color: '#aaa', fontWeight: '600' },
+  scrapTextActive: { color: '#3C6802' },
+  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
+  imageThumb: { width: 100, height: 100, borderRadius: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  modalImage: { width: '100%', height: '100%' },
 });

@@ -1,17 +1,22 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useAuth } from './context/auth';
 
-const NOTIFICATIONS = [
-  { id: 1, type: 'qna',    read: false, title: '내 질문에 답변이 달렸습니다', desc: '알바비를 안 주는데 어떻게 해야 하나요?', date: '2026-05-05 10:30' },
-  { id: 2, type: 'qna',    read: false, title: '스크랩한 질문에 답변이 달렸습니다', desc: '학교 단톡방에서 욕을 먹고 있어요', date: '2026-05-04 15:20' },
-  { id: 3, type: 'manual', read: true,  title: '매뉴얼이 업데이트되었습니다', desc: '아동학대/가정폭력 카테고리에 새로운 내용이 추가되었습니다', date: '2026-05-03 09:00' },
-  { id: 4, type: 'qna',    read: true,  title: '스크랩한 질문에 답변이 달렸습니다', desc: '미성년자 근로계약서 작성 방법이 궁금해요', date: '2026-05-02 14:15' },
-];
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-const hasNotifications = NOTIFICATIONS.length > 0;
+type Notification = {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  read: boolean;
+  refId: number | null;
+  createdAt: string;
+};
 
 function EmptyBellIcon() {
   return (
@@ -28,12 +33,41 @@ function EmptyBellIcon() {
   );
 }
 
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { accessToken } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(useCallback(() => {
+    if (!accessToken) return;
+    setLoading(true);
+    fetch(`${API_BASE}/notifications`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(data => setNotifications(Array.isArray(data) ? data : []))
+      .catch(() => setNotifications([]))
+      .finally(() => setLoading(false));
+
+    // 화면 진입 시 전체 읽음 처리
+    fetch(`${API_BASE}/notifications/read-all`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => {});
+  }, [accessToken]));
+
+  const handlePress = (noti: Notification) => {
+    if (noti.type === 'new_question' && noti.refId) {
+      router.push(`/qna/${noti.refId}`);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#333" />
@@ -42,33 +76,40 @@ export default function NotificationsScreen() {
         <View style={{ width: 32 }} />
       </View>
 
-      {hasNotifications ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
-          {NOTIFICATIONS.map((noti) => (
-            <TouchableOpacity key={noti.id} style={styles.notiCard} activeOpacity={0.7}>
-              <View style={styles.notiLeft}>
-                <Ionicons
-                  name={noti.type === 'qna' ? 'chatbubble-outline' : 'book-outline'}
-                  size={18}
-                  color="#586144"
-                />
-              </View>
-              <View style={styles.notiBody}>
-                <Text style={styles.notiTitle}>{noti.title}</Text>
-                <Text style={styles.notiDesc} numberOfLines={1}>{noti.desc}</Text>
-                <Text style={styles.notiDate}>{noti.date}</Text>
-              </View>
-              {!noti.read && <View style={styles.unreadDot} />}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : (
+      {loading ? (
+        <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+      ) : notifications.length === 0 ? (
         <View style={styles.emptyWrapper}>
           <View style={styles.emptyContainer}>
             <EmptyBellIcon />
             <Text style={styles.emptyText}>알림이 없습니다</Text>
           </View>
         </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
+          {notifications.map((noti) => (
+            <TouchableOpacity
+              key={noti.id}
+              style={[styles.notiCard, noti.read && styles.notiCardRead]}
+              activeOpacity={0.7}
+              onPress={() => handlePress(noti)}
+            >
+              <View style={styles.notiLeft}>
+                <Ionicons
+                  name={noti.type === 'new_question' ? 'chatbubble-outline' : 'book-outline'}
+                  size={18}
+                  color="#586144"
+                />
+              </View>
+              <View style={styles.notiBody}>
+                <Text style={styles.notiTitle}>{noti.title}</Text>
+                <Text style={styles.notiDesc} numberOfLines={1}>{noti.body}</Text>
+                <Text style={styles.notiDate}>{formatDate(noti.createdAt)}</Text>
+              </View>
+              {!noti.read && <View style={styles.unreadDot} />}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -76,64 +117,37 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
   },
   backBtn: { width: 32, height: 32, justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
-
   listContent: { paddingHorizontal: 20, paddingTop: 8, gap: 12 },
   notiCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 110,
-    padding: 17.5,
-    borderRadius: 16,
-    borderWidth: 1.544,
-    borderColor: '#CCD9BA',
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 3,
+    flexDirection: 'row', alignItems: 'center', minHeight: 90,
+    padding: 17.5, borderRadius: 16, borderWidth: 1.544,
+    borderColor: '#CCD9BA', backgroundColor: '#FFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
+  notiCardRead: { backgroundColor: '#FAFAFA', borderColor: '#E4EED4' },
   notiLeft: { marginRight: 12 },
   notiBody: { flex: 1 },
   notiTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 6, lineHeight: 20 },
   notiDesc: { fontSize: 13, color: '#666', marginBottom: 8, lineHeight: 18 },
   notiDate: { fontSize: 11, color: '#aaa', lineHeight: 16 },
   unreadDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#F44336',
-    marginLeft: 8,
-    alignSelf: 'flex-start',
-    marginTop: 4,
+    width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336',
+    marginLeft: 8, alignSelf: 'flex-start', marginTop: 4,
   },
-
   emptyWrapper: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 80 },
   emptyContainer: {
-    width: 345,
-    height: 202,
-    padding: 49,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    borderRadius: 16,
-    borderWidth: 1.544,
-    borderColor: '#CCD9BA',
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 3,
+    width: 345, height: 202, padding: 49, flexDirection: 'column',
+    justifyContent: 'center', alignItems: 'center', gap: 16, borderRadius: 16,
+    borderWidth: 1.544, borderColor: '#CCD9BA', backgroundColor: '#FFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
   emptyText: { fontSize: 14, color: '#9CAF88' },
 });

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -57,12 +58,21 @@ function ResultCard({ item, onPress }: { item: SearchResult; onPress: () => void
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
-  const hasNotification = true;
+  const [hasNotification, setHasNotification] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    if (!accessToken) return;
+    fetch(`${API_BASE}/notifications/unread-count`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(data => setHasNotification((data.count ?? 0) > 0))
+      .catch(() => {});
+  }, [accessToken]));
 
   const handleSearch = () => {
     if (!searchQuery.trim()) return;

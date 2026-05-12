@@ -91,16 +91,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>
-          계정이 없으신가요?{'  '}
-          <Text
-            style={styles.signupLink}
-            onPress={() => router.push('/onboarding')}
-          >
-            회원가입
-          </Text>
-        </Text>
-
       </View>
     </SafeAreaView>
   );
@@ -174,13 +164,4 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  footer: {
-    marginTop: 32,
-    fontSize: 13,
-    color: '#aaa',
-  },
-  signupLink: {
-    color: '#4CAF50',
-    fontWeight: '600',
-  },
 });

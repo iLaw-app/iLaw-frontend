@@ -70,8 +70,10 @@ function ResultCard({ item, keyword, accessToken, onPress }: {
 }) {
   const [titleLines, setTitleLines] = useState(2);
   const [scrapped, setScrapped] = useState(item.scrapped ?? false);
+  const [scrapCount, setScrapCount] = useState(item.scrapCount ?? 0);
 
   useEffect(() => { setScrapped(item.scrapped ?? false); }, [item.scrapped]);
+  useEffect(() => { setScrapCount(item.scrapCount ?? 0); }, [item.scrapCount]);
 
   const handleScrap = async () => {
     if (!accessToken) return;
@@ -82,6 +84,7 @@ function ResultCard({ item, keyword, accessToken, onPress }: {
       const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
       const data = await res.json();
       setScrapped(data.scrapped);
+      setScrapCount(prev => prev + (data.scrapped ? 1 : -1));
     } catch {}
   };
 
@@ -102,6 +105,9 @@ function ResultCard({ item, keyword, accessToken, onPress }: {
             color={scrapped ? '#3C6802' : '#9CAF88'}
           />
         </TouchableOpacity>
+        {scrapCount > 0 && (
+          <Text style={styles.scrapCount}>{scrapCount}</Text>
+        )}
       </View>
       <HighlightText
         text={item.question}
@@ -165,11 +171,11 @@ export default function HomeScreen() {
               : `${API_BASE}/qna/${item.id}/scrap`;
             return fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
               .then(r => r.json())
-              .then(data => data.scrapped ?? false)
-              .catch(() => item.scrapped ?? false);
+              .then(data => ({ scrapped: data.scrapped ?? false, count: data.count ?? 0 }))
+              .catch(() => ({ scrapped: item.scrapped ?? false, count: item.scrapCount ?? 0 }));
           })
         );
-        setSearchResults(combined.map((item, i) => ({ ...item, scrapped: scrapStates[i] })));
+        setSearchResults(combined.map((item, i) => ({ ...item, scrapped: scrapStates[i].scrapped, scrapCount: scrapStates[i].count })));
       } else {
         setSearchResults(combined);
       }

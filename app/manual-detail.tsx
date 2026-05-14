@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/auth';
+import { BottomNav } from '../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -94,7 +95,6 @@ export default function ManualDetailScreen() {
   const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrapped, setScrapped] = useState(false);
-  const [scrapCount, setScrapCount] = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/articles/${articleId}`)
@@ -112,7 +112,6 @@ export default function ManualDetailScreen() {
       .then(r => r.json())
       .then(data => {
         setScrapped(data.scrapped);
-        setScrapCount(data.count ?? 0);
       })
       .catch(() => {});
   }, [articleId, accessToken]);
@@ -129,14 +128,13 @@ export default function ManualDetailScreen() {
       });
       const data = await res.json();
       setScrapped(data.scrapped);
-      setScrapCount(prev => data.scrapped ? prev + 1 : Math.max(0, prev - 1));
     } catch {
       Alert.alert('오류', '스크랩 처리에 실패했습니다.');
     }
   };
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
@@ -162,20 +160,20 @@ export default function ManualDetailScreen() {
           )}
 
           <MarkdownRenderer content={article.content ?? ''} />
-          <View style={{ height: 80 }} />
+
+          <View style={s.scrapArea}>
+            <TouchableOpacity
+              style={[s.scrapBtn, scrapped && s.scrapBtnActive]}
+              activeOpacity={0.85}
+              onPress={handleScrap}
+            >
+              <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={18} color="#fff" />
+              <Text style={s.scrapBtnText}>{scrapped ? '스크랩됨' : '스크랩하기'}</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       )}
-
-      <View style={s.bottomBar}>
-        <TouchableOpacity
-          style={[s.scrapBtn, scrapped && s.scrapBtnActive]}
-          activeOpacity={0.85}
-          onPress={handleScrap}
-        >
-          <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={18} color="#fff" />
-          <Text style={s.scrapBtnText}>{scrapped ? `스크랩됨 ${scrapCount}` : '스크랩하기'}</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomNav activeTab="consult" />
     </SafeAreaView>
   );
 }
@@ -221,15 +219,21 @@ const s = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
   contentImage: { width: '100%', height: 200, borderRadius: 8, marginBottom: 12 },
   blockquote: { fontSize: 14, color: '#555', lineHeight: 22, paddingLeft: 12, borderLeftWidth: 3, borderLeftColor: '#ccc', marginBottom: 8, fontStyle: 'italic' },
-  bottomBar: { padding: 16, borderTopWidth: 1, borderTopColor: '#f0f0f0', backgroundColor: '#fff' },
+  scrapArea: { alignItems: 'center', marginTop: 36, marginBottom: 40 },
   scrapBtn: {
+    width: 290,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
+    backgroundColor: '#B2D36E',
+    paddingVertical: 16,
+    borderRadius: 9999,
+    gap: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 6,
   },
   scrapBtnActive: { backgroundColor: '#3C6802' },
   scrapBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },

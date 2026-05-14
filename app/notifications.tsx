@@ -5,6 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from './context/auth';
+import { BottomNav } from '../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -67,7 +68,7 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#333" />
@@ -111,6 +112,7 @@ export default function NotificationsScreen() {
           ))}
         </ScrollView>
       )}
+      <BottomNav activeTab="home" />
     </SafeAreaView>
   );
 }
@@ -141,9 +143,9 @@ const styles = StyleSheet.create({
     width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336',
     marginLeft: 8, alignSelf: 'flex-start', marginTop: 4,
   },
-  emptyWrapper: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 80 },
+  emptyWrapper: { alignItems: 'center', justifyContent: 'flex-start', paddingTop: 16, paddingHorizontal: 20 },
   emptyContainer: {
-    width: 345, height: 202, padding: 49, flexDirection: 'column',
+    width: '100%', paddingVertical: 48, paddingHorizontal: 49, flexDirection: 'column',
     justifyContent: 'center', alignItems: 'center', gap: 16, borderRadius: 16,
     borderWidth: 1.544, borderColor: '#CCD9BA', backgroundColor: '#FFF',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },

@@ -62,24 +62,26 @@ export default function ManualScreen() {
         </View>
 
         <View style={styles.list}>
-          {categories.map((cat) => {
+          {categories.map((cat, index) => {
             const Icon = cat.Icon;
             return (
-              <TouchableOpacity
-                key={cat.id}
-                style={styles.card}
-                activeOpacity={0.75}
-                onPress={() => router.push(`/manual-list?categoryId=${cat.id}`)}
-              >
-                <View style={styles.iconCircle}>
-                  <Icon />
-                </View>
-                <View style={styles.cardText}>
-                  <Text style={styles.cardLabel}>{cat.label}</Text>
-                  <Text style={styles.cardDesc}>{cat.desc}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#9CAF88" />
-              </TouchableOpacity>
+              <View key={cat.id}>
+                <TouchableOpacity
+                  style={styles.card}
+                  activeOpacity={0.75}
+                  onPress={() => router.push(`/manual-list?categoryId=${cat.id}`)}
+                >
+                  <View style={styles.iconCircle}>
+                    <Icon />
+                  </View>
+                  <View style={styles.cardText}>
+                    <Text style={styles.cardLabel}>{cat.label}</Text>
+                    <Text style={styles.cardDesc}>{cat.desc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#9CAF88" />
+                </TouchableOpacity>
+                {index < categories.length - 1 && <View style={styles.cardDivider} />}
+              </View>
             );
           })}
         </View>
@@ -97,24 +99,28 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
   subtitle: { fontSize: 13, color: '#9CAF88' },
-  list: { paddingHorizontal: 16, gap: 10 },
+  list: {
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E4EED4',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   card: {
-    height: 88,
-    paddingVertical: 20,
+    height: 80,
     paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1.544,
-    borderColor: '#CCD9BA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 3,
   },
+  cardDivider: { height: 1, backgroundColor: '#F0F5E8', marginHorizontal: 20 },
   iconCircle: {
     width: 48,
     height: 48,

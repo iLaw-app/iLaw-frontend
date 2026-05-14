@@ -3,7 +3,10 @@ import { useFocusEffect } from 'expo-router';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
+import { BottomNav } from '../../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -24,10 +27,31 @@ type QnADetail = {
   } | null;
 };
 
+function ClockIcon() {
+  return (
+    <Svg width={64} height={64} viewBox="0 0 64 64" fill="none">
+      <Path
+        d="M31.9985 58.664C46.7255 58.664 58.664 46.7255 58.664 31.9985C58.664 17.2716 46.7255 5.33301 31.9985 5.33301C17.2716 5.33301 5.33301 17.2716 5.33301 31.9985C5.33301 46.7255 17.2716 58.664 31.9985 58.664Z"
+        stroke="#C10007" strokeWidth="5.3331" strokeLinecap="round" strokeLinejoin="round"
+      />
+      <Path
+        d="M31.9985 15.999V31.9983L42.6647 37.3314"
+        stroke="#C10007" strokeWidth="5.3331" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export default function QnaDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { role, accessToken } = useAuth();
+
+  const [post, setPost] = useState<QnADetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [scrapped, setScrapped] = useState(false);
+  const [scrapLoading, setScrapLoading] = useState(false);
 
   const handleScrap = async () => {
     if (!accessToken) return;
@@ -43,11 +67,6 @@ export default function QnaDetailPage() {
       setScrapLoading(false);
     }
   };
-  const [post, setPost] = useState<QnADetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [scrapped, setScrapped] = useState(false);
-  const [scrapLoading, setScrapLoading] = useState(false);
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
@@ -67,70 +86,90 @@ export default function QnaDetailPage() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+        <BottomNav activeTab="qna" />
       </SafeAreaView>
     );
   }
 
   if (!post) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <Text style={{ padding: 20 }}>질문을 찾을 수 없습니다.</Text>
+        <BottomNav activeTab="qna" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 상단 바 */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>{'< QnA'}</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color="#586144" />
+          <Text style={styles.backText}>QnA</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
-          <Text style={styles.scrapIcon}>{scrapped ? '🔖' : '📄'}</Text>
-          <Text style={[styles.scrapText, scrapped && styles.scrapTextActive]}>
-            {scrapped ? '스크랩됨' : '스크랩'}
-          </Text>
+          <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={28} color={scrapped ? '#3C6802' : '#9CAF88'} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.categoryRow}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{post.category}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        {/* 질문 카드 */}
+        <View style={styles.questionCard}>
+          {/* 유저 정보 */}
+          <View style={styles.userRow}>
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person-outline" size={22} color="#3C6802" />
+            </View>
+            <View>
+              <Text style={styles.userName}>{post.author.nickname ?? '익명'}</Text>
+              <View style={styles.dateRow}>
+                <Ionicons name="time-outline" size={12} color="#9CAF88" />
+                <Text style={styles.userDate}>{new Date(post.createdAt).toLocaleDateString('ko-KR')}</Text>
+              </View>
+            </View>
           </View>
+
+          {/* 제목 */}
+          <Text style={styles.questionTitle}>{post.title}</Text>
+
+          {/* 본문 */}
+          <Text style={styles.questionBody}>{post.content}</Text>
+
+          {/* 이미지 */}
+          {post.imageUrls?.length > 0 && (
+            <View style={styles.imageRow}>
+              {post.imageUrls.map((url, i) => (
+                <TouchableOpacity key={i} onPress={() => setSelectedImage(url)}>
+                  <Image source={{ uri: url }} style={styles.imageThumb} resizeMode="cover" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
-        <Text style={styles.title}>{post.title}</Text>
-        <Text style={styles.meta}>
-          {post.author.nickname ?? '익명'} · {new Date(post.createdAt).toLocaleDateString('ko-KR')}
-        </Text>
-        <Text style={styles.body}>{post.content}</Text>
-
-        {post.imageUrls?.length > 0 && (
-          <View style={styles.imageRow}>
-            {post.imageUrls.map((url, i) => (
-              <TouchableOpacity key={i} onPress={() => setSelectedImage(url)}>
-                <Image source={{ uri: url }} style={styles.imageThumb} resizeMode="cover" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
+        {/* 이미지 전체보기 모달 */}
         <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
             <Image source={{ uri: selectedImage! }} style={styles.modalImage} resizeMode="contain" />
           </TouchableOpacity>
         </Modal>
 
-        <View style={styles.divider} />
-
+        {/* 답변 영역 */}
         {post.status === 'pending' ? (
-          <View style={styles.pendingBox}>
-            <Text style={styles.pendingIcon}>🕐</Text>
+          <View style={styles.pendingCard}>
+            <View style={styles.pendingIconWrap}>
+              <ClockIcon />
+            </View>
             <Text style={styles.pendingTitle}>답변 대기 중</Text>
-            <Text style={styles.pendingDesc}>변호사님이 검토 중입니다.{'\n'}답변까지 1~3일 정도 소요됩니다.</Text>
+            <Text style={styles.pendingDesc}>
+              변호사님이 검토 중입니다.{'\n'}답변까지 1~3일 정도 소요됩니다.
+            </Text>
+            <Text style={styles.pendingNote}>
+              긴급한 상황이라면 112 또는 관련 기관에 먼저 연락해주세요.
+            </Text>
             {role === 'lawyer' && (
               <TouchableOpacity
                 style={styles.answerBtn}
@@ -141,10 +180,10 @@ export default function QnaDetailPage() {
             )}
           </View>
         ) : (
-          <View style={styles.answerBox}>
+          <View style={styles.answerCard}>
             <View style={styles.lawyerRow}>
               <View style={styles.lawyerAvatar}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>법</Text>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>법</Text>
               </View>
               <View>
                 <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
@@ -155,53 +194,101 @@ export default function QnaDetailPage() {
           </View>
         )}
       </ScrollView>
+      <BottomNav activeTab="qna" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  back: { fontSize: 16, color: '#3C6802', fontWeight: '600' },
-  content: { padding: 20, paddingBottom: 40 },
-  categoryRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  badge: { backgroundColor: '#EDF5E1', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeText: { fontSize: 12, color: '#3C6802', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', lineHeight: 28, marginBottom: 8 },
-  meta: { fontSize: 12, color: '#9CAF88', marginBottom: 16 },
-  body: { fontSize: 15, color: '#333', lineHeight: 24 },
-  divider: { height: 1, backgroundColor: '#E4EED4', marginVertical: 24 },
-  pendingBox: {
-    alignItems: 'center', paddingVertical: 24,
-    backgroundColor: '#fff', borderRadius: 16, padding: 20,
-    borderWidth: 1.544, borderColor: '#CCD9BA',
+
+  topBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 12,
   },
-  pendingIcon: { fontSize: 40, marginBottom: 12 },
-  pendingTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
-  pendingDesc: { fontSize: 14, color: '#9CAF88', textAlign: 'center', lineHeight: 22 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  backText: { fontSize: 16, color: '#586144', fontWeight: '600' },
+  scrapBtn: { padding: 4 },
+
+  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 16 },
+
+  questionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1.544,
+    borderColor: '#CCD9BA',
+    padding: 25,
+    paddingBottom: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 6,
+  },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarCircle: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#EDF5E1', justifyContent: 'center', alignItems: 'center',
+  },
+  userName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  userDate: { fontSize: 12, color: '#9CAF88' },
+  questionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 27, letterSpacing: -0.439 },
+  questionBody: { fontSize: 14, color: '#444', lineHeight: 22 },
+  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  imageThumb: { width: 90, height: 90, borderRadius: 10 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  modalImage: { width: '100%', height: '100%' },
+
+  pendingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1.544,
+    borderColor: '#D9BABA',
+    padding: 25,
+    paddingBottom: 20,
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 6,
+  },
+  pendingIconWrap: { marginBottom: 4 },
+  pendingTitle: {
+    fontSize: 20, fontWeight: '700', color: '#C10007',
+    lineHeight: 28, letterSpacing: -0.449, textAlign: 'center',
+  },
+  pendingDesc: { fontSize: 14, color: '#C10007', lineHeight: 22, textAlign: 'center' },
+  pendingNote: { fontSize: 12, color: '#C10007', lineHeight: 18, textAlign: 'center', paddingBottom: 8 },
   answerBtn: {
-    marginTop: 16, backgroundColor: '#B2D36E', borderRadius: 9999,
+    marginTop: 8, backgroundColor: '#B2D36E', borderRadius: 9999,
     paddingVertical: 12, paddingHorizontal: 32,
   },
   answerBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  answerBox: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 20,
-    borderWidth: 1.544, borderColor: '#CCD9BA',
+
+  answerCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 24,
+    borderWidth: 1.544,
+    borderColor: '#BEDBFF',
+    padding: 25,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 6,
   },
-  lawyerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  lawyerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   lawyerAvatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#DFEDBE', justifyContent: 'center', alignItems: 'center',
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#2B56B5', justifyContent: 'center', alignItems: 'center',
   },
   lawyerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
   lawyerOrg: { fontSize: 12, color: '#9CAF88', marginTop: 2 },
   answerContent: { fontSize: 14, color: '#333', lineHeight: 22 },
-  topBar: { paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  scrapBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  scrapIcon: { fontSize: 18 },
-  scrapText: { fontSize: 13, color: '#aaa', fontWeight: '600' },
-  scrapTextActive: { color: '#3C6802' },
-  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 },
-  imageThumb: { width: 100, height: 100, borderRadius: 10 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
-  modalImage: { width: '100%', height: '100%' },
 });

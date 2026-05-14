@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
+import { BottomNav } from '../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -32,7 +33,7 @@ export default function MyScrapsScreen() {
   }, [accessToken]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
@@ -73,6 +74,7 @@ export default function MyScrapsScreen() {
           )}
         />
       )}
+      <BottomNav activeTab="profile" />
     </SafeAreaView>
   );
 }

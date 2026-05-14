@@ -3,6 +3,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { BottomNav } from '../components/BottomNav';
+
+function HighlightText({ text, keyword, style }: { text: string; keyword: string; style?: any }) {
+  if (!keyword.trim()) return <Text style={style}>{text}</Text>;
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <Text style={style}>
+      {parts.map((part, i) =>
+        part.toLowerCase() === keyword.toLowerCase()
+          ? <Text key={i} style={{ backgroundColor: '#FFE566' }}>{part}</Text>
+          : part
+      )}
+    </Text>
+  );
+}
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -10,7 +26,7 @@ const SLUG_TO_NAME: Record<string, string> = {
   'finance': '금융(빚 사기 도박)',
   'labor': '노동',
   'sexual-violence': '성폭력 데이트폭력 성착취',
-  'child-abuse': '아동학대',
+  'child-abuse': '아동학대/가정폭력',
   'online-violence': '온라인폭력',
   'birth-and-parenting': '출생과 양육',
   'parental-rights': '친권 미성년후견',
@@ -42,7 +58,7 @@ export default function ManualListScreen() {
     setIsSearching(true);
     setSearchLoading(true);
     const q = encodeURIComponent(searchQuery.trim());
-    fetch(`${API_BASE}/manual/search?q=${q}&categorySlug=${categoryId}`)
+    fetch(`${API_BASE}/manual/search?q=${q}`)
       .then(r => r.json())
       .then(data => setSearchResults(Array.isArray(data) ? data : []))
       .catch(() => setSearchResults([]))
@@ -55,10 +71,16 @@ export default function ManualListScreen() {
     setSearchResults([]);
   };
 
+  // 검색 결과에서 원래 Q 번호 찾기
+  const getQuestionNumber = (id: number) => {
+    const idx = articles.findIndex(a => a.id === id);
+    return idx >= 0 ? idx + 1 : null;
+  };
+
   const categoryLabel = SLUG_TO_NAME[categoryId ?? ''] ?? '매뉴얼';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
@@ -66,8 +88,9 @@ export default function ManualListScreen() {
         <Text style={styles.headerTitle}>{categoryLabel}</Text>
       </View>
 
+      {/* 검색창 - 홈화면과 동일한 스타일 */}
       <View style={styles.searchArea}>
-        <View style={styles.searchBox}>
+        <View style={[styles.searchBox, isSearching && styles.searchBoxActive]}>
           <TextInput
             style={styles.searchInput}
             placeholder="키워드로 검색해보세요!"
@@ -81,12 +104,12 @@ export default function ManualListScreen() {
             returnKeyType="search"
           />
           {isSearching ? (
-            <TouchableOpacity onPress={handleClearSearch}>
-              <Ionicons name="close-circle" size={18} color="#9CAF88" />
+            <TouchableOpacity style={styles.searchBtn} onPress={handleClearSearch}>
+              <Ionicons name="close" size={16} color="#586144" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={handleSearch}>
-              <Ionicons name="search" size={18} color="#586144" />
+            <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
+              <Ionicons name="search" size={16} color="#586144" />
             </TouchableOpacity>
           )}
         </View>
@@ -97,6 +120,7 @@ export default function ManualListScreen() {
           <ActivityIndicator size="large" color="#4CAF50" />
         </View>
       ) : isSearching ? (
+        /* ── 검색 결과 ── */
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           {searchLoading ? (
             <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
@@ -106,43 +130,56 @@ export default function ManualListScreen() {
               <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
             </View>
           ) : (
-            searchResults.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.questionItem}
-                activeOpacity={0.7}
-                onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
-              >
-                <Ionicons name="search" size={15} color="#9CAF88" />
-                <Text style={styles.questionText}>{item.question}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#bbb" />
-              </TouchableOpacity>
-            ))
+            <View style={styles.resultCard}>
+              {searchResults.map((item, idx) => {
+                const qNum = getQuestionNumber(item.id) ?? idx + 1;
+                return (
+                  <View key={item.id}>
+                    <TouchableOpacity
+                      style={styles.questionItem}
+                      activeOpacity={0.7}
+                      onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+                    >
+                      <Text style={styles.questionNumber}>Q{qNum}.</Text>
+                      <HighlightText text={item.question} keyword={searchQuery} style={styles.questionText} />
+                      <Ionicons name="chevron-forward" size={18} color="#bbb" />
+                    </TouchableOpacity>
+                    {idx < searchResults.length - 1 && <View style={styles.divider} />}
+                  </View>
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       ) : (
+        /* ── 전체 목록 ── */
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
           {articles.length === 0 ? (
             <View style={styles.center}>
               <Text style={styles.emptyText}>아직 등록된 내용이 없어요.</Text>
             </View>
           ) : (
-            articles.map((article, index) => (
-              <TouchableOpacity
-                key={article.id}
-                style={styles.questionItem}
-                activeOpacity={0.7}
-                onPress={() => router.push(`/manual-detail?articleId=${article.id}`)}
-              >
-                <Text style={styles.questionNumber}>Q{index + 1}.</Text>
-                <Text style={styles.questionText}>{article.question}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#bbb" />
-              </TouchableOpacity>
-            ))
+            <View style={styles.resultCard}>
+              {articles.map((article, index) => (
+                <View key={article.id}>
+                  <TouchableOpacity
+                    style={styles.questionItem}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(`/manual-detail?articleId=${article.id}`)}
+                  >
+                    <Text style={styles.questionNumber}>Q{index + 1}.</Text>
+                    <Text style={styles.questionText}>{article.question}</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#bbb" />
+                  </TouchableOpacity>
+                  {index < articles.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </View>
           )}
         </ScrollView>
       )}
 
+      {/* 도움이 필요하신가요 버튼 - 오른쪽 하단 */}
       <View style={styles.floatingContainer} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.floatingBtn}
@@ -153,6 +190,7 @@ export default function ManualListScreen() {
           <Text style={styles.floatingText}>도움이 필요하신가요?</Text>
         </TouchableOpacity>
       </View>
+      <BottomNav activeTab="consult" />
     </SafeAreaView>
   );
 }
@@ -169,37 +207,62 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4, marginRight: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
-  searchArea: { paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+
+  searchArea: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F8EE',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
+    height: 52,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: '#CCD9BA',
+    paddingLeft: 20,
+    paddingRight: 10,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
+  searchBoxActive: { borderColor: '#3C6802' },
   searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
+  searchBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#CCD9BA',
+  },
+
   content: { paddingBottom: 100 },
   center: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
   emptyText: { fontSize: 15, color: '#999', marginTop: 12 },
+
+  resultCard: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E4EED4',
+    overflow: 'hidden',
+  },
   questionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
     gap: 8,
   },
+  divider: { height: 1, backgroundColor: '#f5f5f5', marginHorizontal: 20 },
   questionNumber: { fontSize: 15, fontWeight: '700', color: '#4CAF50', minWidth: 28 },
   questionText: { flex: 1, fontSize: 15, color: '#1a1a1a', lineHeight: 22 },
-  floatingContainer: { position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' },
+
+  floatingContainer: { position: 'absolute', bottom: 100, right: 20 },
   floatingBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FF4444',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 30,
     gap: 8,

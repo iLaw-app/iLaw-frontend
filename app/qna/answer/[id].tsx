@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../context/auth';
+import { BottomNav } from '../../../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -42,7 +43,7 @@ export default function AnswerPage() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.back}>{'< 답변 작성'}</Text>
@@ -73,6 +74,7 @@ export default function AnswerPage() {
           <Text style={styles.submitBtnText}>{submitting ? '등록 중...' : '답변 등록하기'}</Text>
         </TouchableOpacity>
       </ScrollView>
+      <BottomNav activeTab="qna" />
     </SafeAreaView>
   );
 }

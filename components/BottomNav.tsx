@@ -32,9 +32,11 @@ export function BottomNav({ activeTab }: { activeTab?: string }) {
   const lastSegment = segments[segments.length - 1] ?? '';
   const resolvedActive = activeTab ?? SEGMENT_TO_TAB[lastSegment] ?? 'home';
 
+  const vertPad = insets.bottom / 2;
+
   return (
     <View style={s.bar}>
-      <View style={s.tabRow}>
+      <View style={[s.tabRow, { paddingTop: vertPad, paddingBottom: vertPad }]}>
         {TABS.map((tab) => {
           const focused = resolvedActive === tab.name;
           return (
@@ -45,8 +47,8 @@ export function BottomNav({ activeTab }: { activeTab?: string }) {
               onPress={() => router.push(`/(tabs)/${tab.name}` as any)}
             >
               <View style={[s.item, focused && s.itemActive]}>
-                <Ionicons name={tab.icon} size={20} color={focused ? '#3C6802' : '#9CAF88'} />
-                <Text style={[s.label, { color: focused ? '#3C6802' : '#9CAF88' }]}>
+                <Ionicons name={tab.icon} size={24} color={focused ? '#3C6802' : '#6A7282'} />
+                <Text style={[s.label, { color: focused ? '#3C6802' : '#6A7282' }]} numberOfLines={1}>
                   {tab.label}
                 </Text>
               </View>
@@ -54,7 +56,6 @@ export function BottomNav({ activeTab }: { activeTab?: string }) {
           );
         })}
       </View>
-      <View style={{ height: insets.bottom }} />
     </View>
   );
 }
@@ -67,20 +68,21 @@ const s = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    paddingHorizontal: 4,
-    paddingVertical: 5,
+    paddingHorizontal: 19,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tab: { alignItems: 'center', justifyContent: 'center' },
   item: {
-    minWidth: 54,
-    height: 44,
+    width: 58,
+    height: 60,
     borderRadius: 16,
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    gap: 3,
+    paddingVertical: 8,
+    gap: 4,
   },
   itemActive: { backgroundColor: '#EFF4E1' },
-  label: { fontSize: 10, fontWeight: '600' },
+  label: { fontSize: 10, fontWeight: '700', lineHeight: 14 },
 });

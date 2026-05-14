@@ -14,9 +14,11 @@ const TAB_SCREENS = [
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
 
+  const vertPad = insets.bottom / 2;
+
   return (
     <View style={s.bar}>
-      <View style={s.tabRow}>
+      <View style={[s.tabRow, { paddingTop: vertPad, paddingBottom: vertPad }]}>
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -43,8 +45,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               activeOpacity={0.8}
             >
               <View style={[s.item, isFocused && s.itemActive]}>
-                <Ionicons name={iconName} size={20} color={isFocused ? '#3C6802' : '#9CAF88'} />
-                <Text style={[s.label, { color: isFocused ? '#3C6802' : '#9CAF88' }]}>
+                <Ionicons name={iconName} size={24} color={isFocused ? '#3C6802' : '#6A7282'} />
+                <Text style={[s.label, { color: isFocused ? '#3C6802' : '#6A7282' }]} numberOfLines={1}>
                   {label}
                 </Text>
               </View>
@@ -52,7 +54,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           );
         })}
       </View>
-      {insets.bottom > 0 && <View style={{ height: insets.bottom }} />}
     </View>
   );
 }
@@ -65,22 +66,23 @@ const s = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    paddingHorizontal: 4,
-    paddingVertical: 5,
+    paddingHorizontal: 19,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tab: { alignItems: 'center', justifyContent: 'center' },
   item: {
-    minWidth: 54,
-    height: 44,
+    width: 58,
+    height: 60,
     borderRadius: 16,
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    gap: 3,
+    paddingVertical: 8,
+    gap: 4,
   },
   itemActive: { backgroundColor: '#EFF4E1' },
-  label: { fontSize: 10, fontWeight: '600' },
+  label: { fontSize: 10, fontWeight: '700', lineHeight: 14 },
 });
 
 export default function TabLayout() {

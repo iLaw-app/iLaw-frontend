@@ -12,11 +12,12 @@ const API_BASE = 'https://ilaw-backend.up.railway.app';
 const QNA_CATEGORIES = ['아동학대', '노동', '금융', '성폭력', '온라인폭력', '출생·양육', '법정대리인', '기타'];
 
 const NOTICES = [
-  '개인정보(이름, 주소, 전화번호 등)는 질문에 기재하지 않는 것을 권장합니다.',
-  '모든 질문은 익명으로 전체 공개되며, 답변까지 1~3일 정도 소요됩니다.',
-  '학대·폭력 관련 긴급 상황이라면 즉시 관련 기관에 신고해 주세요.',
-  '본 서비스의 답변은 참고용이며, 전문가의 공식 법률 조언을 대체하지 않습니다.',
-  '긴급 신고: 여성긴급전화 1366 · 아동학대신고 112 · 범죄신고 112',
+  '개인정보(실명, 주민번호, 주소 등)는 절대 적지 마세요.',
+  '민감한 사진이나 개인을 특정할 수 있는 이미지는 되도록 올리지 마세요.',
+  '구체적인 상황을 설명하면 더 정확한 답변을 받을 수 있어요.',
+  '욕설이나 비방은 삼가주세요.',
+  '변호사님의 답변까지 1~3일 정도 걸릴 수 있어요.',
+  '긴급한 상황이라면 112 또는 관련 기관에 먼저 연락하세요.',
 ];
 
 export default function AskPage() {
@@ -145,6 +146,11 @@ export default function AskPage() {
           )}
         </View>
 
+        <View style={styles.publicNoticeRow}>
+          <Ionicons name="eye-outline" size={16} color="#586144" />
+          <Text style={styles.publicNotice}>질문을 공개합니다 (다른 사용자들도 볼 수 있습니다)</Text>
+        </View>
+
         <TouchableOpacity
           style={[styles.submitBtn, (submitting || !title.trim() || !content.trim() || selectedCategories.length === 0) && styles.submitBtnDisabled]}
           onPress={handleSubmit}
@@ -227,6 +233,22 @@ const styles = StyleSheet.create({
   imageAddIcon: { fontSize: 22, color: '#9CAF88' },
   imageAddText: { fontSize: 11, color: '#9CAF88', marginTop: 2 },
 
+  publicNoticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    alignSelf: 'stretch',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  publicNotice: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#586144',
+    lineHeight: 20,
+    letterSpacing: -0.15,
+  },
   submitBtn: {
     backgroundColor: '#B2D36E', borderRadius: 9999, paddingVertical: 16,
     alignItems: 'center', marginTop: 24,

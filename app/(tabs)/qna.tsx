@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 'auto' as any },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   metaText: { fontSize: 12, color: '#9CAF88' },
   metaDot: { fontSize: 12, color: '#9CAF88' },

@@ -135,30 +135,49 @@ export default function HomeScreen() {
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
-  const runSearch = useCallback((q: string) => {
+  const runSearch = useCallback(async (q: string) => {
     setSearchLoading(true);
     const encoded = encodeURIComponent(q.trim());
     const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-    Promise.all([
-      fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
-      fetch(`${API_BASE}/qna/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
-    ])
-      .then(([manualData, qnaData]) => {
-        const manualResults: SearchResult[] = (Array.isArray(manualData) ? manualData : []).map((item: any) => ({
-          ...item, type: 'manual' as const,
-        }));
-        const qnaResults: SearchResult[] = (Array.isArray(qnaData) ? qnaData : []).map((item: any) => ({
-          id: item.id,
-          type: 'qna' as const,
-          question: item.title,
-          summary: null,
-          category: { name: item.category, slug: item.category },
-          scrapped: item.scrapped,
-        }));
-        setSearchResults([...manualResults, ...qnaResults]);
-      })
-      .catch(() => setSearchResults([]))
-      .finally(() => setSearchLoading(false));
+    try {
+      const [manualData, qnaData] = await Promise.all([
+        fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
+        fetch(`${API_BASE}/qna/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
+      ]);
+      const manualResults: SearchResult[] = (Array.isArray(manualData) ? manualData : []).map((item: any) => ({
+        ...item, type: 'manual' as const,
+      }));
+      const qnaResults: SearchResult[] = (Array.isArray(qnaData) ? qnaData : []).map((item: any) => ({
+        id: item.id,
+        type: 'qna' as const,
+        question: item.title,
+        summary: null,
+        category: { name: item.category, slug: item.category },
+        scrapped: item.scrapped,
+      }));
+      const combined = [...manualResults, ...qnaResults];
+
+      if (accessToken && combined.length > 0) {
+        const scrapStates = await Promise.all(
+          combined.map(item => {
+            const url = item.type === 'manual'
+              ? `${API_BASE}/manual/articles/${item.id}/scrap`
+              : `${API_BASE}/qna/${item.id}/scrap`;
+            return fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+              .then(r => r.json())
+              .then(data => data.scrapped ?? false)
+              .catch(() => item.scrapped ?? false);
+          })
+        );
+        setSearchResults(combined.map((item, i) => ({ ...item, scrapped: scrapStates[i] })));
+      } else {
+        setSearchResults(combined);
+      }
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
   }, [accessToken]);
 
   useFocusEffect(useCallback(() => {

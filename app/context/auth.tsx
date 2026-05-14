@@ -16,6 +16,8 @@ export interface UserInfo {
 
 interface AuthState {
   role: UserRole;
+  roleOverride: UserRole | null;
+  setRoleOverride: (r: UserRole | null) => void;
   accessToken: string | null;
   setAccessToken: (token: string | null) => void;
   user: UserInfo | null;
@@ -27,11 +29,12 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [roleOverride, setRoleOverride] = useState<UserRole | null>(null);
 
-  const role: UserRole = user?.role ?? 'user';
+  const role: UserRole = roleOverride ?? user?.role ?? 'user';
 
   return (
-    <AuthContext.Provider value={{ role, accessToken, setAccessToken, user, setUser }}>
+    <AuthContext.Provider value={{ role, roleOverride, setRoleOverride, accessToken, setAccessToken, user, setUser }}>
       {children}
     </AuthContext.Provider>
   );

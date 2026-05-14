@@ -38,9 +38,9 @@ export default function MyQuestionsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={22} color="#586144" />
+          <Text style={styles.headerTitle}>내 질문</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>내 질문 목록</Text>
       </View>
 
       {loading ? (
@@ -51,9 +51,9 @@ export default function MyQuestionsScreen() {
           keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="chatbubble-outline" size={40} color="#CCD9BA" />
-              <Text style={styles.emptyText}>등록한 질문이 없습니다</Text>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubble-outline" size={48} color="#CCD9BA" />
+              <Text style={styles.emptyText}>아직 작성한 질문이 없습니다</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -106,13 +106,9 @@ export default function MyQuestionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
-  },
-  backBtn: { padding: 4, marginRight: 8 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#586144' },
   list: { padding: 16, gap: 12, paddingBottom: 24 },
   card: {
     backgroundColor: '#fff',
@@ -149,6 +145,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
   },
-  empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyContainer: {
+    margin: 16,
+    padding: 49,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    borderRadius: 24,
+    borderWidth: 1.356,
+    borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+  },
   emptyText: { fontSize: 14, color: '#9CAF88' },
 });

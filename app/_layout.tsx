@@ -80,6 +80,8 @@ function AppNavigator() {
       <Stack.Screen name="qna/answer/[id]" />
       <Stack.Screen name="my-questions" />
       <Stack.Screen name="my-scraps" />
+      <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="notification-settings" />
     </Stack>
   );
 }

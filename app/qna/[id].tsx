@@ -136,7 +136,9 @@ export default function QnaDetailPage() {
           <Text style={styles.questionTitle}>{post.title}</Text>
 
           {/* 본문 */}
-          <Text style={styles.questionBody}>{post.content}</Text>
+          <View style={styles.contentBox}>
+            <Text style={styles.questionBody}>{post.content}</Text>
+          </View>
 
           {/* 이미지 */}
           {post.imageUrls?.length > 0 && (
@@ -183,7 +185,7 @@ export default function QnaDetailPage() {
           <View style={styles.answerCard}>
             <View style={styles.lawyerRow}>
               <View style={styles.lawyerAvatar}>
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>법</Text>
+                <Ionicons name="person-outline" size={22} color="#fff" />
               </View>
               <View>
                 <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
@@ -235,6 +237,7 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   userDate: { fontSize: 12, color: '#9CAF88' },
   questionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 27, letterSpacing: -0.439 },
+  contentBox: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 16 },
   questionBody: { fontSize: 14, color: '#444', lineHeight: 22 },
   imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   imageThumb: { width: 90, height: 90, borderRadius: 10 },

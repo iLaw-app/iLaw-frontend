@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -125,16 +126,23 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>{'<'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>프로필 수정</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
-          <Text style={[styles.saveBtn, saving && styles.saveBtnDisabled]}>저장</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={22} color="#586144" />
+          <Text style={styles.headerTitle}>정보 수정</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {/* 아바타 */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person-outline" size={46} color="#fff" />
+          </View>
+          <View style={styles.cameraBadge}>
+            <Ionicons name="camera" size={12} color="#fff" />
+          </View>
+        </View>
+
         {/* 아이디 */}
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>아이디</Text>
@@ -199,6 +207,14 @@ export default function EditProfileScreen() {
             ))}
           </View>
         </View>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, saving && styles.submitBtnDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <Text style={styles.submitBtnText}>{saving ? '저장 중...' : '저장하기'}</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <PickerModal
@@ -223,15 +239,28 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
-  },
-  back: { fontSize: 20, color: '#3C6802', fontWeight: '600', width: 32 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: '#586144' },
   saveBtn: { fontSize: 15, color: '#3C6802', fontWeight: '700', width: 32, textAlign: 'right' },
   saveBtnDisabled: { color: '#aaa' },
   inner: { padding: 20, gap: 4 },
+
+  avatarSection: { alignItems: 'center', marginBottom: 24 },
+  avatarCircle: {
+    width: 96, height: 96, borderRadius: 9999,
+    backgroundColor: '#B2D36E',
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
+  },
+  cameraBadge: {
+    position: 'absolute', bottom: 0, right: '30%',
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#3C6802',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: '#FDFFF8',
+  },
   fieldGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '700', color: '#3C6802', marginBottom: 6 },
   input: {
@@ -254,6 +283,14 @@ const styles = StyleSheet.create({
   genderBtnActive: { borderColor: '#B2D36E', backgroundColor: '#f4faed' },
   genderText: { fontSize: 14, color: '#888' },
   genderTextActive: { color: '#3C6802', fontWeight: '600' },
+  submitBtn: {
+    backgroundColor: '#B2D36E', borderRadius: 9999,
+    paddingVertical: 16, alignItems: 'center', marginTop: 24, marginBottom: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
+  },
+  submitBtnDisabled: { opacity: 0.6 },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 
 const pickerStyles = StyleSheet.create({

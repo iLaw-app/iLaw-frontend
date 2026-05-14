@@ -29,9 +29,16 @@ function WithdrawIcon() {
   );
 }
 
-const MENU_ITEMS = [
+const USER_MENU_ITEMS = [
   { icon: 'bookmark-outline' as const,          label: '내 스크랩',          route: '/my-scraps' },
   { icon: 'chatbubble-outline' as const,        label: '내 질문 보기',       route: '/my-questions' },
+  { icon: 'notifications-outline' as const,    label: '알림설정',           route: '/notification-settings' },
+  { icon: 'document-text-outline' as const,    label: '이용약관',           route: null },
+  { icon: 'shield-outline' as const,           label: '개인정보처리방침',    route: null },
+] as const;
+
+const LAWYER_MENU_ITEMS = [
+  { icon: 'chatbubble-outline' as const,        label: '내 답변 보기',       route: '/my-answers' },
   { icon: 'notifications-outline' as const,    label: '알림설정',           route: '/notification-settings' },
   { icon: 'document-text-outline' as const,    label: '이용약관',           route: null },
   { icon: 'shield-outline' as const,           label: '개인정보처리방침',    route: null },
@@ -85,12 +92,21 @@ export default function ProfilePage() {
               <Ionicons name="pencil" size={10} color="#fff" />
             </View>
           </TouchableOpacity>
-          <Text style={styles.nickname}>{user?.nickname ?? 'user'}</Text>
+          {role === 'lawyer' ? (
+            <>
+              <Text style={styles.nickname}>{user?.nickname ?? ''} 변호사</Text>
+              <Text style={styles.lawyerAffiliation}>{user?.affiliation ?? '소속 미등록'}</Text>
+            </>
+          ) : (
+            <Text style={styles.nickname}>{user?.nickname ?? 'user'}</Text>
+          )}
         </View>
 
         {/* 메뉴 카드 */}
         <View style={styles.menuCard}>
-          {MENU_ITEMS.map((item, idx) => (
+          {(role === 'lawyer' ? LAWYER_MENU_ITEMS : USER_MENU_ITEMS).map((item, idx) => {
+            const menuList = role === 'lawyer' ? LAWYER_MENU_ITEMS : USER_MENU_ITEMS;
+            return (
             <View key={item.label}>
               <TouchableOpacity
                 style={styles.menuRow}
@@ -103,9 +119,10 @@ export default function ProfilePage() {
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#CCD9BA" />
               </TouchableOpacity>
-              {idx < MENU_ITEMS.length - 1 && <View style={styles.menuDivider} />}
+              {idx < menuList.length - 1 && <View style={styles.menuDivider} />}
             </View>
-          ))}
+            );
+          })}
           <View style={styles.menuDivider} />
           <View style={styles.menuRow}>
             <View style={styles.menuLeft}>
@@ -182,6 +199,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#FDFFF8',
   },
   nickname: { fontSize: 28, fontWeight: '700', color: '#4A5565', marginTop: 12, lineHeight: 34, letterSpacing: -0.15 },
+  lawyerAffiliation: { fontSize: 14, color: '#9CAF88', marginTop: 4, fontWeight: '500' },
 
   menuCard: {
     backgroundColor: '#fff',
@@ -220,4 +238,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
   actionBtnText: { fontSize: 14, fontWeight: '600', color: '#E7000B' },
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center', alignItems: 'center', padding: 16,
+  },
+  modalCard: {
+    width: '100%', maxWidth: 361, borderRadius: 24,
+    borderWidth: 1.356, borderColor: '#D8F999', backgroundColor: '#FFF',
+    padding: 25, gap: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 20, fontWeight: '700', color: '#4A5565',
+    lineHeight: 28, letterSpacing: -0.449, textAlign: 'center',
+  },
+  modalBody: { fontSize: 14, color: '#586144', lineHeight: 22, textAlign: 'center' },
+  cancelBtn: {
+    width: '100%', height: 36, borderRadius: 14,
+    borderWidth: 1.356, borderColor: '#B2D36E', backgroundColor: '#B2D36E',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  cancelBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  withdrawBtn: {
+    width: '100%', height: 36, borderRadius: 14,
+    backgroundColor: '#FB2C36', justifyContent: 'center', alignItems: 'center',
+  },
+  withdrawBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

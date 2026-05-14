@@ -82,6 +82,7 @@ function AppNavigator() {
       <Stack.Screen name="my-scraps" />
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="notification-settings" />
+      <Stack.Screen name="my-answers" />
     </Stack>
   );
 }

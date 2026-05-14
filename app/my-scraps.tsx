@@ -98,72 +98,74 @@ export default function MyScrapsScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
-      ) : activeTab === 'manual' ? (
-        <FlatList
-          key="manual"
-          data={manualItems}
-          keyExtractor={item => `m-${item.id}`}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.badge}>
-                  <Ionicons name="book-outline" size={11} color="#3C6802" />
-                  <Text style={styles.badgeText}>{item.category.name}</Text>
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+        ) : activeTab === 'manual' ? (
+          <FlatList
+            key="manual"
+            data={manualItems}
+            keyExtractor={item => `m-${item.id}`}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState />}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.badge}>
+                    <Ionicons name="book-outline" size={11} color="#3C6802" />
+                    <Text style={styles.badgeText}>{item.category.name}</Text>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.cardTitle} numberOfLines={2}>{item.question}</Text>
-              {item.summary ? (
-                <Text style={styles.cardSummary} numberOfLines={2}>
-                  {item.summary.replace(/\*\*(.*?)\*\*/g, '$1')}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-          )}
-        />
-      ) : (
-        <FlatList
-          key="qna"
-          data={qnaItems}
-          keyExtractor={item => `q-${item.id}`}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={<EmptyState />}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/qna/${item.id}` as any)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.badge}>
-                  <Ionicons name="chatbubbles-outline" size={11} color="#3C6802" />
-                  <Text style={styles.badgeText}>
-                    {item.category?.name ?? 'QnA'}
+                <Text style={styles.cardTitle} numberOfLines={2}>{item.question}</Text>
+                {item.summary ? (
+                  <Text style={styles.cardSummary} numberOfLines={2}>
+                    {item.summary.replace(/\*\*(.*?)\*\*/g, '$1')}
                   </Text>
-                </View>
-                {item.status ? (
-                  <View style={[styles.statusBadge, item.status === 'answered' && styles.statusBadgeAnswered]}>
-                    <Text style={[styles.statusText, item.status === 'answered' && styles.statusTextAnswered]}>
-                      {STATUS_LABEL[item.status] ?? item.status}
+                ) : null}
+              </TouchableOpacity>
+            )}
+          />
+        ) : (
+          <FlatList
+            key="qna"
+            data={qnaItems}
+            keyExtractor={item => `q-${item.id}`}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState />}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/qna/${item.id}` as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.badge}>
+                    <Ionicons name="chatbubbles-outline" size={11} color="#3C6802" />
+                    <Text style={styles.badgeText}>
+                      {item.category?.name ?? 'QnA'}
                     </Text>
                   </View>
+                  {item.status ? (
+                    <View style={[styles.statusBadge, item.status === 'answered' && styles.statusBadgeAnswered]}>
+                      <Text style={[styles.statusText, item.status === 'answered' && styles.statusTextAnswered]}>
+                        {STATUS_LABEL[item.status] ?? item.status}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                {item.content ? (
+                  <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>
                 ) : null}
-              </View>
-              <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-              {item.content ? (
-                <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>
-              ) : null}
-            </TouchableOpacity>
-          )}
-        />
-      )}
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
 
       <BottomNav activeTab="profile" />
     </SafeAreaView>

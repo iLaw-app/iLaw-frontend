@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TAB_SCREENS = [
   { name: 'home',      title: '홈',       icon: 'home-outline'        } as const,
@@ -12,13 +11,9 @@ const TAB_SCREENS = [
 ];
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
-  const insets = useSafeAreaInsets();
-
-  const vertPad = insets.bottom / 2;
-
   return (
     <View style={s.bar}>
-      <View style={[s.tabRow, { paddingTop: vertPad, paddingBottom: vertPad }]}>
+      <View style={s.tabRow}>
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -69,6 +64,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 19,
     justifyContent: 'space-between',
     alignItems: 'center',
+    height: 80,
   },
   tab: { alignItems: 'center', justifyContent: 'center' },
   item: {

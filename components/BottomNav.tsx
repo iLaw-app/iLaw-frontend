@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TABS = [
   { name: 'home',      label: '홈',       icon: 'home-outline'        } as const,
@@ -26,17 +25,14 @@ const SEGMENT_TO_TAB: Record<string, string> = {
 
 export function BottomNav({ activeTab }: { activeTab?: string }) {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const segments = useSegments();
 
   const lastSegment = segments[segments.length - 1] ?? '';
   const resolvedActive = activeTab ?? SEGMENT_TO_TAB[lastSegment] ?? 'home';
 
-  const vertPad = insets.bottom / 2;
-
   return (
     <View style={s.bar}>
-      <View style={[s.tabRow, { paddingTop: vertPad, paddingBottom: vertPad }]}>
+      <View style={s.tabRow}>
         {TABS.map((tab) => {
           const focused = resolvedActive === tab.name;
           return (
@@ -71,6 +67,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 19,
     justifyContent: 'space-between',
     alignItems: 'center',
+    height: 80,
   },
   tab: { alignItems: 'center', justifyContent: 'center' },
   item: {

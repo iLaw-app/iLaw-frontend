@@ -43,62 +43,64 @@ export default function MyQuestionsScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={item => String(item.id)}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubble-outline" size={48} color="#CCD9BA" />
-              <Text style={styles.emptyText}>아직 작성한 질문이 없습니다</Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(`/qna/${item.id}`)}
-              activeOpacity={0.8}
-            >
-              <View style={[
-                styles.statusBadge,
-                item.status === 'answered' ? styles.statusAnswered : styles.statusPending,
-              ]}>
-                <Text style={[
-                  styles.statusText,
-                  item.status === 'answered' ? styles.statusTextAnswered : styles.statusTextPending,
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+        ) : (
+          <FlatList
+            data={posts}
+            keyExtractor={item => String(item.id)}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="chatbubble-outline" size={48} color="#CCD9BA" />
+                <Text style={styles.emptyText}>아직 작성한 질문이 없습니다</Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/qna/${item.id}`)}
+                activeOpacity={0.8}
+              >
+                <View style={[
+                  styles.statusBadge,
+                  item.status === 'answered' ? styles.statusAnswered : styles.statusPending,
                 ]}>
-                  {item.status === 'answered' ? '답변 완료' : '답변 대기'}
-                </Text>
-              </View>
-
-              <View style={styles.badgeRow}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.category}</Text>
+                  <Text style={[
+                    styles.statusText,
+                    item.status === 'answered' ? styles.statusTextAnswered : styles.statusTextPending,
+                  ]}>
+                    {item.status === 'answered' ? '답변 완료' : '답변 대기'}
+                  </Text>
                 </View>
-              </View>
 
-              <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-
-              {item.content ? (
-                <>
-                  <View style={styles.divider} />
-                  <View style={styles.contentBox}>
-                    <Text style={styles.contentPreview} numberOfLines={3}>{item.content}</Text>
+                <View style={styles.badgeRow}>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.category}</Text>
                   </View>
-                </>
-              ) : null}
+                </View>
 
-              <View style={styles.cardBottom}>
-                <Ionicons name="time-outline" size={12} color="#9CAF88" />
-                <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('ko-KR')}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      )}
+                <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+
+                {item.content ? (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.contentBox}>
+                      <Text style={styles.contentPreview} numberOfLines={3}>{item.content}</Text>
+                    </View>
+                  </>
+                ) : null}
+
+                <View style={styles.cardBottom}>
+                  <Ionicons name="time-outline" size={12} color="#9CAF88" />
+                  <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('ko-KR')}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
       <BottomNav activeTab="profile" />
     </SafeAreaView>
   );

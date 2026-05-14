@@ -12,6 +12,7 @@ export interface UserInfo {
   provider: string;
   profileCompleted: boolean;
   role: UserRole;
+  affiliation?: string;
 }
 
 interface AuthState {

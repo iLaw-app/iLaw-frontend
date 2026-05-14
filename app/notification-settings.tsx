@@ -1,10 +1,42 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from './context/auth';
 
-const TOGGLES = [
+function CustomToggle({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {
+  const translateX = useRef(new Animated.Value(value ? 18 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: value ? 18 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [value, translateX]);
+
+  return (
+    <TouchableOpacity
+      onPress={onValueChange}
+      activeOpacity={0.9}
+      style={[ts.track, { backgroundColor: value ? '#B2D36E' : '#E4EED4' }]}
+    >
+      <Animated.View style={[ts.thumb, { transform: [{ translateX }] }]} />
+    </TouchableOpacity>
+  );
+}
+
+const ts = StyleSheet.create({
+  track: { width: 44, height: 26, borderRadius: 13, padding: 3 },
+  thumb: {
+    width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+  },
+});
+
+const USER_TOGGLES = [
   {
     key: 'answer',
     icon: 'chatbubble-outline' as const,
@@ -25,12 +57,30 @@ const TOGGLES = [
   },
 ];
 
+const LAWYER_TOGGLES = [
+  {
+    key: 'newQuestion',
+    icon: 'chatbubble-outline' as const,
+    title: '질문 등록 알림',
+    desc: '학생의 질문이 등록되면 알려드려요',
+  },
+  {
+    key: 'manual',
+    icon: 'book-outline' as const,
+    title: '매뉴얼 업데이트 알림',
+    desc: '새로운 법률 정보가 추가되면 알려드려요',
+  },
+];
+
 export default function NotificationSettingsScreen() {
   const router = useRouter();
+  const { role } = useAuth();
+  const toggles = role === 'lawyer' ? LAWYER_TOGGLES : USER_TOGGLES;
   const [enabled, setEnabled] = useState<Record<string, boolean>>({
     answer: true,
     scrap: true,
     manual: false,
+    newQuestion: true,
   });
 
   const toggle = (key: string) => setEnabled(prev => ({ ...prev, [key]: !prev[key] }));
@@ -45,7 +95,7 @@ export default function NotificationSettingsScreen() {
       </View>
 
       <View style={styles.list}>
-        {TOGGLES.map((item, idx) => (
+        {toggles.map((item, idx) => (
           <View key={item.key}>
             <View style={styles.row}>
               <View style={styles.iconBox}>
@@ -55,14 +105,12 @@ export default function NotificationSettingsScreen() {
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 <Text style={styles.rowDesc}>{item.desc}</Text>
               </View>
-              <Switch
+              <CustomToggle
                 value={enabled[item.key]}
                 onValueChange={() => toggle(item.key)}
-                trackColor={{ false: '#E4EED4', true: '#B2D36E' }}
-                thumbColor="#fff"
               />
             </View>
-            {idx < TOGGLES.length - 1 && <View style={styles.divider} />}
+            {idx < toggles.length - 1 && <View style={styles.divider} />}
           </View>
         ))}
       </View>

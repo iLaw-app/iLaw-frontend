@@ -115,69 +115,71 @@ export default function ManualListScreen() {
         </View>
       </View>
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-        </View>
-      ) : isSearching ? (
-        /* ── 검색 결과 ── */
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          {searchLoading ? (
-            <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
-          ) : searchResults.length === 0 ? (
-            <View style={styles.center}>
-              <Ionicons name="search-outline" size={36} color="#CCD9BA" />
-              <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
-            </View>
-          ) : (
-            <View style={styles.resultCard}>
-              {searchResults.map((item, idx) => {
-                const qNum = getQuestionNumber(item.id) ?? idx + 1;
-                return (
-                  <View key={item.id}>
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+          </View>
+        ) : isSearching ? (
+          /* ── 검색 결과 ── */
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+            {searchLoading ? (
+              <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+            ) : searchResults.length === 0 ? (
+              <View style={styles.center}>
+                <Ionicons name="search-outline" size={36} color="#CCD9BA" />
+                <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
+              </View>
+            ) : (
+              <View style={styles.resultCard}>
+                {searchResults.map((item, idx) => {
+                  const qNum = getQuestionNumber(item.id) ?? idx + 1;
+                  return (
+                    <View key={item.id}>
+                      <TouchableOpacity
+                        style={styles.questionItem}
+                        activeOpacity={0.7}
+                        onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+                      >
+                        <Text style={styles.questionNumber}>Q{qNum}.</Text>
+                        <HighlightText text={item.question} keyword={searchQuery} style={styles.questionText} />
+                        <Ionicons name="chevron-forward" size={18} color="#bbb" />
+                      </TouchableOpacity>
+                      {idx < searchResults.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </ScrollView>
+        ) : (
+          /* ── 전체 목록 ── */
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+            {articles.length === 0 ? (
+              <View style={styles.center}>
+                <Text style={styles.emptyText}>아직 등록된 내용이 없어요.</Text>
+              </View>
+            ) : (
+              <View style={styles.resultCard}>
+                {articles.map((article, index) => (
+                  <View key={article.id}>
                     <TouchableOpacity
                       style={styles.questionItem}
                       activeOpacity={0.7}
-                      onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
+                      onPress={() => router.push(`/manual-detail?articleId=${article.id}`)}
                     >
-                      <Text style={styles.questionNumber}>Q{qNum}.</Text>
-                      <HighlightText text={item.question} keyword={searchQuery} style={styles.questionText} />
+                      <Text style={styles.questionNumber}>Q{index + 1}.</Text>
+                      <Text style={styles.questionText}>{article.question}</Text>
                       <Ionicons name="chevron-forward" size={18} color="#bbb" />
                     </TouchableOpacity>
-                    {idx < searchResults.length - 1 && <View style={styles.divider} />}
+                    {index < articles.length - 1 && <View style={styles.divider} />}
                   </View>
-                );
-              })}
-            </View>
-          )}
-        </ScrollView>
-      ) : (
-        /* ── 전체 목록 ── */
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          {articles.length === 0 ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>아직 등록된 내용이 없어요.</Text>
-            </View>
-          ) : (
-            <View style={styles.resultCard}>
-              {articles.map((article, index) => (
-                <View key={article.id}>
-                  <TouchableOpacity
-                    style={styles.questionItem}
-                    activeOpacity={0.7}
-                    onPress={() => router.push(`/manual-detail?articleId=${article.id}`)}
-                  >
-                    <Text style={styles.questionNumber}>Q{index + 1}.</Text>
-                    <Text style={styles.questionText}>{article.question}</Text>
-                    <Ionicons name="chevron-forward" size={18} color="#bbb" />
-                  </TouchableOpacity>
-                  {index < articles.length - 1 && <View style={styles.divider} />}
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-      )}
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        )}
+      </View>
 
       {/* 도움이 필요하신가요 버튼 - 오른쪽 하단 */}
       <View style={styles.floatingContainer} pointerEvents="box-none">

@@ -17,6 +17,7 @@ type Notification = {
   read: boolean;
   refId: number | null;
   createdAt: string;
+  category?: string;
 };
 
 function EmptyBellIcon() {
@@ -41,7 +42,7 @@ function formatDate(iso: string) {
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const { accessToken, role } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,6 +62,10 @@ export default function NotificationsScreen() {
     }).catch(() => {});
   }, [accessToken]));
 
+  const visibleNotifications = role === 'lawyer'
+    ? notifications.filter(n => n.type === 'new_question')
+    : notifications;
+
   const handlePress = (noti: Notification) => {
     if (noti.type === 'new_question' && noti.refId) {
       router.push(`/qna/${noti.refId}`);
@@ -77,18 +82,19 @@ export default function NotificationsScreen() {
         <View style={{ width: 32 }} />
       </View>
 
-      {loading ? (
-        <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
-      ) : notifications.length === 0 ? (
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
+        ) : visibleNotifications.length === 0 ? (
         <View style={styles.emptyWrapper}>
           <View style={styles.emptyContainer}>
             <EmptyBellIcon />
             <Text style={styles.emptyText}>알림이 없습니다</Text>
           </View>
         </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
-          {notifications.map((noti) => (
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
+            {visibleNotifications.map((noti) => (
             <TouchableOpacity
               key={noti.id}
               style={[styles.notiCard, noti.read && styles.notiCardRead]}
@@ -103,15 +109,23 @@ export default function NotificationsScreen() {
                 />
               </View>
               <View style={styles.notiBody}>
-                <Text style={styles.notiTitle}>{noti.title}</Text>
+                <View style={styles.notiTitleRow}>
+                  <Text style={styles.notiTitle}>{noti.title}</Text>
+                  {noti.category ? (
+                    <View style={styles.categoryChip}>
+                      <Text style={styles.categoryChipText}>{noti.category}</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text style={styles.notiDesc} numberOfLines={1}>{noti.body}</Text>
                 <Text style={styles.notiDate}>{formatDate(noti.createdAt)}</Text>
               </View>
               {!noti.read && <View style={styles.unreadDot} />}
             </TouchableOpacity>
           ))}
-        </ScrollView>
-      )}
+          </ScrollView>
+        )}
+      </View>
       <BottomNav activeTab="home" />
     </SafeAreaView>
   );
@@ -152,4 +166,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
   emptyText: { fontSize: 14, color: '#9CAF88' },
+  notiTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
+  categoryChip: {
+    backgroundColor: '#ECFCCA', borderRadius: 9999,
+    paddingVertical: 2, paddingLeft: 8, paddingRight: 6,
+  },
+  categoryChipText: { fontSize: 11, color: '#3C6802', fontWeight: '700' },
 });

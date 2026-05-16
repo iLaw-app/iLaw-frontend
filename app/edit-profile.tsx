@@ -58,13 +58,14 @@ function PickerModal({
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, accessToken, setUser } = useAuth();
+  const { user, accessToken, setUser, role } = useAuth();
 
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [nicknameError, setNicknameError] = useState('');
   const [region, setRegion] = useState(user?.region ?? '');
   const [birthYear, setBirthYear] = useState(user?.birthYear ? String(user.birthYear) : '');
   const [gender, setGender] = useState(user?.gender ?? '');
+  const [affiliation, setAffiliation] = useState(user?.affiliation ?? '');
   const [saving, setSaving] = useState(false);
 
   const [showRegionPicker, setShowRegionPicker] = useState(false);
@@ -97,7 +98,7 @@ export default function EditProfileScreen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ nickname, region, birthYear: parseInt(birthYear, 10), gender }),
+        body: JSON.stringify({ nickname, region, birthYear: parseInt(birthYear, 10), gender, affiliation: role === 'lawyer' ? affiliation : undefined }),
       });
 
       if (res.status === 409) {
@@ -115,7 +116,7 @@ export default function EditProfileScreen() {
       }
 
       if (user) {
-        setUser({ ...user, nickname, region, birthYear: parseInt(birthYear, 10), gender });
+        setUser({ ...user, nickname, region, birthYear: parseInt(birthYear, 10), gender, affiliation: role === 'lawyer' ? affiliation : user.affiliation });
       }
       router.back();
     } finally {
@@ -182,6 +183,20 @@ export default function EditProfileScreen() {
             <Text style={styles.selectArrow}>›</Text>
           </TouchableOpacity>
         </View>
+
+        {/* 소속 (변호사 전용) */}
+        {role === 'lawyer' && (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>소속</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="소속 기관을 입력해주세요"
+              placeholderTextColor="#bbb"
+              value={affiliation}
+              onChangeText={setAffiliation}
+            />
+          </View>
+        )}
 
         {/* 성별 */}
         <View style={styles.fieldGroup}>

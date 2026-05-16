@@ -3,13 +3,16 @@ import { Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from './context/auth';
+import { NotificationSettingsProvider } from './context/notificationSettings';
 
 const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <AppNavigator />
+      <NotificationSettingsProvider>
+        <AppNavigator />
+      </NotificationSettingsProvider>
     </AuthProvider>
   );
 }

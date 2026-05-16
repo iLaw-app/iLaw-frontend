@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { Animated, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
+import { useNotificationSettings } from './context/notificationSettings';
 
 function CustomToggle({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {
   const translateX = useRef(new Animated.Value(value ? 18 : 0)).current;
@@ -75,15 +76,8 @@ const LAWYER_TOGGLES = [
 export default function NotificationSettingsScreen() {
   const router = useRouter();
   const { role } = useAuth();
+  const { settings: enabled, toggle } = useNotificationSettings();
   const toggles = role === 'lawyer' ? LAWYER_TOGGLES : USER_TOGGLES;
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({
-    answer: true,
-    scrap: true,
-    manual: false,
-    newQuestion: true,
-  });
-
-  const toggle = (key: string) => setEnabled(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -106,8 +100,8 @@ export default function NotificationSettingsScreen() {
                 <Text style={styles.rowDesc}>{item.desc}</Text>
               </View>
               <CustomToggle
-                value={enabled[item.key]}
-                onValueChange={() => toggle(item.key)}
+                value={enabled[item.key as keyof typeof enabled]}
+                onValueChange={() => toggle(item.key as keyof typeof enabled)}
               />
             </View>
             {idx < toggles.length - 1 && <View style={styles.divider} />}

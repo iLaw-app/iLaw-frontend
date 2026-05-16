@@ -5,6 +5,17 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from './context/auth';
+import { useNotificationSettings } from './context/notificationSettings';
+
+type NotificationSettingKey = 'answer' | 'scrap' | 'manual' | 'newQuestion';
+
+const TYPE_TO_SETTING: Record<string, NotificationSettingKey> = {
+  answer:        'answer',
+  qna_answered:  'answer',
+  scrap_answer:  'scrap',
+  manual_update: 'manual',
+  new_question:  'newQuestion',
+};
 import { BottomNav } from '../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -43,6 +54,7 @@ function formatDate(iso: string) {
 export default function NotificationsScreen() {
   const router = useRouter();
   const { accessToken, role } = useAuth();
+  const { settings } = useNotificationSettings();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -62,9 +74,12 @@ export default function NotificationsScreen() {
     }).catch(() => {});
   }, [accessToken]));
 
-  const visibleNotifications = role === 'lawyer'
-    ? notifications.filter(n => n.type === 'new_question')
-    : notifications;
+  const visibleNotifications = notifications.filter(n => {
+    if (role === 'lawyer' && n.type !== 'new_question') return false;
+    const settingKey = TYPE_TO_SETTING[n.type];
+    if (!settingKey) return true;
+    return settings[settingKey];
+  });
 
   const handlePress = (noti: Notification) => {
     if (noti.type === 'new_question' && noti.refId) {

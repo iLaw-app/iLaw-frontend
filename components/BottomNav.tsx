@@ -59,14 +59,8 @@ export function BottomNav({ activeTab }: { activeTab?: string }) {
 const s = StyleSheet.create({
   bar: {
     backgroundColor: '#fff',
-    borderTopWidth: 6,
-    borderTopColor: 'rgba(204, 217, 186, 0.80)',
-    paddingTop: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 15,
-    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E4EED4',
   },
   tabRow: {
     flexDirection: 'row',

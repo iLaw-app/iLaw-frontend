@@ -60,7 +60,7 @@ export default function ManualListScreen() {
     const q = encodeURIComponent(searchQuery.trim());
     fetch(`${API_BASE}/manual/search?q=${q}`)
       .then(r => r.json())
-      .then(data => setSearchResults(Array.isArray(data) ? data : []))
+      .then(data => setSearchResults(Array.isArray(data) ? data.filter((item: SearchResult) => item.category.slug === categoryId) : []))
       .catch(() => setSearchResults([]))
       .finally(() => setSearchLoading(false));
   };
@@ -105,11 +105,11 @@ export default function ManualListScreen() {
           />
           {isSearching ? (
             <TouchableOpacity style={styles.searchBtn} onPress={handleClearSearch}>
-              <Ionicons name="close" size={16} color="#586144" />
+              <Ionicons name="close" size={16} color="#fff" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
-              <Ionicons name="search" size={16} color="#586144" />
+              <Ionicons name="search" size={16} color="#fff" />
             </TouchableOpacity>
           )}
         </View>
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     borderColor: '#CCD9BA',
     paddingLeft: 20,
     paddingRight: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -242,11 +242,13 @@ const styles = StyleSheet.create({
   resultCard: {
     marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E4EED4',
-    overflow: 'hidden',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   questionItem: {
     flexDirection: 'row',

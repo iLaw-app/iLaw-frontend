@@ -106,10 +106,16 @@ export default function ManualScreen() {
         <View style={styles.list}>
           {categories.map((cat, index) => {
             const Icon = cat.Icon;
+            const isFirst = index === 0;
+            const isLast = index === categories.length - 1;
             return (
               <View key={cat.id}>
                 <TouchableOpacity
-                  style={styles.card}
+                  style={[
+                    styles.card,
+                    isFirst && { borderTopLeftRadius: 10, borderTopRightRadius: 10 },
+                    isLast && { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 },
+                  ]}
                   activeOpacity={0.75}
                   onPress={() => router.push(`/manual-list?categoryId=${cat.id}`)}
                 >
@@ -139,16 +145,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, color: '#9CAF88' },
   list: {
     marginHorizontal: 16,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#E4EED4',
-    overflow: 'hidden',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 4,
   },
   card: {
     height: 80,

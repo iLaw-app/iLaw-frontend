@@ -99,7 +99,7 @@ export default function NotificationSettingsScreen() {
           <View key={item.key}>
             <View style={styles.row}>
               <View style={styles.iconBox}>
-                <Ionicons name={item.icon} size={20} color="#586144" />
+                <Ionicons name={item.icon} size={20} color="#fff" />
               </View>
               <View style={styles.textGroup}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#586144' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#586144' },
   list: { paddingHorizontal: 16, paddingTop: 8 },
   row: {
     flexDirection: 'row', alignItems: 'center',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 40, height: 40,
     borderRadius: 9999,
-    backgroundColor: '#CCD9BA',
+    backgroundColor: '#B2D36E',
     justifyContent: 'center',
     alignItems: 'center',
   },

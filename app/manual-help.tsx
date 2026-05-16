@@ -93,17 +93,14 @@ export default function ManualHelpScreen() {
           <Text style={s.emptyText}>선택한 지역에 등록된 기관이 없어요.</Text>
         ) : (
           agencies.map((agency) => (
-            <View key={agency.id} style={s.centerCard}>
+            <TouchableOpacity key={agency.id} style={s.centerCard} activeOpacity={0.8} onPress={() => setCallTarget(agency)}>
               <Text style={s.centerName}>{agency.name}</Text>
               {agency.role ? <Text style={s.roleText}>{agency.role}</Text> : null}
-              <TouchableOpacity
-                style={s.phoneRow}
-                onPress={() => setCallTarget(agency)}
-              >
+              <View style={s.phoneRow}>
                 <Ionicons name="call-outline" size={14} color="#4CAF50" />
                 <Text style={s.phoneText}>{agency.contact}</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -205,23 +202,29 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: '#CCD9BA',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: 20,
     backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   regionBtnText: { fontSize: 14, color: '#586144', fontWeight: '500' },
 
   emergencyBox: {
     backgroundColor: '#FFF5F5',
-    borderWidth: 1.5,
-    borderColor: '#FFBBB0',
     borderRadius: 14,
     padding: 16,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   emergencyHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   emergencyTitle: { fontSize: 14, fontWeight: '700', color: '#E53935' },
@@ -233,13 +236,11 @@ const s = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#eee',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   centerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
   roleText: { fontSize: 12, color: '#999', marginBottom: 8 },
@@ -294,6 +295,10 @@ const s = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
   modalCenterName: { fontSize: 13, color: '#999', marginBottom: 8 },
   modalPhone: { fontSize: 32, fontWeight: '700', color: '#1a1a1a', marginBottom: 24 },
-  callBtn: { backgroundColor: '#B2D36E', paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
+  callBtn: {
+    backgroundColor: '#B2D36E', paddingVertical: 16, borderRadius: 14, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 6, elevation: 4,
+  },
   callBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

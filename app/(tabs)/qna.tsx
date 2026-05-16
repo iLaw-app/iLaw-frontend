@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,15 +26,10 @@ type QnAPost = {
   category: string;
   status: string;
   createdAt: string;
+  scrapCount?: number;
   author: { nickname: string | null };
 };
 
-function daysAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return '오늘 작성';
-  return `${days}일 전 작성`;
-}
 
 function QnaCard({ item, onPress }: { item: QnAPost; onPress: () => void }) {
   return (
@@ -53,8 +48,19 @@ function QnaCard({ item, onPress }: { item: QnAPost; onPress: () => void }) {
       {item.content ? <Text style={styles.cardContent} numberOfLines={2}>{item.content}</Text> : null}
       <View style={styles.cardDivider} />
       <View style={styles.cardMeta}>
-        <Ionicons name="time-outline" size={12} color="#9CAF88" />
-        <Text style={styles.metaText}>{daysAgo(item.createdAt)}</Text>
+        <View style={styles.metaLeft}>
+          <Ionicons name="chatbubble-outline" size={12} color="#9CAF88" />
+          <Text style={styles.metaText}>{item.author.nickname ?? '익명'}</Text>
+          <Text style={styles.metaDot}>•</Text>
+          <Ionicons name="time-outline" size={12} color="#9CAF88" />
+          <Text style={styles.metaText}>{new Date(item.createdAt).toISOString().slice(0, 10)}</Text>
+        </View>
+        {item.scrapCount !== undefined && (
+          <View style={styles.metaRight}>
+            <Ionicons name="bookmark-outline" size={12} color="#9CAF88" />
+            <Text style={styles.metaText}>{item.scrapCount}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -65,6 +71,7 @@ export default function QnaPage() {
   const { role, accessToken } = useAuth();
   const [posts, setPosts] = useState<QnAPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
@@ -74,6 +81,10 @@ export default function QnaPage() {
       .catch(() => setPosts([]))
       .finally(() => setLoading(false));
   }, [accessToken]);
+
+  const filteredPosts = searchQuery.trim()
+    ? posts.filter(p => p.title.includes(searchQuery) || p.content?.includes(searchQuery) || p.category.includes(searchQuery))
+    : posts;
 
   if (role === 'lawyer') {
     const pendingPosts = posts.filter(p => p.status === 'pending');
@@ -124,38 +135,29 @@ export default function QnaPage() {
         <Text style={styles.headerSub}>변호사님이 직접 답변해 드립니다</Text>
       </View>
 
+      <View style={styles.searchArea}>
+        <View style={styles.searchBox}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="키워드로 검색해보세요!"
+            placeholderTextColor="#9CAF88"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <View style={styles.searchBtn}>
+            <Ionicons name="search" size={16} color="#fff" />
+          </View>
+        </View>
+      </View>
+
       {loading ? (
         <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={posts}
+          data={filteredPosts}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => router.push(`/qna/${item.id}`)}>
-              <View style={[styles.statusBadge, item.status === 'answered' ? styles.statusAnswered : styles.statusPending]}>
-                <Text style={[styles.statusText, item.status === 'answered' ? styles.statusTextAnswered : styles.statusTextPending]}>
-                  {item.status === 'answered' ? '답변완료' : '답변대기'}
-                </Text>
-              </View>
-              <View style={styles.badgeRow}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.category}</Text>
-                </View>
-              </View>
-              <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-              {item.content ? <Text style={styles.cardContent} numberOfLines={2}>{item.content}</Text> : null}
-              <View style={styles.cardMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="person-outline" size={12} color="#9CAF88" />
-                  <Text style={styles.metaText}>{item.author.nickname ?? '익명'}</Text>
-                </View>
-                <Text style={styles.metaDot}>·</Text>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={12} color="#9CAF88" />
-                  <Text style={styles.metaText}>{new Date(item.createdAt).toLocaleDateString('ko-KR')}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+            <QnaCard item={item} onPress={() => router.push(`/qna/${item.id}`)} />
           )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
@@ -179,15 +181,29 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
   headerSub: { fontSize: 13, color: '#9CAF88', marginTop: 2 },
+  searchArea: { paddingHorizontal: 16, paddingBottom: 12 },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center',
+    height: 52, borderRadius: 9999,
+    borderWidth: 1.5, borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+    paddingLeft: 20, paddingRight: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: '#333' },
+  searchBtn: {
+    width: 32, height: 32, borderRadius: 9999,
+    backgroundColor: '#CCD9BA',
+    justifyContent: 'center', alignItems: 'center',
+  },
+
   list: { paddingHorizontal: 16, paddingBottom: 100, gap: 12 },
 
   card: {
     backgroundColor: '#FFF',
     borderRadius: 16,
-    borderWidth: 1.544,
-    borderColor: '#CCD9BA',
     padding: 16,
-    minHeight: 170,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
@@ -230,8 +246,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12, color: '#9CAF88' },
   metaDot: { fontSize: 12, color: '#9CAF88' },
 
@@ -241,15 +258,15 @@ const styles = StyleSheet.create({
     bottom: 20,
     width: 52,
     height: 52,
-    borderRadius: 26,
-    backgroundColor: '#B2D36E',
+    borderRadius: 9999,
+    backgroundColor: '#678720',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },

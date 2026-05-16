@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#586144' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#586144' },
 
   tabSwitcher: {
     flexDirection: 'row',
@@ -220,9 +220,8 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingBottom: 16, gap: 12 },
   card: {
     backgroundColor: '#fff', borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: '#CCD9BA',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
     gap: 8,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },

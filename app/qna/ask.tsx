@@ -4,20 +4,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import { BottomNav } from '../../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-const QNA_CATEGORIES = ['아동학대', '노동', '금융', '성폭력', '온라인폭력', '출생·양육', '법정대리인', '기타'];
+const QNA_CATEGORIES = ['노동', '금융', '온라인폭력', '아동학대', '성폭력', '출생', '법정대리인', '기타'];
 
-const NOTICES = [
-  '개인정보(실명, 주민번호, 주소 등)는 절대 적지 마세요.',
-  '민감한 사진이나 개인을 특정할 수 있는 이미지는 되도록 올리지 마세요.',
-  '구체적인 상황을 설명하면 더 정확한 답변을 받을 수 있어요.',
-  '욕설이나 비방은 삼가주세요.',
-  '변호사님의 답변까지 1~3일 정도 걸릴 수 있어요.',
-  '긴급한 상황이라면 112 또는 관련 기관에 먼저 연락하세요.',
+function PhotoIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Path d="M15.8262 2.49902H4.16492C3.24487 2.49902 2.49902 3.24487 2.49902 4.16492V15.8262C2.49902 16.7463 3.24487 17.4921 4.16492 17.4921H15.8262C16.7463 17.4921 17.4921 16.7463 17.4921 15.8262V4.16492C17.4921 3.24487 16.7463 2.49902 15.8262 2.49902Z" stroke="#364153" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M7.49647 9.16285C8.41652 9.16285 9.16237 8.41701 9.16237 7.49695C9.16237 6.5769 8.41652 5.83105 7.49647 5.83105C6.57642 5.83105 5.83057 6.5769 5.83057 7.49695C5.83057 8.41701 6.57642 9.16285 7.49647 9.16285Z" stroke="#364153" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M17.4918 12.4938L14.9213 9.9233C14.6089 9.61099 14.1853 9.43555 13.7435 9.43555C13.3018 9.43555 12.8781 9.61099 12.5657 9.9233L4.99756 17.4915" stroke="#364153" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}
+
+const NOTICE_ITEMS = [
+  '이름, 주민등록번호, 주소, 전화번호 등 개인정보는 적지 마세요.',
+  '얼굴이 보이는 사진이나 개인을 특정할 수 있는 이미지는 올리지 마세요.',
+  '상황을 구체적으로 설명할수록 더 정확한 답변을 받을 수 있어요.',
+  '욕설, 비방, 장난성 질문은 삼가 주세요.',
+  '변호사님의 답변은 보통 1~3일 정도 걸릴 수 있어요.',
+  '지금 바로 위험한 상황이라면 앱에 질문하기보다\n  112 또는 관련 기관에 먼저 연락해 주세요.',
 ];
 
 export default function AskPage() {
@@ -84,98 +95,103 @@ export default function AskPage() {
     }
   };
 
+  const canSubmit = title.trim().length > 0 && content.trim().length > 0 && selectedCategories.length > 0;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>{'< 질문하기'}</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
         </TouchableOpacity>
+        <Text style={styles.topBarTitle}>질문하기</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.label}>제목 <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="질문 제목을 입력하세요"
-          value={title}
-          onChangeText={setTitle}
-        />
-
-        <Text style={styles.label}>카테고리 <Text style={styles.required}>*</Text></Text>
-        <View style={styles.categoryGrid}>
-          {QNA_CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[styles.categoryChip, selectedCategories.includes(cat) && styles.categoryChipSelected]}
-              onPress={() => setSelectedCategories(prev =>
-                prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-              )}
-            >
-              <Text style={[styles.categoryChipText, selectedCategories.includes(cat) && styles.categoryChipTextSelected]}>
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>질문 내용 <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          placeholder="구체적인 질문 내용을 작성해주세요"
-          value={content}
-          onChangeText={setContent}
-          multiline
-          textAlignVertical="top"
-        />
-
-        <Text style={styles.label}>사진 첨부 <Text style={styles.optional}>(선택, 최대 3장)</Text></Text>
-        <View style={styles.imageRow}>
-          {images.map((img, i) => (
-            <View key={i} style={styles.imageThumbWrap}>
-              <Image source={{ uri: img.uri }} style={styles.imageThumb} />
-              <TouchableOpacity style={styles.imageRemove} onPress={() => handleRemoveImage(i)}>
-                <Text style={styles.imageRemoveText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          {images.length < 3 && (
-            <TouchableOpacity style={styles.imageAddBtn} onPress={handlePickImage}>
-              <Text style={styles.imageAddIcon}>+</Text>
-              <Text style={styles.imageAddText}>사진 추가</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.publicNoticeRow}>
-          <Ionicons name="eye-outline" size={16} color="#586144" />
-          <Text style={styles.publicNotice}>질문을 공개합니다 (다른 사용자들도 볼 수 있습니다)</Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitBtn, (submitting || !title.trim() || !content.trim() || selectedCategories.length === 0) && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting || !title.trim() || !content.trim() || selectedCategories.length === 0}
-        >
-          <Text style={styles.submitBtnText}>{submitting ? '등록 중...' : '질문 작성하기'}</Text>
-        </TouchableOpacity>
-
-        {/* 주의사항 */}
-        <View style={styles.noticeCard}>
-          <View style={styles.noticeTitleRow}>
-            <Ionicons name="alert-circle" size={20} color="#894B00" />
-            <Text style={styles.noticeTitle}>질문 시 주의사항</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* 제목 + 내용 통합 카드 */}
+        <View style={styles.inputCard}>
+          <TextInput
+            style={styles.titleInput}
+            placeholder="제목을 입력하세요"
+            placeholderTextColor="#99A1AF"
+            value={title}
+            onChangeText={setTitle}
+          />
+          <View style={styles.cardDivider} />
+          <View style={styles.contentWrapper}>
+            <TextInput
+              style={styles.contentInput}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              textAlignVertical="top"
+            />
+            {!content && (
+              <View style={styles.contentPlaceholder} pointerEvents="none">
+                <Text style={styles.placeholderMain}>내용을 입력하세요</Text>
+                <Text style={styles.placeholderSub}>{'\n'}질문 전 꼭 확인해 주세요</Text>
+                {NOTICE_ITEMS.map((item, i) => (
+                  <Text key={i} style={styles.placeholderNote}>• {item}</Text>
+                ))}
+              </View>
+            )}
           </View>
-          {NOTICES.map((text, i) => (
-            <View key={i} style={styles.noticeItem}>
-              <Text style={styles.noticeBullet}>•</Text>
-              <Text style={styles.noticeText}>{text}</Text>
-            </View>
-          ))}
+
+          {/* 사진 추가 - 카드 내부 */}
+          <View style={styles.photoRow}>
+            {images.length < 3 && (
+              <TouchableOpacity style={styles.photoBtn} onPress={handlePickImage} activeOpacity={0.7}>
+                <PhotoIcon />
+                <Text style={styles.photoBtnText}>사진 추가</Text>
+              </TouchableOpacity>
+            )}
+            {images.map((img, i) => (
+              <View key={i} style={styles.imageThumbWrap}>
+                <Image source={{ uri: img.uri }} style={styles.imageThumb} />
+                <TouchableOpacity style={styles.imageRemove} onPress={() => handleRemoveImage(i)}>
+                  <Text style={styles.imageRemoveText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 카테고리 */}
+        <View style={styles.categorySection}>
+          <Text style={styles.categoryLabel}>카테고리</Text>
+          <View style={styles.categoryGrid}>
+            {QNA_CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryChip, selectedCategories.includes(cat) && styles.categoryChipSelected]}
+                onPress={() => setSelectedCategories(prev =>
+                  prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                )}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.categoryChipText, selectedCategories.includes(cat) && styles.categoryChipTextSelected]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* 질문 제출하기 + 안내 */}
+        <View style={styles.submitSection}>
+          <TouchableOpacity
+            style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={submitting || !canSubmit}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.submitBtnText}>{submitting ? '등록 중...' : '질문 제출하기'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.bottomNotice}>질문은 익명으로 공개되며, 다른 사용자들도 볼 수 있어요.</Text>
         </View>
       </ScrollView>
+
       <BottomNav activeTab="qna" />
 
-      {/* 제출 완료 모달 */}
       <Modal visible={showSuccess} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.successCard}>
@@ -186,19 +202,13 @@ export default function AskPage() {
             <Text style={styles.successDesc}>빠른 시일 내로{'\n'}답변 드리겠습니다!</Text>
             <TouchableOpacity
               style={styles.homeBtn}
-              onPress={() => {
-                setShowSuccess(false);
-                router.replace('/(tabs)/home');
-              }}
+              onPress={() => { setShowSuccess(false); router.replace('/(tabs)/home'); }}
             >
               <Text style={styles.homeBtnText}>홈으로</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.myQnaBtn}
-              onPress={() => {
-                setShowSuccess(false);
-                router.replace('/my-questions');
-              }}
+              onPress={() => { setShowSuccess(false); router.replace('/my-questions'); }}
             >
               <Text style={styles.myQnaBtnText}>내 질문 보기</Text>
             </TouchableOpacity>
@@ -211,130 +221,131 @@ export default function AskPage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  topBar: { paddingHorizontal: 16, paddingVertical: 12 },
-  back: { fontSize: 16, color: '#3C6802', fontWeight: '600' },
-  content: { padding: 20, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '700', color: '#3C6802', marginBottom: 8, marginTop: 16 },
-  required: { color: '#f44336' },
-  input: { backgroundColor: '#fff', borderRadius: 12, padding: 14, fontSize: 14, borderWidth: 1.5, borderColor: '#CCD9BA' },
-  textarea: { height: 160, marginBottom: 8 },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryChip: { borderRadius: 9999, borderWidth: 1.5, borderColor: '#CCD9BA', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff' },
-  categoryChipSelected: { backgroundColor: '#B2D36E', borderColor: '#B2D36E' },
-  categoryChipText: { fontSize: 13, color: '#9CAF88' },
-  categoryChipTextSelected: { color: '#fff', fontWeight: '600' },
-  optional: { fontSize: 12, color: '#aaa', fontWeight: '400' },
-  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  topBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 16, paddingVertical: 12, position: 'relative',
+  },
+  backBtn: { position: 'absolute', left: 16, zIndex: 1, padding: 4 },
+  topBarTitle: {
+    fontSize: 20, fontWeight: '700', color: '#586144',
+    lineHeight: 36, letterSpacing: 0.07,
+  },
+
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40, gap: 32 },
+
+  inputCard: {
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    gap: 16,
+  },
+  titleInput: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    letterSpacing: -0.449,
+    paddingVertical: 0,
+    minHeight: 28,
+  },
+  cardDivider: { height: 1, backgroundColor: '#D1D5DC' },
+  contentWrapper: { minHeight: 257, position: 'relative', paddingBottom: 8 },
+  contentInput: {
+    minHeight: 257,
+    fontSize: 14,
+    color: '#1a1a1a',
+    lineHeight: 24,
+    letterSpacing: -0.312,
+    textAlignVertical: 'top',
+    padding: 0,
+  },
+  contentPlaceholder: { position: 'absolute', top: 0, left: 0, right: 0 },
+  placeholderMain: { fontSize: 14, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
+  placeholderSub: { fontSize: 10, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
+  placeholderNote: { fontSize: 10, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
+
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
+  photoBtn: {
+    flexDirection: 'row',
+    width: 112,
+    height: 40,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+  photoBtnText: { fontSize: 14, fontWeight: '600', color: '#364153' },
   imageThumbWrap: { position: 'relative' },
   imageThumb: { width: 80, height: 80, borderRadius: 10 },
-  imageRemove: { position: 'absolute', top: -6, right: -6, backgroundColor: '#f44336', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
+  imageRemove: {
+    position: 'absolute', top: -6, right: -6,
+    backgroundColor: '#f44336', borderRadius: 10,
+    width: 20, height: 20, justifyContent: 'center', alignItems: 'center',
+  },
   imageRemoveText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  imageAddBtn: { width: 80, height: 80, borderRadius: 10, borderWidth: 1.5, borderColor: '#CCD9BA', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fff4' },
-  imageAddIcon: { fontSize: 22, color: '#9CAF88' },
-  imageAddText: { fontSize: 11, color: '#9CAF88', marginTop: 2 },
 
-  publicNoticeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    alignSelf: 'stretch',
-    marginTop: 20,
-    marginBottom: 8,
+  categorySection: { gap: 10 },
+  categoryLabel: { fontSize: 14, fontWeight: '700', color: '#586144' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  categoryChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 9999,
+    backgroundColor: '#F3F4F6',
   },
-  publicNotice: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#586144',
-    lineHeight: 20,
-    letterSpacing: -0.15,
-  },
+  categoryChipSelected: { backgroundColor: '#B2D36E' },
+  categoryChipText: { fontSize: 14, fontWeight: '700', color: '#4A5565', lineHeight: 20, letterSpacing: -0.15 },
+  categoryChipTextSelected: { color: '#fff' },
+
   submitBtn: {
-    backgroundColor: '#B2D36E', borderRadius: 9999, paddingVertical: 16,
-    alignItems: 'center', marginTop: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
-  },
-  submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  noticeCard: {
-    marginTop: 20,
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    borderWidth: 1.356,
-    borderColor: '#FFF9F0',
-    padding: 17,
-    gap: 10,
-    shadowColor: '#894B00',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  noticeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  noticeTitle: { fontSize: 18, fontWeight: '700', color: '#894B00', lineHeight: 27, letterSpacing: -0.439 },
-  noticeItem: { flexDirection: 'row', gap: 6 },
-  noticeBullet: { fontSize: 14, color: '#A65F00', lineHeight: 20, marginTop: 1 },
-  noticeText: { flex: 1, fontSize: 14, color: '#A65F00', lineHeight: 20, letterSpacing: -0.15 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  successCard: {
-    width: '100%',
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    borderWidth: 3.861,
-    borderColor: '#CCD9BA',
-    padding: 36,
-    alignItems: 'center',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 25 },
-    shadowOpacity: 0.25,
-    shadowRadius: 50,
-    elevation: 20,
-  },
-  checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    borderRadius: 9999,
     backgroundColor: '#B2D36E',
-    justifyContent: 'center',
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.10,
     shadowRadius: 15,
-    elevation: 6,
+    elevation: 5,
+  },
+  submitSection: { gap: 24 },
+  submitBtnDisabled: { opacity: 0.5 },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  bottomNotice: {
+    fontSize: 14, fontWeight: '700', color: '#C10007',
+    lineHeight: 20, letterSpacing: -0.15, textAlign: 'center',
+  },
+
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20,
+  },
+  successCard: {
+    width: '100%', backgroundColor: '#FFF', borderRadius: 24,
+    padding: 36, alignItems: 'center', gap: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 25 },
+    shadowOpacity: 0.25, shadowRadius: 50, elevation: 20,
+  },
+  checkCircle: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: '#B2D36E',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
   successTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
   successDesc: { fontSize: 15, color: '#586144', textAlign: 'center', lineHeight: 22, marginBottom: 8 },
   homeBtn: {
-    alignSelf: 'stretch',
-    backgroundColor: '#B2D36E',
-    borderRadius: 9999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.10,
-    shadowRadius: 15,
-    elevation: 6,
+    alignSelf: 'stretch', backgroundColor: '#B2D36E', borderRadius: 9999,
+    paddingVertical: 14, alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
   homeBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   myQnaBtn: {
-    alignSelf: 'stretch',
-    borderRadius: 9999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#CCD9BA',
+    alignSelf: 'stretch', borderRadius: 9999, paddingVertical: 14,
+    alignItems: 'center', borderWidth: 1.5, borderColor: '#CCD9BA',
   },
   myQnaBtnText: { color: '#586144', fontSize: 16, fontWeight: '600' },
 });

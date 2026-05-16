@@ -160,16 +160,18 @@ export default function QnaDetailPage() {
           {/* 유저 정보 */}
           <View style={styles.userRow}>
             <View style={styles.avatarCircle}>
-              <Ionicons name="person-outline" size={22} color="#3C6802" />
+              <Ionicons name="person-outline" size={22} color="#fff" />
             </View>
             <View>
               <Text style={styles.userName}>{post.author.nickname ?? '익명'}</Text>
               <View style={styles.dateRow}>
-                <Ionicons name="time-outline" size={12} color="#9CAF88" />
+                <Ionicons name="time-outline" size={12} color="#4A5565" />
                 <Text style={styles.userDate}>{new Date(post.createdAt).toLocaleDateString('ko-KR')}</Text>
               </View>
             </View>
           </View>
+
+          <View style={styles.divider} />
 
           {/* 제목 */}
           <Text style={styles.questionTitle}>{post.title}</Text>
@@ -243,9 +245,13 @@ export default function QnaDetailPage() {
                   </View>
                   <View>
                     <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
-                    <Text style={styles.lawyerOrg}>법률 전문가</Text>
+                    <View style={styles.orgRow}>
+                      <Ionicons name="business-outline" size={12} color="#4A5565" />
+                      <Text style={styles.lawyerOrg}>{post.answer?.lawyer.role ?? '법률 전문가'}</Text>
+                    </View>
                   </View>
                 </View>
+                <View style={styles.answerDivider} />
                 <Text style={styles.answerContent}>{post.answer?.content}</Text>
               </View>
             )}
@@ -257,7 +263,7 @@ export default function QnaDetailPage() {
             </View>
             <Text style={styles.pendingTitle}>답변 대기 중</Text>
             <Text style={styles.pendingDesc}>
-              변호사님이 검토 중입니다.{'\n'}답변까지 1~3일 정도 소요됩니다.
+              변호사님이 검토 중입니다.{'\n'}답변까지 <Text style={{ fontWeight: '700' }}>1~3일</Text> 정도 소요됩니다.
             </Text>
             <Text style={styles.pendingNote}>
               긴급한 상황이라면 112 또는 관련 기관에 먼저 연락해주세요.
@@ -271,9 +277,13 @@ export default function QnaDetailPage() {
               </View>
               <View>
                 <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
-                <Text style={styles.lawyerOrg}>법률 전문가</Text>
+                <View style={styles.orgRow}>
+                  <Ionicons name="business-outline" size={12} color="#4A5565" />
+                  <Text style={styles.lawyerOrg}>{post.answer?.lawyer.role ?? '법률 전문가'}</Text>
+                </View>
               </View>
             </View>
+            <View style={styles.answerDivider} />
             <Text style={styles.answerContent}>{post.answer?.content}</Text>
           </View>
         )}
@@ -291,7 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 16, color: '#586144', fontWeight: '600' },
+  backText: { fontSize: 20, color: '#586144', fontWeight: '700' },
   scrapBtn: { padding: 4 },
 
   content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 16 },
@@ -299,8 +309,6 @@ const styles = StyleSheet.create({
   questionCard: {
     backgroundColor: '#fff',
     borderRadius: 24,
-    borderWidth: 1.544,
-    borderColor: '#CCD9BA',
     padding: 25,
     paddingBottom: 20,
     gap: 16,
@@ -310,14 +318,17 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 6,
   },
+  divider: { height: 1.544, backgroundColor: '#CCD9BA' },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#EDF5E1', justifyContent: 'center', alignItems: 'center',
+    width: 44, height: 44, borderRadius: 9999,
+    backgroundColor: '#B2D36E', justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
-  userName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  userDate: { fontSize: 12, color: '#9CAF88' },
+  userName: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  userDate: { fontSize: 12, fontWeight: '400', color: '#4A5565', lineHeight: 18, letterSpacing: -0.15 },
   questionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 27, letterSpacing: -0.439 },
   contentBox: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 16 },
   questionBody: { fontSize: 14, color: '#444', lineHeight: 22 },
@@ -330,8 +341,6 @@ const styles = StyleSheet.create({
   pendingCard: {
     backgroundColor: '#fff',
     borderRadius: 24,
-    borderWidth: 1.544,
-    borderColor: '#D9BABA',
     padding: 25,
     paddingBottom: 20,
     alignItems: 'center',
@@ -358,8 +367,6 @@ const styles = StyleSheet.create({
   answerCard: {
     backgroundColor: '#F9FAFB',
     borderRadius: 24,
-    borderWidth: 1.544,
-    borderColor: '#BEDBFF',
     padding: 25,
     gap: 16,
     shadowColor: '#000',
@@ -370,11 +377,15 @@ const styles = StyleSheet.create({
   },
   lawyerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   lawyerAvatar: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 44, height: 44, borderRadius: 9999,
     backgroundColor: '#2B56B5', justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
-  lawyerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
-  lawyerOrg: { fontSize: 12, color: '#9CAF88', marginTop: 2 },
+  lawyerName: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
+  orgRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  lawyerOrg: { fontSize: 12, color: '#4A5565' },
+  answerDivider: { height: 1.544, backgroundColor: '#FFF' },
   answerContent: { fontSize: 14, color: '#333', lineHeight: 22 },
 
   lawyerBackText: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
@@ -382,8 +393,10 @@ const styles = StyleSheet.create({
   studentInfoCard: {
     paddingTop: 17.353, paddingHorizontal: 17.353, paddingBottom: 1.356,
     flexDirection: 'column', alignItems: 'flex-start', gap: 11.992,
-    borderRadius: 16, borderWidth: 1.356, borderColor: '#CCD9BA', backgroundColor: '#FDFFF8',
+    borderRadius: 16, backgroundColor: '#FDFFF8',
     minHeight: 84,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
   },
   studentInfoHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   studentInfoTitle: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
@@ -391,7 +404,7 @@ const styles = StyleSheet.create({
   studentInfoItem: { fontSize: 13, color: '#586144' },
 
   lawyerAnswerCard: {
-    borderRadius: 24, borderWidth: 1.356, borderColor: '#BEDBFF',
+    borderRadius: 24,
     backgroundColor: '#F9FAFB', padding: 20, gap: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,

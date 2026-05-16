@@ -138,9 +138,6 @@ export default function EditProfileScreen() {
           <View style={styles.avatarCircle}>
             <Ionicons name="person-outline" size={46} color="#fff" />
           </View>
-          <View style={styles.cameraBadge}>
-            <Ionicons name="camera" size={12} color="#fff" />
-          </View>
         </View>
 
         {/* 아이디 */}
@@ -241,7 +238,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#586144' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#586144' },
   saveBtn: { fontSize: 15, color: '#3C6802', fontWeight: '700', width: 32, textAlign: 'right' },
   saveBtnDisabled: { color: '#aaa' },
   inner: { padding: 20, gap: 4 },
@@ -254,19 +251,14 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
-  cameraBadge: {
-    position: 'absolute', bottom: 0, right: '30%',
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#3C6802',
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#FDFFF8',
-  },
   fieldGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '700', color: '#3C6802', marginBottom: 6 },
   input: {
     width: '100%', paddingVertical: 13, paddingHorizontal: 16,
-    borderRadius: 12, borderWidth: 1, borderColor: '#ddd',
+    borderRadius: 12,
     backgroundColor: '#fff', fontSize: 15, color: '#1a1a1a',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 4, elevation: 2,
   },
   inputError: { borderColor: '#f44336' },
   errorText: { fontSize: 12, color: '#f44336', marginTop: 4 },
@@ -277,8 +269,10 @@ const styles = StyleSheet.create({
   genderRow: { flexDirection: 'row', gap: 10 },
   genderBtn: {
     flex: 1, paddingVertical: 13, borderRadius: 12,
-    borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fff',
+    backgroundColor: '#fff',
     justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 4, elevation: 2,
   },
   genderBtnActive: { borderColor: '#B2D36E', backgroundColor: '#f4faed' },
   genderText: { fontSize: 14, color: '#888' },

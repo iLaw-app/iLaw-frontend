@@ -3,7 +3,23 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, G, ClipPath, Defs, Rect } from 'react-native-svg';
+
+function PencilIcon() {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+      <G clipPath="url(#pencilClip)">
+        <Path d="M10.5804 3.40369C10.8446 3.13957 10.993 2.78132 10.9931 2.40775C10.9931 2.03418 10.8448 1.67589 10.5807 1.4117C10.3165 1.14752 9.95828 0.99907 9.58471 0.999023C9.21114 0.998977 8.85286 1.14733 8.58867 1.41145L1.9199 8.08173C1.80388 8.1974 1.71808 8.33983 1.67005 8.49646L1.00997 10.6711C0.997058 10.7143 0.996083 10.7602 1.00715 10.8039C1.01822 10.8476 1.04091 10.8876 1.07283 10.9194C1.10475 10.9513 1.1447 10.9739 1.18844 10.9849C1.23218 10.9959 1.27808 10.9949 1.32128 10.9819L3.4964 10.3223C3.65288 10.2747 3.79529 10.1894 3.91113 10.074L10.5804 3.40369Z" stroke="#5EA500" strokeWidth="1.24921" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M7.49536 2.49805L9.49409 4.49678" stroke="#5EA500" strokeWidth="1.24921" strokeLinecap="round" strokeLinejoin="round"/>
+      </G>
+      <Defs>
+        <ClipPath id="pencilClip">
+          <Rect width="11.9924" height="11.9924" fill="white"/>
+        </ClipPath>
+      </Defs>
+    </Svg>
+  );
+}
 import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -89,7 +105,7 @@ export default function ProfilePage() {
               <Ionicons name="person-outline" size={38} color="#fff" />
             </View>
             <View style={styles.editBadge}>
-              <Ionicons name="pencil" size={10} color="#fff" />
+              <PencilIcon />
             </View>
           </TouchableOpacity>
           {role === 'lawyer' ? (
@@ -193,23 +209,23 @@ const styles = StyleSheet.create({
   },
   editBadge: {
     position: 'absolute', bottom: 0, right: 0,
-    width: 24, height: 24, borderRadius: 12,
-    backgroundColor: '#3C6802',
+    width: 30, height: 30, borderRadius: 9999,
+    backgroundColor: '#FFF',
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#FDFFF8',
+    borderWidth: 1.356, borderColor: '#D8F999',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
   nickname: { fontSize: 28, fontWeight: '700', color: '#4A5565', marginTop: 12, lineHeight: 34, letterSpacing: -0.15 },
   lawyerAffiliation: { fontSize: 14, color: '#9CAF88', marginTop: 4, fontWeight: '500' },
 
   menuCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E4EED4',
-    overflow: 'hidden',
+    borderRadius: 10,
+    borderWidth: 1.356, borderColor: '#FFF',
     marginBottom: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    shadowOpacity: 0.25, shadowRadius: 4, elevation: 4,
   },
   menuRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -232,12 +248,12 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 47,
     borderRadius: 16,
-    borderWidth: 1.356, borderColor: '#FFC9C9',
+    borderWidth: 1.356, borderColor: '#FFF',
     backgroundColor: '#FFF',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
-  actionBtnText: { fontSize: 14, fontWeight: '600', color: '#E7000B' },
+  actionBtnText: { fontSize: 16, fontWeight: '700', color: '#1E2939', lineHeight: 24, letterSpacing: -0.312 },
   modalOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center', alignItems: 'center', padding: 16,
@@ -255,14 +271,19 @@ const styles = StyleSheet.create({
   },
   modalBody: { fontSize: 14, color: '#586144', lineHeight: 22, textAlign: 'center' },
   cancelBtn: {
-    width: '100%', height: 36, borderRadius: 14,
-    borderWidth: 1.356, borderColor: '#B2D36E', backgroundColor: '#B2D36E',
+    width: 209, height: 36, borderRadius: 14,
+    paddingVertical: 8, paddingHorizontal: 16,
+    backgroundColor: '#B2D36E',
     justifyContent: 'center', alignItems: 'center',
+    alignSelf: 'center',
   },
   cancelBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   withdrawBtn: {
-    width: '100%', height: 36, borderRadius: 14,
-    backgroundColor: '#FB2C36', justifyContent: 'center', alignItems: 'center',
+    width: 209, height: 36, borderRadius: 14,
+    paddingVertical: 8, paddingHorizontal: 16,
+    backgroundColor: '#FB2C36',
+    justifyContent: 'center', alignItems: 'center',
+    alignSelf: 'center',
   },
   withdrawBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

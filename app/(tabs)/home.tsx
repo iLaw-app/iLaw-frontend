@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, ActivityIndicator,
+  ScrollView, TextInput, ActivityIndicator, PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -45,6 +45,17 @@ function HighlightText({ text, keyword, style, numberOfLines, onTextLayout }: {
           : part
       )}
     </Text>
+  );
+}
+
+function AiChatFabIcon() {
+  return (
+    <Svg width={32} height={32} viewBox="0 0 32 32" fill="none">
+      <Path d="M10.5306 26.6595C13.0748 27.9646 16.0013 28.3181 18.783 27.6563C21.5647 26.9945 24.0185 25.361 25.7024 23.0501C27.3862 20.7391 28.1893 17.9028 27.9669 15.0521C27.7445 12.2014 26.5113 9.52395 24.4894 7.50211C22.4676 5.48026 19.7901 4.24703 16.9394 4.02464C14.0888 3.80225 11.2524 4.60533 8.94148 6.28916C6.63054 7.97299 4.997 10.4268 4.33521 13.2085C3.67343 15.9902 4.02692 18.9168 5.33199 21.4609L2.66602 29.3255L10.5306 26.6595Z" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M10.6638 15.9961H10.6771" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M15.9958 15.9961H16.0092" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M21.3279 15.9961H21.3412" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
   );
 }
 
@@ -141,6 +152,16 @@ export default function HomeScreen() {
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
+  const swipeBackPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        gs.dx > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 2.5,
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx > 80) handleClearSearch();
+      },
+    })
+  ).current;
+
   const runSearch = useCallback(async (q: string) => {
     setSearchLoading(true);
     const encoded = encodeURIComponent(q.trim());
@@ -224,7 +245,7 @@ export default function HomeScreen() {
   // ── 검색 결과 화면 ──
   if (isSearching) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['top']} {...swipeBackPan.panHandlers}>
         <View style={styles.searchHeader}>
           <TouchableOpacity onPress={handleClearSearch} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={22} color="#586144" />
@@ -320,6 +341,10 @@ export default function HomeScreen() {
         </View>
         <Text style={styles.searchExample}>ex) 알바비 미지급</Text>
       </ScrollView>
+
+      <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.85}>
+        <AiChatFabIcon />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -439,4 +464,16 @@ const styles = StyleSheet.create({
 
   emptyBox: { alignItems: 'center', paddingVertical: 48 },
   emptyText: { fontSize: 14, color: '#9CAF88', marginTop: 12 },
+
+  aiFab: {
+    position: 'absolute', right: 20, bottom: 20,
+    width: 56, height: 56, borderRadius: 9999,
+    backgroundColor: '#586144',
+    justifyContent: 'center', alignItems: 'center',
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 15,
+  },
 });

@@ -86,6 +86,7 @@ function AppNavigator() {
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="notification-settings" />
       <Stack.Screen name="my-answers" />
+      <Stack.Screen name="ai-chat" options={{ animation: 'slide_from_right' }} />
     </Stack>
   );
 }

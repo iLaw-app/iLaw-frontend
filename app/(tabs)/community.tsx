@@ -1,7 +1,19 @@
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
+
+function ThumbsUpIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 19 19" fill="none">
+      <Path
+        d="M11.6614 4.06485L10.8284 7.49661H15.6845C15.9431 7.49661 16.1982 7.55682 16.4295 7.67248C16.6608 7.78814 16.8621 7.95607 17.0172 8.16297C17.1724 8.36987 17.2773 8.61005 17.3235 8.8645C17.3698 9.11895 17.3562 9.38068 17.2838 9.62896L15.343 16.2926C15.2421 16.6386 15.0316 16.9426 14.7433 17.1588C14.4549 17.3751 14.1042 17.492 13.7437 17.492H2.49891C2.05708 17.492 1.63336 17.3165 1.32094 17.0041C1.00852 16.6917 0.833008 16.2679 0.833008 15.8261V9.16251C0.833008 8.72068 1.00852 8.29696 1.32094 7.98454C1.63336 7.67212 2.05708 7.49661 2.49891 7.49661H4.79785C5.10778 7.49644 5.41151 7.40982 5.67491 7.24649C5.9383 7.08316 6.15091 6.84958 6.28883 6.57203L9.16251 0.833008C9.55531 0.837872 9.94193 0.931437 10.2935 1.10671C10.6451 1.28199 10.9525 1.53444 11.1927 1.84521C11.433 2.15598 11.6 2.51703 11.6811 2.90139C11.7623 3.28575 11.7555 3.68348 11.6614 4.06485Z"
+        stroke="#9CAF88" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 
 function PersonIcon() {
   return (
@@ -32,11 +44,21 @@ type CommunityPost = {
   poll?: { options: PollOption[]; total: number };
 };
 
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) return diffDays === 0 ? '오늘' : `${diffDays}일 전`;
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${mm}.${dd}`;
+}
+
 const MOCK_POSTS: CommunityPost[] = [
   {
     id: 1,
     nickname: '익명1',
-    createdAt: '5일 전',
+    createdAt: '2026-05-11T00:00:00Z',
     title: '처음으로 알바하는데 궁금한 게 있어요',
     content: '내일 첫 알바 출근인데 너무 떨려요. 혹시 알바 처음 하시는 분들 어떻게 준비하셨나요? 사장님께 어떻게 인사드려야 할지도...',
     likes: 12,
@@ -45,7 +67,7 @@ const MOCK_POSTS: CommunityPost[] = [
   {
     id: 2,
     nickname: '익명2',
-    createdAt: '6일 전',
+    createdAt: '2026-05-10T00:00:00Z',
     title: '법을 공부하시는 분들 계신가요?',
     content: '진로를 법조인으로 생각하고 있는데 어떤 준비를 해야 할까요?',
     likes: 8,
@@ -54,7 +76,7 @@ const MOCK_POSTS: CommunityPost[] = [
   {
     id: 3,
     nickname: '익명3',
-    createdAt: '05.08',
+    createdAt: '2026-05-08T00:00:00Z',
     title: '청소년도 SNS 계정 해킹 당하면 경찰에 신고할 수 있나요?',
     content: '',
     likes: 21,
@@ -83,9 +105,9 @@ function PollBar({ option, total }: { option: PollOption; total: number }) {
   );
 }
 
-function PostCard({ item }: { item: CommunityPost }) {
+function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.cardTop}>
         <View style={styles.avatarRow}>
           <View style={styles.avatar}>
@@ -93,7 +115,7 @@ function PostCard({ item }: { item: CommunityPost }) {
           </View>
           <Text style={styles.nickname}>{item.nickname}</Text>
         </View>
-        <Text style={styles.date}>{item.createdAt}</Text>
+        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
       </View>
 
       <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
@@ -111,7 +133,7 @@ function PostCard({ item }: { item: CommunityPost }) {
 
       <View style={styles.cardBottom}>
         <View style={styles.metaItem}>
-          <Ionicons name="thumbs-up-outline" size={14} color="#9CAF88" />
+          <ThumbsUpIcon />
           <Text style={styles.metaText}>{item.likes}</Text>
         </View>
         <View style={styles.metaItem}>
@@ -124,6 +146,7 @@ function PostCard({ item }: { item: CommunityPost }) {
 }
 
 export default function CommunityScreen() {
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -140,13 +163,13 @@ export default function CommunityScreen() {
         <FlatList
           data={MOCK_POSTS}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <PostCard item={item} />}
+          renderItem={({ item }) => <PostCard item={item} onPress={() => router.push(`/community/${item.id}` as any)} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
       </View>
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/community/write' as any)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -154,19 +177,19 @@ export default function CommunityScreen() {
 }
 
 const ps = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   barBg: {
-    flex: 1, height: 28, borderRadius: 6,
-    backgroundColor: '#F0F5E8',
+    flex: 1, height: 34, borderRadius: 10,
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     overflow: 'hidden',
     position: 'relative',
   },
   barFill: {
     position: 'absolute', left: 0, top: 0, bottom: 0,
-    backgroundColor: '#B2D36E', borderRadius: 6,
+    backgroundColor: '#EFF4E1', borderRadius: 10,
   },
-  barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 10, zIndex: 1 },
+  barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
   pct: { fontSize: 13, color: '#586144', fontWeight: '600', width: 36, textAlign: 'right' },
 });
 
@@ -197,7 +220,6 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 100 },
 
   card: {
-    minHeight: 190.903,
     flexShrink: 0,
     alignSelf: 'stretch',
     borderBottomWidth: 0.678,
@@ -225,7 +247,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.15, marginBottom: 8,
   },
 
-  poll: { marginTop: 8, marginBottom: 4, gap: 2 },
+  poll: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 16, gap: 8, marginTop: 8, marginBottom: 4 },
 
   cardBottom: { flexDirection: 'row', gap: 12, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -233,12 +255,13 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute', right: 20, bottom: 20,
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: '#B2D36E',
+    width: 56, height: 56, borderRadius: 9999,
+    paddingHorizontal: 16,
+    backgroundColor: '#678720',
     justifyContent: 'center', alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4,
+    elevation: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35, shadowRadius: 15,
   },
-  fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
+  fabText: { fontSize: 30, color: '#fff', lineHeight: 34 },
 });

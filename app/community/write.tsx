@@ -42,7 +42,7 @@ export default function CommunityWriteScreen() {
   const [content, setContent] = useState(editContent ?? '');
   const [pollActive, setPollActive] = useState(false);
   const [pollOptions, setPollOptions] = useState(['', '']);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [contentFocused, setContentFocused] = useState(false);
 
@@ -66,18 +66,17 @@ export default function CommunityWriteScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setPhotos(prev => [...prev, result.assets[0].uri]);
+      const asset = result.assets[0];
+      const ext = asset.uri.split('.').pop() ?? 'jpg';
+      setPhotos(prev => [...prev, { uri: asset.uri, type: `image/${ext}`, name: `photo.${ext}` }]);
     }
   };
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
-  const uploadPhoto = async (uri: string): Promise<string> => {
-    const filename = uri.split('/').pop() ?? 'photo.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const uploadPhoto = async (photo: { uri: string; type: string; name: string }): Promise<string> => {
     const formData = new FormData();
-    formData.append('image', { uri, name: filename, type } as any);
+    formData.append('image', { uri: photo.uri, type: photo.type, name: photo.name } as any);
     const res = await fetch(`${API_BASE}/upload/image`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -213,9 +212,9 @@ export default function CommunityWriteScreen() {
             {/* Photos */}
             {photos.length > 0 && (
               <View style={s.photoRow}>
-                {photos.map((uri, i) => (
+                {photos.map((photo, i) => (
                   <View key={i} style={s.photoThumb}>
-                    <Image source={{ uri }} style={s.photoImg} />
+                    <Image source={{ uri: photo.uri }} style={s.photoImg} />
                     <TouchableOpacity style={s.photoRemove} onPress={() => removePhoto(i)}>
                       <Ionicons name="close-circle" size={18} color="#fff" />
                     </TouchableOpacity>

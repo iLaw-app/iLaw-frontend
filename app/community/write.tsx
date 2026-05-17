@@ -101,7 +101,11 @@ export default function CommunityWriteScreen() {
         }
       }
       if (photos.length > 0) {
-        body.imageUrls = await Promise.all(photos.map(uploadPhoto));
+        try {
+          body.imageUrls = await Promise.all(photos.map(uploadPhoto));
+        } catch {
+          Alert.alert('사진 업로드 실패', '사진을 업로드하지 못했습니다. 사진 없이 게시합니다.');
+        }
       }
 
       const url = isEditing ? `${API_BASE}/community/${editId}` : `${API_BASE}/community`;

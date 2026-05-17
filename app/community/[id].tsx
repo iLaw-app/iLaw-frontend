@@ -64,12 +64,14 @@ type Comment = {
   date: string;
   text: string;
   likes: number;
+  liked: boolean;
   isAuthor: boolean;
   parentId?: number | null;
   replies?: Comment[];
 };
 type Post = {
   id: number; nickname: string; createdAt: string; title: string; content: string;
+  isAuthor: boolean;
   likes: number; bookmarks: number; bookmarked: boolean;
   imageUrls?: string[];
   poll?: { options: PollOption[]; total: number; votedOptionIndex: number | null };
@@ -92,7 +94,8 @@ function mapComment(c: any): Comment {
     nickname: c.nickname,
     date: formatDate(c.createdAt),
     text: c.content,
-    likes: 0,
+    likes: c.likes ?? 0,
+    liked: !!c.liked,
     isAuthor: !!c.isAuthor,
     parentId: c.parentId ?? null,
     replies: (c.replies ?? []).map(mapComment),
@@ -130,9 +133,7 @@ function PollBar({ option, total, selected, onVote }: { option: PollOption; tota
   );
 }
 
-function ReplyItem({ reply, onDelete }: { reply: Comment; onDelete: (id: number) => void }) {
-  const [likes, setLikes] = useState(reply.likes);
-  const [liked, setLiked] = useState(false);
+function ReplyItem({ reply, onDelete, onLike }: { reply: Comment; onDelete: (id: number) => void; onLike: (id: number) => void }) {
   return (
     <View style={s.replyRow}>
       <View style={s.replyLeftLine} />
@@ -148,18 +149,16 @@ function ReplyItem({ reply, onDelete }: { reply: Comment; onDelete: (id: number)
           )}
         </View>
         <Text style={s.commentText}>{reply.text}</Text>
-        <TouchableOpacity style={s.commentLike} activeOpacity={0.7} onPress={() => { setLiked(v => !v); setLikes(c => liked ? c - 1 : c + 1); }}>
-          <ThumbsUpIcon filled={liked} size={13} />
-          <Text style={[s.replyMeta, liked && { color: '#3C6802' }]}>{likes}</Text>
+        <TouchableOpacity style={s.commentLike} activeOpacity={0.7} onPress={() => onLike(reply.id)}>
+          <ThumbsUpIcon filled={reply.liked} size={13} />
+          <Text style={[s.replyMeta, reply.liked && { color: '#3C6802' }]}>{reply.likes}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-function CommentItem({ comment, onReply, onDelete }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void }) {
-  const [likes, setLikes] = useState(comment.likes);
-  const [liked, setLiked] = useState(false);
+function CommentItem({ comment, onReply, onDelete, onLike }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void; onLike: (id: number) => void }) {
   return (
     <View>
       <View style={s.commentRow}>
@@ -176,9 +175,9 @@ function CommentItem({ comment, onReply, onDelete }: { comment: Comment; onReply
           </View>
           <Text style={s.commentText}>{comment.text}</Text>
           <View style={s.commentActions}>
-            <TouchableOpacity style={s.commentLike} activeOpacity={0.7} onPress={() => { setLiked(v => !v); setLikes(c => liked ? c - 1 : c + 1); }}>
-              <ThumbsUpIcon filled={liked} size={13} />
-              <Text style={[s.replyMeta, liked && { color: '#3C6802' }]}>{likes}</Text>
+            <TouchableOpacity style={s.commentLike} activeOpacity={0.7} onPress={() => onLike(comment.id)}>
+              <ThumbsUpIcon filled={comment.liked} size={13} />
+              <Text style={[s.replyMeta, comment.liked && { color: '#3C6802' }]}>{comment.likes}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => onReply(comment.id)} activeOpacity={0.7}>
               <Text style={s.replyBtn}>답글</Text>
@@ -186,7 +185,7 @@ function CommentItem({ comment, onReply, onDelete }: { comment: Comment; onReply
           </View>
         </View>
       </View>
-      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} onDelete={onDelete} />)}
+      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} onDelete={onDelete} onLike={onLike} />)}
     </View>
   );
 }
@@ -239,6 +238,14 @@ export default function CommunityDetailScreen() {
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
   const pollOptions = post?.poll?.options ?? [];
   const pollTotal = post?.poll?.total ?? 0;
+  const updateComment = (
+    items: Comment[],
+    commentId: number,
+    updater: (comment: Comment) => Comment,
+  ): Comment[] => items.map(comment => {
+    if (comment.id === commentId) return updater(comment);
+    return { ...comment, replies: updateComment(comment.replies ?? [], commentId, updater) };
+  });
 
   const handleLike = async () => {
     if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
@@ -340,6 +347,34 @@ export default function CommunityDetailScreen() {
     setReplyingTo(null);
   };
 
+  const handleCommentLike = async (commentId: number) => {
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
+    let nextLiked = false;
+    setComments(prev => updateComment(prev, commentId, comment => {
+      nextLiked = !comment.liked;
+      return { ...comment, liked: nextLiked, likes: Math.max(0, comment.likes + (nextLiked ? 1 : -1)) };
+    }));
+    try {
+      const res = await fetch(`${API_BASE}/community/${postId}/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error('comment like failed');
+      const data = await res.json();
+      setComments(prev => updateComment(prev, commentId, comment => ({
+        ...comment,
+        liked: data.liked,
+        likes: data.count,
+      })));
+    } catch {
+      setComments(prev => updateComment(prev, commentId, comment => ({
+        ...comment,
+        liked: !nextLiked,
+        likes: Math.max(0, comment.likes + (nextLiked ? -1 : 1)),
+      })));
+    }
+  };
+
   const handleDeleteComment = (commentId: number) => {
     if (!accessToken) return;
     Alert.alert('댓글 삭제', '댓글을 삭제하시겠습니까?', [
@@ -403,10 +438,12 @@ export default function CommunityDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <Ionicons name="chevron-back" size={22} color="#586144" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowMenu(v => !v)} style={s.menuBtn}>
-            <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
-          </TouchableOpacity>
-          {showMenu && (
+          {post.isAuthor && (
+            <TouchableOpacity onPress={() => setShowMenu(v => !v)} style={s.menuBtn}>
+              <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
+            </TouchableOpacity>
+          )}
+          {post.isAuthor && showMenu && (
 
             <View style={s.dropdown}>
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
@@ -495,6 +532,7 @@ export default function CommunityDetailScreen() {
               comment={comment}
               onReply={(cid) => setReplyingTo(replyingTo === cid ? null : cid)}
               onDelete={handleDeleteComment}
+              onLike={handleCommentLike}
             />
           ))}
         </ScrollView>

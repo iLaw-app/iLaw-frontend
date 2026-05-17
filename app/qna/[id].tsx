@@ -28,7 +28,7 @@ type QnADetail = {
     id: number;
     content: string;
     createdAt: string;
-    lawyer: { nickname: string | null; role: string };
+    lawyer: { nickname: string | null; role: string; affiliation: string | null };
   } | null;
 };
 
@@ -87,6 +87,7 @@ export default function QnaDetailPage() {
           lawyer: {
             nickname: prev.answer?.lawyer.nickname ?? null,
             role: 'lawyer',
+            affiliation: prev.answer?.lawyer.affiliation ?? null,
           },
         },
       } : prev);
@@ -259,7 +260,7 @@ export default function QnaDetailPage() {
                     <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
                     <View style={styles.orgRow}>
                       <Ionicons name="business-outline" size={12} color="#4A5565" />
-                      <Text style={styles.lawyerOrg}>{post.answer?.lawyer.role ?? '법률 전문가'}</Text>
+                      <Text style={styles.lawyerOrg}>{post.answer?.lawyer.affiliation ?? '소속 미등록'}</Text>
                     </View>
                   </View>
                 </View>
@@ -291,7 +292,7 @@ export default function QnaDetailPage() {
                 <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
                 <View style={styles.orgRow}>
                   <Ionicons name="business-outline" size={12} color="#4A5565" />
-                  <Text style={styles.lawyerOrg}>{post.answer?.lawyer.role ?? '법률 전문가'}</Text>
+                  <Text style={styles.lawyerOrg}>{post.answer?.lawyer.affiliation ?? '소속 미등록'}</Text>
                 </View>
               </View>
             </View>

@@ -67,8 +67,9 @@ export default function CommunityWriteScreen() {
     });
     if (!result.canceled) {
       const asset = result.assets[0];
-      const ext = asset.uri.split('.').pop() ?? 'jpg';
-      setPhotos(prev => [...prev, { uri: asset.uri, type: `image/${ext}`, name: `photo.${ext}` }]);
+      const ext = (asset.uri.split('.').pop() ?? 'jpg').toLowerCase();
+      const type = asset.mimeType ?? (ext === 'jpg' ? 'image/jpeg' : `image/${ext}`);
+      setPhotos(prev => [...prev, { uri: asset.uri, type, name: `photo.${ext}` }]);
     }
   };
 

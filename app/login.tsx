@@ -32,7 +32,7 @@ function GoogleIcon() {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { setAccessToken, setUser } = useAuth();
+  const { setAuthTokens, setUser } = useAuth();
 
   const handleLogin = async (provider: 'kakao' | 'naver' | 'google') => {
     const appRedirectUri = Linking.createURL('auth');
@@ -42,8 +42,9 @@ export default function LoginScreen() {
     if (result.type === 'success' && result.url) {
       const { queryParams } = Linking.parse(result.url);
       const accessToken = queryParams?.accessToken as string | undefined;
-      if (accessToken) {
-        setAccessToken(accessToken);
+      const refreshToken = queryParams?.refreshToken as string | undefined;
+      if (accessToken && refreshToken) {
+        await setAuthTokens({ accessToken, refreshToken });
         try {
           const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${accessToken}` },

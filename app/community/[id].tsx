@@ -61,9 +61,9 @@ type PollOption = { label: string; votes: number };
 type Comment = { id: number; nickname: string; date: string; text: string; likes: number; replies?: Comment[] };
 type Post = {
   id: number; nickname: string; createdAt: string; title: string; content: string;
-  likes: number; scraps: number; bookmarked: boolean;
+  likes: number; bookmarks: number; bookmarked: boolean;
   imageUrls?: string[];
-  poll?: { options: PollOption[]; total: number };
+  poll?: { options: PollOption[]; total: number; votedOptionIndex: number | null };
   comments: Comment[];
 };
 
@@ -81,10 +81,19 @@ function mapComment(c: any): Comment {
   return { id: c.id, nickname: c.nickname, date: formatDate(c.createdAt), text: c.content, likes: 0, replies: [] };
 }
 
-function mapPoll(poll: any): { options: PollOption[]; total: number } | undefined {
+function mapPoll(poll: any): { options: PollOption[]; total: number; votedOptionIndex: number | null } | undefined {
   if (!poll?.options) return undefined;
   const options = poll.options as PollOption[];
-  return { options, total: options.reduce((s, o) => s + o.votes, 0) };
+  return {
+    options,
+    total: typeof poll.total === 'number' ? poll.total : options.reduce((s, o) => s + o.votes, 0),
+    votedOptionIndex: typeof poll.votedOptionIndex === 'number' ? poll.votedOptionIndex : null,
+  };
+}
+
+function imageSourceUrl(url: string): string {
+  if (!url.includes('.amazonaws.com/')) return url;
+  return `${API_BASE}/upload/image-proxy?url=${encodeURIComponent(url)}`;
 }
 
 function Avatar({ size = 32 }: { size?: number }) {
@@ -95,11 +104,11 @@ function Avatar({ size = 32 }: { size?: number }) {
   );
 }
 
-function PollBar({ option, total, onVote, disabled }: { option: PollOption; total: number; onVote: () => void; disabled: boolean }) {
+function PollBar({ option, total, selected, onVote }: { option: PollOption; total: number; selected: boolean; onVote: () => void }) {
   const pct = total > 0 ? Math.round((option.votes / total) * 100) : 0;
   return (
-    <TouchableOpacity style={ps.row} onPress={onVote} activeOpacity={disabled ? 1 : 0.8} disabled={disabled}>
-      <View style={ps.barBg}>
+    <TouchableOpacity style={ps.row} onPress={onVote} activeOpacity={0.8}>
+      <View style={[ps.barBg, selected && ps.barSelected]}>
         <View style={[ps.barFill, { width: `${pct}%` }]} />
         <Text style={ps.barLabel}>{option.label}</Text>
       </View>
@@ -184,30 +193,90 @@ export default function CommunityDetailScreen() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        setPost({ ...data, imageUrls: data.imageUrls ?? [], scraps: 0, bookmarked: false, comments: [] });
+        const poll = mapPoll(data.poll);
+        setPost({
+          ...data,
+          bookmarks: data.bookmarks ?? 0,
+          bookmarked: data.bookmarked ?? false,
+          imageUrls: data.imageUrls ?? [],
+          poll,
+          comments: [],
+        });
         setLiked(data.liked ?? false);
         setLikeCount(data.likes ?? 0);
+        setBookmarked(data.bookmarked ?? false);
+        setScrapCount(data.bookmarks ?? 0);
+        setVotedIdx(poll?.votedOptionIndex ?? null);
         setComments((data.comments ?? []).map(mapComment));
       })
       .finally(() => setLoading(false));
   }, [postId, accessToken]);
 
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
-  const pollOptions = (post?.poll?.options ?? []).map((opt, i) => votedIdx === i ? { ...opt, votes: opt.votes + 1 } : opt);
-  const pollTotal = votedIdx !== null ? (post?.poll?.total ?? 0) + 1 : (post?.poll?.total ?? 0);
+  const pollOptions = post?.poll?.options ?? [];
+  const pollTotal = post?.poll?.total ?? 0;
 
   const handleLike = async () => {
     if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
     const newLiked = !liked;
     setLiked(newLiked);
     setLikeCount(c => newLiked ? c + 1 : c - 1);
-    await fetch(`${API_BASE}/community/${postId}/like`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }).catch(() => {
+    try {
+      const res = await fetch(`${API_BASE}/community/${postId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error('like failed');
+      const data = await res.json();
+      setLiked(data.liked);
+      setLikeCount(data.count);
+    } catch {
       setLiked(!newLiked);
       setLikeCount(c => newLiked ? c - 1 : c + 1);
-    });
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
+    const newBookmarked = !bookmarked;
+    setBookmarked(newBookmarked);
+    setScrapCount(c => Math.max(0, newBookmarked ? c + 1 : c - 1));
+    try {
+      const res = await fetch(`${API_BASE}/community/${postId}/bookmark`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error('bookmark failed');
+      const data = await res.json();
+      setBookmarked(data.bookmarked);
+      setScrapCount(data.count);
+    } catch {
+      setBookmarked(!newBookmarked);
+      setScrapCount(c => Math.max(0, newBookmarked ? c - 1 : c + 1));
+    }
+  };
+
+  const handleVote = async (optionIndex: number) => {
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 투표할 수 있습니다.'); return; }
+    try {
+      const res = await fetch(`${API_BASE}/community/${postId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ optionIndex }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message ?? 'vote failed');
+      }
+      const data = await res.json();
+      const poll = mapPoll(data.poll);
+      if (poll) {
+        setPost(prev => prev ? { ...prev, poll } : prev);
+        setVotedIdx(poll.votedOptionIndex);
+      }
+    } catch (e) {
+      Alert.alert('오류', e instanceof Error ? e.message : '투표에 실패했습니다.');
+    }
   };
 
   const handleDelete = () => {
@@ -316,7 +385,7 @@ export default function CommunityDetailScreen() {
           {post.imageUrls && post.imageUrls.length > 0 && (
             <View style={s.imageRow}>
               {post.imageUrls.map((url, i) => (
-                <Image key={i} source={{ uri: url }} style={s.postImage} resizeMode="cover" />
+                <Image key={i} source={{ uri: imageSourceUrl(url) }} style={s.postImage} resizeMode="cover" />
               ))}
             </View>
           )}
@@ -325,7 +394,7 @@ export default function CommunityDetailScreen() {
           {post.poll && (
             <View style={ps.container}>
               {pollOptions.map((opt, i) => (
-                <PollBar key={opt.label} option={opt} total={pollTotal} disabled={votedIdx !== null} onVote={() => setVotedIdx(i)} />
+                <PollBar key={opt.label} option={opt} total={pollTotal} selected={votedIdx === i} onVote={() => handleVote(i)} />
               ))}
               <View style={ps.footer}>
                 <BarChartIcon />
@@ -346,7 +415,7 @@ export default function CommunityDetailScreen() {
                 <Text style={s.actionText}>{totalComments}</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={s.actionBtn} onPress={() => { setBookmarked(v => !v); setScrapCount(c => bookmarked ? c - 1 : c + 1); }} activeOpacity={0.7}>
+            <TouchableOpacity style={s.actionBtn} onPress={handleBookmark} activeOpacity={0.7}>
               <Ionicons name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={18} color="#4A5565" />
               <Text style={[s.actionText, bookmarked && { color: '#3C6802' }]}>{scrapCount}</Text>
             </TouchableOpacity>
@@ -402,6 +471,7 @@ const ps = StyleSheet.create({
     overflow: 'hidden', position: 'relative',
   },
   barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#EFF4E1', borderRadius: 8 },
+  barSelected: { borderWidth: 1, borderColor: '#9CAF88' },
   barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
   pct: { fontSize: 13, color: '#586144', fontWeight: '700', width: 36, textAlign: 'right' },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 16 },

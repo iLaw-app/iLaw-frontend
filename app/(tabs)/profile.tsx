@@ -62,16 +62,21 @@ const LAWYER_MENU_ITEMS = [
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, accessToken, setAccessToken, setUser, role, setRoleOverride } = useAuth();
+  const { user, accessToken, clearAuth, role, setRoleOverride } = useAuth();
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
       { text: '취소', style: 'cancel' },
       {
         text: '로그아웃',
-        onPress: () => {
-          setAccessToken(null);
-          setUser(null);
+        onPress: async () => {
+          if (accessToken) {
+            await fetch(`${API_BASE}/auth/logout`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }).catch(() => {});
+          }
+          await clearAuth();
           router.replace('/login');
         },
       },
@@ -88,8 +93,7 @@ export default function ProfilePage() {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    setAccessToken(null);
-    setUser(null);
+    await clearAuth();
     router.replace('/login');
   };
 

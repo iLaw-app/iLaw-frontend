@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -180,6 +180,7 @@ export default function CommunityDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const headers: Record<string, string> = {};
@@ -380,7 +381,9 @@ export default function CommunityDetailScreen() {
           {post.imageUrls && post.imageUrls.length > 0 && (
             <View style={s.imageRow}>
               {post.imageUrls.map((url, i) => (
-                <Image key={i} source={{ uri: url }} style={s.postImage} resizeMode="cover" />
+                <TouchableOpacity key={i} onPress={() => setSelectedImage(url)} activeOpacity={0.85}>
+                  <Image source={{ uri: url }} style={s.imageThumb} resizeMode="cover" />
+                </TouchableOpacity>
               ))}
             </View>
           )}
@@ -424,6 +427,12 @@ export default function CommunityDetailScreen() {
             <CommentItem key={comment.id} comment={comment} onReply={(cid) => setReplyingTo(replyingTo === cid ? null : cid)} />
           ))}
         </ScrollView>
+
+        <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
+          <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
+            <Image source={{ uri: selectedImage! }} style={s.modalImage} resizeMode="contain" />
+          </TouchableOpacity>
+        </Modal>
 
         {/* Comment Input */}
         <View style={s.inputBar}>
@@ -492,7 +501,9 @@ const s = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', lineHeight: 28, letterSpacing: -0.449, marginBottom: 8 },
   content: { fontSize: 14, color: '#586144', lineHeight: 22, marginBottom: 12 },
   imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  postImage: { width: '100%', aspectRatio: 16 / 9, borderRadius: 10, marginBottom: 4 },
+  imageThumb: { width: 90, height: 90, borderRadius: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  modalImage: { width: '100%', height: '100%' },
 
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderTopWidth: 0.678, borderTopColor: '#F3F4F6' },
   actionsLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },

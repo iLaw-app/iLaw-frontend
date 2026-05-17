@@ -58,7 +58,16 @@ function BarChartIcon() {
 }
 
 type PollOption = { label: string; votes: number };
-type Comment = { id: number; nickname: string; date: string; text: string; likes: number; parentId?: number | null; replies?: Comment[] };
+type Comment = {
+  id: number;
+  nickname: string;
+  date: string;
+  text: string;
+  likes: number;
+  isAuthor: boolean;
+  parentId?: number | null;
+  replies?: Comment[];
+};
 type Post = {
   id: number; nickname: string; createdAt: string; title: string; content: string;
   likes: number; bookmarks: number; bookmarked: boolean;
@@ -84,6 +93,7 @@ function mapComment(c: any): Comment {
     date: formatDate(c.createdAt),
     text: c.content,
     likes: 0,
+    isAuthor: !!c.isAuthor,
     parentId: c.parentId ?? null,
     replies: (c.replies ?? []).map(mapComment),
   };
@@ -120,7 +130,7 @@ function PollBar({ option, total, selected, onVote }: { option: PollOption; tota
   );
 }
 
-function ReplyItem({ reply }: { reply: Comment }) {
+function ReplyItem({ reply, onDelete }: { reply: Comment; onDelete: (id: number) => void }) {
   const [likes, setLikes] = useState(reply.likes);
   const [liked, setLiked] = useState(false);
   return (
@@ -131,6 +141,11 @@ function ReplyItem({ reply }: { reply: Comment }) {
         <View style={s.commentMeta}>
           <Text style={s.replyNickname}>{reply.nickname}</Text>
           <Text style={s.replyDate}>{reply.date}</Text>
+          {reply.isAuthor && (
+            <TouchableOpacity onPress={() => onDelete(reply.id)} activeOpacity={0.7}>
+              <Text style={s.deleteBtn}>삭제</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <Text style={s.commentText}>{reply.text}</Text>
         <TouchableOpacity style={s.commentLike} activeOpacity={0.7} onPress={() => { setLiked(v => !v); setLikes(c => liked ? c - 1 : c + 1); }}>
@@ -142,7 +157,7 @@ function ReplyItem({ reply }: { reply: Comment }) {
   );
 }
 
-function CommentItem({ comment, onReply }: { comment: Comment; onReply: (id: number) => void }) {
+function CommentItem({ comment, onReply, onDelete }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void }) {
   const [likes, setLikes] = useState(comment.likes);
   const [liked, setLiked] = useState(false);
   return (
@@ -153,6 +168,11 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (id: num
           <View style={s.commentMeta}>
             <Text style={s.commentNickname}>{comment.nickname}</Text>
             <Text style={s.replyDate}>{comment.date}</Text>
+            {comment.isAuthor && (
+              <TouchableOpacity onPress={() => onDelete(comment.id)} activeOpacity={0.7}>
+                <Text style={s.deleteBtn}>삭제</Text>
+              </TouchableOpacity>
+            )}
           </View>
           <Text style={s.commentText}>{comment.text}</Text>
           <View style={s.commentActions}>
@@ -166,7 +186,7 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (id: num
           </View>
         </View>
       </View>
-      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} />)}
+      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} onDelete={onDelete} />)}
     </View>
   );
 }
@@ -320,6 +340,35 @@ export default function CommunityDetailScreen() {
     setReplyingTo(null);
   };
 
+  const handleDeleteComment = (commentId: number) => {
+    if (!accessToken) return;
+    Alert.alert('댓글 삭제', '댓글을 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: async () => {
+          const res = await fetch(`${API_BASE}/community/${postId}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          if (!res.ok && res.status !== 204) {
+            Alert.alert('오류', '댓글 삭제에 실패했습니다.');
+            return;
+          }
+          setComments(prev => prev
+            .filter(comment => comment.id !== commentId)
+            .map(comment => ({
+              ...comment,
+              replies: (comment.replies ?? []).filter(reply => reply.id !== commentId),
+            }))
+          );
+          if (replyingTo === commentId) setReplyingTo(null);
+        },
+      },
+    ]);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
@@ -441,7 +490,12 @@ export default function CommunityDetailScreen() {
           <Text style={s.commentsHeader}>댓글 {totalComments}</Text>
 
           {comments.map(comment => (
-            <CommentItem key={comment.id} comment={comment} onReply={(cid) => setReplyingTo(replyingTo === cid ? null : cid)} />
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              onReply={(cid) => setReplyingTo(replyingTo === cid ? null : cid)}
+              onDelete={handleDeleteComment}
+            />
           ))}
         </ScrollView>
 
@@ -538,6 +592,7 @@ const s = StyleSheet.create({
   commentMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   commentNickname: { fontSize: 13, fontWeight: '700', color: '#1E2939' },
   replyNickname: { fontSize: 13, fontWeight: '700', color: '#6A7282' },
+  deleteBtn: { fontSize: 12, color: '#C10007', fontWeight: '600' },
   replyDate: { fontSize: 11, color: '#6A7282' },
   commentText: { fontSize: 14, color: '#1a1a1a', lineHeight: 20, marginBottom: 6 },
   commentActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },

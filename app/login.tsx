@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -93,6 +93,15 @@ export default function LoginScreen() {
             <GoogleIcon />
             <Text style={[styles.btnText, { color: '#333' }]}>구글 로그인</Text>
           </TouchableOpacity>
+
+          {Platform.OS === 'web' && (
+            <TouchableOpacity
+              style={styles.demoBtn}
+              onPress={() => router.replace('/(tabs)/home')}
+            >
+              <Text style={styles.demoBtnText}>로그인 없이 둘러보기</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
       </View>
@@ -158,6 +167,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#fff',
+  },
+  demoBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 9999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#CCD9BA',
+  },
+  demoBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#586144',
   },
 
 });

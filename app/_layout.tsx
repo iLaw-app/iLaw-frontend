@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View, Platform, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth';
@@ -8,6 +8,19 @@ import { NotificationSettingsProvider } from './context/notificationSettings';
 const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
 
 export default function RootLayout() {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={webStyles.bg}>
+        <View style={webStyles.phone}>
+          <AuthProvider>
+            <NotificationSettingsProvider>
+              <AppNavigator />
+            </NotificationSettingsProvider>
+          </AuthProvider>
+        </View>
+      </View>
+    );
+  }
   return (
     <AuthProvider>
       <NotificationSettingsProvider>
@@ -16,6 +29,27 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+const webStyles = StyleSheet.create({
+  bg: {
+    flex: 1,
+    backgroundColor: '#D4DFC9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh' as any,
+  },
+  phone: {
+    width: 390,
+    height: 844,
+    backgroundColor: '#FDFFF8',
+    borderRadius: 40,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 40,
+  },
+});
 
 function AppNavigator() {
   const router = useRouter();

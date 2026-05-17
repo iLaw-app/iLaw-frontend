@@ -71,17 +71,21 @@ export default function QnaPage() {
   const { role, accessToken } = useAuth();
   const [posts, setPosts] = useState<QnAPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      setLoading(true);
+      if (!loadedOnce) setLoading(true);
       const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
       fetch(`${API_BASE}/qna`, options)
         .then(r => r.json())
         .then(data => {
-          if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+          if (!cancelled) {
+            setPosts(Array.isArray(data) ? data : []);
+            setLoadedOnce(true);
+          }
         })
         .catch(() => {
           if (!cancelled) setPosts([]);
@@ -90,7 +94,7 @@ export default function QnaPage() {
           if (!cancelled) setLoading(false);
         });
       return () => { cancelled = true; };
-    }, [accessToken])
+    }, [accessToken, loadedOnce])
   );
 
   const filteredPosts = searchQuery.trim()

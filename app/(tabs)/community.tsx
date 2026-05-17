@@ -217,7 +217,7 @@ export default function CommunityScreen() {
   );
 
   const displayPosts = [...posts]
-    .filter(p => !searchQuery.trim() || p.title.includes(searchQuery) || p.content.includes(searchQuery))
+    .filter(p => !searchQuery.trim() || p.title.includes(searchQuery) || (p.content ?? '').includes(searchQuery))
     .sort((a, b) => sort === 'popular' ? b.likes - a.likes : 0);
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, KeyboardAvoidingView, Platform, Image,
@@ -8,7 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
-import { AuthContext } from '../context/auth';
+import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -37,7 +37,7 @@ export default function CommunityWriteScreen() {
   const router = useRouter();
   const { editId, editTitle, editContent } = useLocalSearchParams<{ editId?: string; editTitle?: string; editContent?: string }>();
   const isEditing = !!editId;
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken } = useAuth();
   const [title, setTitle] = useState(editTitle ?? '');
   const [content, setContent] = useState(editContent ?? '');
   const [pollActive, setPollActive] = useState(false);

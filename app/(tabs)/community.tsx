@@ -1,11 +1,11 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
-import { AuthContext } from '../context/auth';
+import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -120,7 +120,7 @@ function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void 
 
 export default function CommunityScreen() {
   const router = useRouter();
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
 

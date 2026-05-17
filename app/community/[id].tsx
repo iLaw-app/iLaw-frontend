@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
@@ -8,7 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { BottomNav } from '../../components/BottomNav';
-import { AuthContext } from '../context/auth';
+import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -161,7 +161,7 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (id: num
 export default function CommunityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { accessToken } = useContext(AuthContext);
+  const { accessToken } = useAuth();
   const postId = String(id);
 
   const [post, setPost] = useState<Post | null>(null);

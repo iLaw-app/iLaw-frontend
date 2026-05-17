@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -62,6 +62,7 @@ type Comment = { id: number; nickname: string; date: string; text: string; likes
 type Post = {
   id: number; nickname: string; createdAt: string; title: string; content: string;
   likes: number; scraps: number; bookmarked: boolean;
+  imageUrls?: string[];
   poll?: { options: PollOption[]; total: number };
   comments: Comment[];
 };
@@ -183,7 +184,7 @@ export default function CommunityDetailScreen() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        setPost({ ...data, scraps: 0, bookmarked: false, comments: [] });
+        setPost({ ...data, imageUrls: data.imageUrls ?? [], scraps: 0, bookmarked: false, comments: [] });
         setLiked(data.liked ?? false);
         setLikeCount(data.likes ?? 0);
         setComments((data.comments ?? []).map(mapComment));
@@ -312,6 +313,14 @@ export default function CommunityDetailScreen() {
           <Text style={s.title}>{post.title}</Text>
           {post.content ? <Text style={s.content}>{post.content}</Text> : null}
 
+          {post.imageUrls && post.imageUrls.length > 0 && (
+            <View style={s.imageRow}>
+              {post.imageUrls.map((url, i) => (
+                <Image key={i} source={{ uri: url }} style={s.postImage} resizeMode="cover" />
+              ))}
+            </View>
+          )}
+
           {/* Poll */}
           {post.poll && (
             <View style={ps.container}>
@@ -417,6 +426,8 @@ const s = StyleSheet.create({
   date: { fontSize: 12, color: '#99A1AF', lineHeight: 16 },
   title: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', lineHeight: 28, letterSpacing: -0.449, marginBottom: 8 },
   content: { fontSize: 14, color: '#586144', lineHeight: 22, marginBottom: 12 },
+  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  postImage: { width: '100%', aspectRatio: 16 / 9, borderRadius: 10, marginBottom: 4 },
 
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderTopWidth: 0.678, borderTopColor: '#F3F4F6' },
   actionsLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },

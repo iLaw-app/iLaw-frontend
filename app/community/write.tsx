@@ -72,6 +72,22 @@ export default function CommunityWriteScreen() {
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
+  const uploadPhoto = async (uri: string): Promise<string> => {
+    const filename = uri.split('/').pop() ?? 'photo.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    const formData = new FormData();
+    formData.append('image', { uri, name: filename, type } as any);
+    const res = await fetch(`${API_BASE}/upload/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('이미지 업로드 실패');
+    const data = await res.json();
+    return data.url as string;
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) { Alert.alert('입력 오류', '제목을 입력해주세요.'); return; }
     if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
@@ -84,7 +100,9 @@ export default function CommunityWriteScreen() {
           body.poll = { options: validOptions.map(label => ({ label, votes: 0 })) };
         }
       }
-      if (photos.length > 0) body.imageUrls = photos;
+      if (photos.length > 0) {
+        body.imageUrls = await Promise.all(photos.map(uploadPhoto));
+      }
 
       const url = isEditing ? `${API_BASE}/community/${editId}` : `${API_BASE}/community`;
       const method = isEditing ? 'PUT' : 'POST';

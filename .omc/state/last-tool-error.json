@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"npm run build 2>&1\",\"description\":\"TypeScript build check\"}",
-  "error": "Exit code 1\nnpm error Missing script: \"build\"\nnpm error\nnpm error To see a list of scripts, run:\nnpm error   npm run\nnpm error A complete log of this run can be found in: /Users/taknayeon/.npm/_logs/2026-05-12T10_53_47_950Z-debug-0.log",
-  "timestamp": "2026-05-12T10:53:48.028Z",
-  "retry_count": 1
-}

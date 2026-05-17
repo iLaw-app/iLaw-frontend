@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, KeyboardAvoidingView, Platform, Image,
@@ -8,6 +8,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
+import { AuthContext } from '../context/auth';
+
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 function PhotoIcon() {
   return (
@@ -34,6 +37,7 @@ export default function CommunityWriteScreen() {
   const router = useRouter();
   const { editId, editTitle, editContent } = useLocalSearchParams<{ editId?: string; editTitle?: string; editContent?: string }>();
   const isEditing = !!editId;
+  const { accessToken } = useContext(AuthContext);
   const [title, setTitle] = useState(editTitle ?? '');
   const [content, setContent] = useState(editContent ?? '');
   const [pollActive, setPollActive] = useState(false);
@@ -70,10 +74,34 @@ export default function CommunityWriteScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim()) { Alert.alert('입력 오류', '제목을 입력해주세요.'); return; }
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 500));
-    setSubmitting(false);
-    router.back();
+    try {
+      const body: Record<string, any> = { title: title.trim(), content: content.trim() || undefined };
+      if (pollActive) {
+        const validOptions = pollOptions.filter(o => o.trim());
+        if (validOptions.length >= 2) {
+          body.poll = { options: validOptions.map(label => ({ label, votes: 0 })) };
+        }
+      }
+      if (photos.length > 0) body.imageUrls = photos;
+
+      const url = isEditing ? `${API_BASE}/community/${editId}` : `${API_BASE}/community`;
+      const method = isEditing ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        router.back();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Alert.alert('오류', data.message ?? '저장에 실패했습니다.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const showPlaceholder = content.length === 0 && !pollActive && !contentFocused;

@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, Alert,
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { BottomNav } from '../../components/BottomNav';
+import { AuthContext } from '../context/auth';
+
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 function PersonIcon({ size = 15 }: { size?: number }) {
   return (
@@ -73,34 +76,15 @@ function formatDate(iso: string): string {
   return `${mm}.${dd}`;
 }
 
-const ALL_POSTS: Post[] = [
-  {
-    id: 1, nickname: '익명1', createdAt: '2026-05-11T00:00:00Z',
-    title: '처음으로 알바하는데 궁금한 게 있어요',
-    content: '내일 첫 알바 출근인데 너무 떨려요. 혹시 알바 처음 하시는 분들 어떻게 준비하셨나요? 사장님께 어떻게 인사드려야 할지도...',
-    likes: 12, scraps: 3, bookmarked: false,
-    comments: [{ id: 1, nickname: '익명2', date: '5일 전', text: '저도 처음엔 많이 떨렸어요! 밝게 인사하면 다 좋아하시더라고요 :)', likes: 5, replies: [] }],
-  },
-  {
-    id: 2, nickname: '익명2', createdAt: '2026-05-10T00:00:00Z',
-    title: '법을 공부하시는 분들 계신가요?',
-    content: '진로를 법조인으로 생각하고 있는데 어떤 준비를 해야 할까요?',
-    likes: 8, scraps: 2, bookmarked: false,
-    comments: [{ id: 1, nickname: '익명4', date: '6일 전', text: '로스쿨 준비라면 학점 관리가 제일 중요해요!', likes: 3, replies: [] }],
-  },
-  {
-    id: 3, nickname: '익명3', createdAt: '2026-05-08T00:00:00Z',
-    title: '청소년도 SNS 계정 해킹 당하면 경찰에 신고할 수 있나요?',
-    content: '', likes: 34, scraps: 7, bookmarked: false,
-    poll: { options: [{ label: '가능하다', votes: 78 }, { label: '불가능하다', votes: 12 }, { label: '잘 모르겠다', votes: 15 }], total: 105 },
-    comments: [{
-      id: 1, nickname: '익명5', date: '05.08',
-      text: '당연히 가능해요! 나이 상관없이 피해자면 신고할 수 있습니다.',
-      likes: 12,
-      replies: [{ id: 2, nickname: '익명3', date: '05.08', text: '감사합니다! 도움이 됐어요', likes: 3 }],
-    }],
-  },
-];
+function mapComment(c: any): Comment {
+  return { id: c.id, nickname: c.nickname, date: formatDate(c.createdAt), text: c.content, likes: 0, replies: [] };
+}
+
+function mapPoll(poll: any): { options: PollOption[]; total: number } | undefined {
+  if (!poll?.options) return undefined;
+  const options = poll.options as PollOption[];
+  return { options, total: options.reduce((s, o) => s + o.votes, 0) };
+}
 
 function Avatar({ size = 32 }: { size?: number }) {
   return (
@@ -177,44 +161,107 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (id: num
 export default function CommunityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const post = ALL_POSTS.find(p => String(p.id) === String(id)) ?? ALL_POSTS[0];
+  const { accessToken } = useContext(AuthContext);
+  const postId = String(id);
 
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
-  const [bookmarked, setBookmarked] = useState(post.bookmarked);
-  const [scrapCount, setScrapCount] = useState(post.scraps);
+  const [likeCount, setLikeCount] = useState(0);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [scrapCount, setScrapCount] = useState(0);
   const [votedIdx, setVotedIdx] = useState<number | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState(post.comments);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
 
+  useEffect(() => {
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    fetch(`${API_BASE}/community/${postId}`, { headers })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        setPost({ ...data, scraps: 0, bookmarked: false, comments: [] });
+        setLiked(data.liked ?? false);
+        setLikeCount(data.likes ?? 0);
+        setComments((data.comments ?? []).map(mapComment));
+      })
+      .finally(() => setLoading(false));
+  }, [postId, accessToken]);
+
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
-  const pollOptions = (post.poll?.options ?? []).map((opt, i) => votedIdx === i ? { ...opt, votes: opt.votes + 1 } : opt);
-  const pollTotal = votedIdx !== null ? (post.poll?.total ?? 0) + 1 : (post.poll?.total ?? 0);
+  const pollOptions = (post?.poll?.options ?? []).map((opt, i) => votedIdx === i ? { ...opt, votes: opt.votes + 1 } : opt);
+  const pollTotal = votedIdx !== null ? (post?.poll?.total ?? 0) + 1 : (post?.poll?.total ?? 0);
 
-  const getNextNickname = (currentComments: Comment[]) => {
-    const allNames = [
-      ...currentComments.map(c => c.nickname),
-      ...currentComments.flatMap(c => (c.replies ?? []).map(r => r.nickname)),
-    ];
-    const nums = allNames
-      .map(n => Number(n.match(/^익명(\d+)$/)?.[1]))
-      .filter(n => n > 0);
-    return `익명${nums.length > 0 ? Math.max(...nums) + 1 : 1}`;
+  const handleLike = async () => {
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 이용해주세요.'); return; }
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikeCount(c => newLiked ? c + 1 : c - 1);
+    await fetch(`${API_BASE}/community/${postId}/like`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => {
+      setLiked(!newLiked);
+      setLikeCount(c => newLiked ? c - 1 : c + 1);
+    });
   };
 
-  const handleSend = () => {
+  const handleDelete = () => {
+    if (!accessToken) return;
+    fetch(`${API_BASE}/community/${postId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).then(r => {
+      if (r.ok || r.status === 204) router.replace('/(tabs)/community' as any);
+      else Alert.alert('오류', '삭제에 실패했습니다.');
+    });
+  };
+
+  const handleSend = async () => {
     if (!commentText.trim()) return;
-    const newComment: Comment = { id: Date.now(), nickname: getNextNickname(comments), date: '방금', text: commentText.trim(), likes: 0 };
-    if (replyingTo !== null) {
-      setComments(prev => prev.map(c => c.id === replyingTo ? { ...c, replies: [...(c.replies ?? []), newComment] } : c));
-      setReplyingTo(null);
-    } else {
-      setComments(prev => [...prev, newComment]);
-    }
+    if (!accessToken) { Alert.alert('로그인 필요', '로그인 후 댓글을 작성할 수 있습니다.'); return; }
+    const text = commentText.trim();
     setCommentText('');
+    const res = await fetch(`${API_BASE}/community/${postId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ content: text }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setComments(prev => [...prev, mapComment(data)]);
+    }
+    setReplyingTo(null);
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={s.container} edges={['top']}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={22} color="#586144" />
+          </TouchableOpacity>
+        </View>
+        <ActivityIndicator style={{ marginTop: 40 }} color="#9CAF88" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!post) {
+    return (
+      <SafeAreaView style={s.container} edges={['top']}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={22} color="#586144" />
+          </TouchableOpacity>
+        </View>
+        <Text style={{ textAlign: 'center', marginTop: 40, color: '#9CAF88' }}>게시글을 찾을 수 없습니다.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -234,7 +281,7 @@ export default function CommunityDetailScreen() {
                 setShowMenu(false);
                 Alert.alert('게시글 삭제', '정말 삭제하시겠습니까?', [
                   { text: '취소', style: 'cancel' },
-                  { text: '삭제', style: 'destructive', onPress: () => router.replace('/(tabs)/community' as any) },
+                  { text: '삭제', style: 'destructive', onPress: handleDelete },
                 ]);
               }}>
                 <Ionicons name="trash-outline" size={14} color="#C10007" />
@@ -243,7 +290,7 @@ export default function CommunityDetailScreen() {
               <View style={s.dropdownDivider} />
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
                 setShowMenu(false);
-                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content } } as any);
+                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '' } } as any);
               }}>
                 <Ionicons name="create-outline" size={14} color="#586144" />
                 <Text style={s.dropdownText}>수정하기</Text>
@@ -281,7 +328,7 @@ export default function CommunityDetailScreen() {
           {/* Actions */}
           <View style={s.actions}>
             <View style={s.actionsLeft}>
-              <TouchableOpacity style={s.actionBtn} onPress={() => { setLiked(v => !v); setLikeCount(c => liked ? c - 1 : c + 1); }} activeOpacity={0.7}>
+              <TouchableOpacity style={s.actionBtn} onPress={handleLike} activeOpacity={0.7}>
                 <ThumbsUpIcon filled={liked} size={18} />
                 <Text style={[s.actionText, liked && { color: '#3C6802' }]}>{likeCount}</Text>
               </TouchableOpacity>

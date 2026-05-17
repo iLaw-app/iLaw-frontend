@@ -1,8 +1,13 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState, useEffect, useContext } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
+import { AuthContext } from '../context/auth';
+
+const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 function ThumbsUpIcon() {
   return (
@@ -54,43 +59,11 @@ function formatDate(iso: string): string {
   return `${mm}.${dd}`;
 }
 
-const MOCK_POSTS: CommunityPost[] = [
-  {
-    id: 1,
-    nickname: '익명1',
-    createdAt: '2026-05-11T00:00:00Z',
-    title: '처음으로 알바하는데 궁금한 게 있어요',
-    content: '내일 첫 알바 출근인데 너무 떨려요. 혹시 알바 처음 하시는 분들 어떻게 준비하셨나요? 사장님께 어떻게 인사드려야 할지도...',
-    likes: 12,
-    comments: 5,
-  },
-  {
-    id: 2,
-    nickname: '익명2',
-    createdAt: '2026-05-10T00:00:00Z',
-    title: '법을 공부하시는 분들 계신가요?',
-    content: '진로를 법조인으로 생각하고 있는데 어떤 준비를 해야 할까요?',
-    likes: 8,
-    comments: 3,
-  },
-  {
-    id: 3,
-    nickname: '익명3',
-    createdAt: '2026-05-08T00:00:00Z',
-    title: '청소년도 SNS 계정 해킹 당하면 경찰에 신고할 수 있나요?',
-    content: '',
-    likes: 21,
-    comments: 9,
-    poll: {
-      options: [
-        { label: '가능하다', votes: 74 },
-        { label: '불가능하다', votes: 12 },
-        { label: '잘 모르겠다', votes: 14 },
-      ],
-      total: 100,
-    },
-  },
-];
+function mapPoll(poll: any): { options: PollOption[]; total: number } | undefined {
+  if (!poll?.options) return undefined;
+  const options = poll.options as PollOption[];
+  return { options, total: options.reduce((s, o) => s + o.votes, 0) };
+}
 
 function PollBar({ option, total }: { option: PollOption; total: number }) {
   const pct = total > 0 ? Math.round((option.votes / total) * 100) : 0;
@@ -147,6 +120,31 @@ function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void 
 
 export default function CommunityScreen() {
   const router = useRouter();
+  const { accessToken } = useContext(AuthContext);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      const res = await fetch(`${API_BASE}/community?limit=50`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(
+          data.posts.map((p: any) => ({
+            ...p,
+            poll: mapPoll(p.poll),
+          }))
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useFocusEffect(loadPosts);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -160,13 +158,17 @@ export default function CommunityScreen() {
       </View>
 
       <View style={{ flex: 1 }}>
-        <FlatList
-          data={MOCK_POSTS}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <PostCard item={item} onPress={() => router.push(`/community/${item.id}` as any)} />}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        />
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color="#9CAF88" />
+        ) : (
+          <FlatList
+            data={posts}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => <PostCard item={item} onPress={() => router.push(`/community/${item.id}` as any)} />}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
 
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/community/write' as any)}>

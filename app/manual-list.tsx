@@ -5,14 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { BottomNav } from '../components/BottomNav';
 
-function HighlightText({ text, keyword, style }: { text: string; keyword: string; style?: any }) {
-  if (!keyword.trim()) return <Text style={style}>{text}</Text>;
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
+  const active = keywords.filter(k => k.trim());
+  if (active.length === 0) return <Text style={style}>{text}</Text>;
+  const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return (
     <Text style={style}>
       {parts.map((part, i) =>
-        part.toLowerCase() === keyword.toLowerCase()
+        active.some(k => part.toLowerCase() === k.toLowerCase())
           ? <Text key={i} style={{ backgroundColor: '#FFE566' }}>{part}</Text>
           : part
       )}
@@ -42,6 +43,7 @@ export default function ManualListScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -60,7 +62,10 @@ export default function ManualListScreen() {
     const q = encodeURIComponent(searchQuery.trim());
     fetch(`${API_BASE}/manual/search?q=${q}`)
       .then(r => r.json())
-      .then(data => setSearchResults(Array.isArray(data) ? data.filter((item: SearchResult) => item.category.slug === categoryId) : []))
+      .then(data => {
+        setExpandedTerms(data.expandedTerms ?? []);
+        setSearchResults(Array.isArray(data.results) ? data.results.filter((item: SearchResult) => item.category.slug === categoryId) : []);
+      })
       .catch(() => setSearchResults([]))
       .finally(() => setSearchLoading(false));
   };
@@ -69,6 +74,7 @@ export default function ManualListScreen() {
     setSearchQuery('');
     setIsSearching(false);
     setSearchResults([]);
+    setExpandedTerms([]);
   };
 
   // 검색 결과에서 원래 Q 번호 찾기
@@ -142,7 +148,7 @@ export default function ManualListScreen() {
                         onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
                       >
                         <Text style={styles.questionNumber}>Q{qNum}.</Text>
-                        <HighlightText text={item.question} keyword={searchQuery} style={styles.questionText} />
+                        <HighlightText text={item.question} keywords={expandedTerms.length > 0 ? expandedTerms : [searchQuery]} style={styles.questionText} />
                         <Ionicons name="chevron-forward" size={18} color="#bbb" />
                       </TouchableOpacity>
                       {idx < searchResults.length - 1 && <View style={styles.divider} />}

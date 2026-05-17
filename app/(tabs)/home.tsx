@@ -29,18 +29,20 @@ const TABS: { key: TabType; label: string }[] = [
   { key: 'qna', label: 'QnA' },
 ];
 
-function HighlightText({ text, keyword, style, numberOfLines, onTextLayout }: {
-  text: string; keyword: string; style?: any; numberOfLines?: number; onTextLayout?: (e: any) => void;
+function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
+  text: string; keywords: string[]; style?: any; numberOfLines?: number; onTextLayout?: (e: any) => void;
 }) {
-  if (!keyword.trim()) {
+  const active = keywords.filter(k => k.trim());
+  if (active.length === 0) {
     return <Text style={style} numberOfLines={numberOfLines} onTextLayout={onTextLayout}>{text}</Text>;
   }
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = text.split(regex);
   return (
     <Text style={style} numberOfLines={numberOfLines} onTextLayout={onTextLayout}>
       {parts.map((part, i) =>
-        part.toLowerCase() === keyword.toLowerCase()
+        active.some(k => part.toLowerCase() === k.toLowerCase())
           ? <Text key={i} style={{ backgroundColor: '#FFE566' }}>{part}</Text>
           : part
       )}
@@ -76,8 +78,8 @@ function QnaIcon() {
   );
 }
 
-function ResultCard({ item, keyword, accessToken, onPress }: {
-  item: SearchResult; keyword: string; accessToken: string | null; onPress: () => void
+function ResultCard({ item, keywords, accessToken, onPress }: {
+  item: SearchResult; keywords: string[]; accessToken: string | null; onPress: () => void
 }) {
   const [titleLines, setTitleLines] = useState(2);
   const [scrapped, setScrapped] = useState(item.scrapped ?? false);
@@ -122,7 +124,7 @@ function ResultCard({ item, keyword, accessToken, onPress }: {
       </View>
       <HighlightText
         text={item.question}
-        keyword={keyword}
+        keywords={keywords}
         style={styles.resultTitle}
         numberOfLines={2}
         onTextLayout={(e) => setTitleLines(e.nativeEvent.lines.length)}
@@ -130,7 +132,7 @@ function ResultCard({ item, keyword, accessToken, onPress }: {
       {item.summary ? (
         <HighlightText
           text={item.summary.replace(/\*\*(.*?)\*\*/g, '$1')}
-          keyword={keyword}
+          keywords={keywords}
           style={styles.resultDesc}
           numberOfLines={titleLines >= 2 ? 1 : 2}
         />
@@ -145,6 +147,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [hasNotification, setHasNotification] = useState(false);
@@ -171,10 +174,15 @@ export default function HomeScreen() {
         fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
         fetch(`${API_BASE}/qna/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
       ]);
-      const manualResults: SearchResult[] = (Array.isArray(manualData) ? manualData : []).map((item: any) => ({
+      const mergedTerms = Array.from(new Set([
+        ...(manualData.expandedTerms ?? []),
+        ...(qnaData.expandedTerms ?? []),
+      ]));
+      setExpandedTerms(mergedTerms);
+      const manualResults: SearchResult[] = (Array.isArray(manualData.results) ? manualData.results : []).map((item: any) => ({
         ...item, type: 'manual' as const,
       }));
-      const qnaResults: SearchResult[] = (Array.isArray(qnaData) ? qnaData : []).map((item: any) => ({
+      const qnaResults: SearchResult[] = (Array.isArray(qnaData.results) ? qnaData.results : []).map((item: any) => ({
         id: item.id,
         type: 'qna' as const,
         question: item.title,
@@ -235,6 +243,7 @@ export default function HomeScreen() {
     setSearchQuery('');
     setIsSearching(false);
     setSearchResults([]);
+    setExpandedTerms([]);
     setActiveTab('all');
   };
 
@@ -288,7 +297,7 @@ export default function HomeScreen() {
                 <ResultCard
                   key={`${item.type}-${item.id}`}
                   item={item}
-                  keyword={searchQuery}
+                  keywords={expandedTerms.length > 0 ? expandedTerms : [searchQuery]}
                   accessToken={accessToken}
                   onPress={() => item.type === 'qna'
                     ? router.push(`/qna/${item.id}`)

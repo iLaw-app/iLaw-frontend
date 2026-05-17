@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   divider: { height: 1, backgroundColor: '#f5f5f5', marginHorizontal: 20 },
-  questionNumber: { fontSize: 15, fontWeight: '700', color: '#4CAF50', minWidth: 28 },
-  questionText: { flex: 1, fontSize: 15, color: '#1a1a1a', lineHeight: 22 },
+  questionNumber: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312, minWidth: 28 },
+  questionText: { flex: 1, fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
 
   floatingContainer: { position: 'absolute', bottom: 100, right: 20 },
   floatingBtn: {

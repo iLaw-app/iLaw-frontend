@@ -86,6 +86,7 @@ export default function TabLayout() {
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
+      backBehavior="none"
     >
       {TAB_SCREENS.map((screen) => (
         <Tabs.Screen

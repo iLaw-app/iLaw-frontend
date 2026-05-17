@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -178,21 +178,18 @@ export default function ProfilePage() {
         </View>
       </ScrollView>
 
-      <Modal visible={showWithdrawModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+      <Modal visible={showWithdrawModal} transparent animationType="fade" onRequestClose={() => setShowWithdrawModal(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowWithdrawModal(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
             <Text style={styles.modalTitle}>정말로 아이로를 떠나시나요?</Text>
             <Text style={styles.modalBody}>
               {'탈퇴하시면\n지금까지 스크랩한 자료와 질문 내역이 모두 사라져요.\n언제든 다시 돌아와주세요.\n아이로는 항상 여러분을 응원합니다!'}
             </Text>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowWithdrawModal(false)} activeOpacity={0.8}>
-              <Text style={styles.cancelBtnText}>다시 생각해볼게요</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.withdrawBtn} onPress={doWithdraw} activeOpacity={0.8}>
               <Text style={styles.withdrawBtnText}>탈퇴할게요</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );
@@ -264,8 +261,9 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%', maxWidth: 361, borderRadius: 24,
-    borderWidth: 1.356, borderColor: '#D8F999', backgroundColor: '#FFF',
-    padding: 25, gap: 16,
+    borderWidth: 1.356, borderColor: '#FFF', backgroundColor: '#FFF',
+    paddingTop: 25.504, paddingHorizontal: 25, paddingBottom: 18.471,
+    alignItems: 'center', gap: 14.025,
     shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
@@ -273,21 +271,12 @@ const styles = StyleSheet.create({
     fontSize: 20, fontWeight: '700', color: '#4A5565',
     lineHeight: 28, letterSpacing: -0.449, textAlign: 'center',
   },
-  modalBody: { fontSize: 14, color: '#586144', lineHeight: 22, textAlign: 'center' },
-  cancelBtn: {
-    width: 209, height: 36, borderRadius: 14,
-    paddingVertical: 8, paddingHorizontal: 16,
-    backgroundColor: '#B2D36E',
-    justifyContent: 'center', alignItems: 'center',
-    alignSelf: 'center',
-  },
-  cancelBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  modalBody: { fontSize: 14, color: '#364153', lineHeight: 22, textAlign: 'center' },
   withdrawBtn: {
     width: 209, height: 36, borderRadius: 14,
     paddingVertical: 8, paddingHorizontal: 16,
     backgroundColor: '#FB2C36',
     justifyContent: 'center', alignItems: 'center',
-    alignSelf: 'center',
   },
   withdrawBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

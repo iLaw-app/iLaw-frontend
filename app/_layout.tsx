@@ -129,7 +129,7 @@ function AppNavigator() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="login" />
       <Stack.Screen name="onboarding" />
@@ -145,7 +145,7 @@ function AppNavigator() {
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="notification-settings" />
       <Stack.Screen name="my-answers" />
-      <Stack.Screen name="ai-chat" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="ai-chat" />
     </Stack>
   );
 }

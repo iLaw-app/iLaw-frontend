@@ -172,12 +172,18 @@ export default function CommunityWriteScreen() {
                   <Text style={s.phDesc}>안전한 이용을 위해 아래 내용을 지켜주세요.</Text>
                   <Text style={s.phBlank}>{' '}</Text>
                   <Text style={s.phSection}>작성 전 꼭 확인해주세요</Text>
-                  <Text style={s.phItem}>1. 이름, 학교, 주소, 연락처 등 개인을 알아볼 수 있는 정보는 쓰지 말아주세요.</Text>
-                  <Text style={s.phItem}>2. 다른 사람을 비난하거나 상처 줄 수 있는 표현은 피해주세요.</Text>
-                  <Text style={s.phItem}>3. 정확하지 않은 법률 정보를 단정적으로 작성하지 말아주세요.</Text>
-                  <Text style={s.phItem}>4. 긴급한 위험 상황이라면</Text>
-                  <Text style={s.phItemIndent}>커뮤니티보다 112, 1388, 가까운 보호기관에 먼저 도움을 요청해주세요.</Text>
-                  <Text style={s.phItem}>5. 작성한 글은 운영 기준에 따라 수정되거나 숨김 처리될 수 있어요.</Text>
+                  {[
+                    '이름, 학교, 주소, 연락처 등 개인을 알아볼 수 있는 정보는 쓰지 말아주세요.',
+                    '다른 사람을 비난하거나 상처 줄 수 있는 표현은 피해주세요.',
+                    '정확하지 않은 법률 정보를 단정적으로 작성하지 말아주세요.',
+                    '긴급한 위험 상황이라면 커뮤니티보다 112, 1388, 가까운 보호기관에 먼저 도움을 요청해주세요.',
+                    '작성한 글은 운영 기준에 따라 수정되거나 숨김 처리될 수 있어요.',
+                  ].map((text, idx) => (
+                    <View key={idx} style={s.phItemRow}>
+                      <Text style={s.phItemNum}>{idx + 1}.</Text>
+                      <Text style={s.phItem}>{text}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>
@@ -293,10 +299,11 @@ const s = StyleSheet.create({
   placeholder: { position: 'absolute', top: 0, left: 0, right: 0 },
   phMain:       { fontSize: 14, color: '#99A1AF', lineHeight: 24 },
   phBlank:      { fontSize: 14, color: 'transparent', lineHeight: 20 },
-  phSection:    { fontSize: 13, fontWeight: '700', color: '#99A1AF', lineHeight: 24 },
-  phDesc:       { fontSize: 13, color: '#99A1AF', lineHeight: 22 },
-  phItem:       { fontSize: 12, color: '#99A1AF', lineHeight: 22 },
-  phItemIndent: { fontSize: 12, color: '#99A1AF', lineHeight: 22, paddingLeft: 18 },
+  phSection:    { fontSize: 15, fontWeight: '700', color: '#99A1AF', lineHeight: 24 },
+  phDesc:       { fontSize: 14, color: '#99A1AF', lineHeight: 22 },
+  phItemRow:    { flexDirection: 'row', gap: 4 },
+  phItemNum:    { fontSize: 13, color: '#99A1AF', lineHeight: 22, width: 18 },
+  phItem:       { fontSize: 13, color: '#99A1AF', lineHeight: 22, flex: 1 },
 
   pollCard: {
     borderRadius: 14,

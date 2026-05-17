@@ -26,7 +26,14 @@ type QnaScrap = {
   scrapCount?: number;
 };
 
-type Tab = 'manual' | 'qna';
+type CommunityScrap = {
+  id: number;
+  title: string;
+  content?: string;
+  nickname: string;
+};
+
+type Tab = 'manual' | 'qna' | 'community';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: '답변 대기',
@@ -40,8 +47,10 @@ export default function MyScrapsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('manual');
   const [manualItems, setManualItems] = useState<ManualScrap[]>([]);
   const [qnaItems, setQnaItems] = useState<QnaScrap[]>([]);
+  const [communityItems, setCommunityItems] = useState<CommunityScrap[]>([]);
   const [loadingManual, setLoadingManual] = useState(true);
   const [loadingQna, setLoadingQna] = useState(true);
+  const [loadingCommunity, setLoadingCommunity] = useState(true);
 
   const fetchManual = useCallback(() => {
     if (!accessToken) { setLoadingManual(false); return; }
@@ -63,9 +72,19 @@ export default function MyScrapsScreen() {
       .finally(() => setLoadingQna(false));
   }, [accessToken]);
 
-  useEffect(() => { fetchManual(); fetchQna(); }, [fetchManual, fetchQna]);
+  const fetchCommunity = useCallback(() => {
+    if (!accessToken) { setLoadingCommunity(false); return; }
+    setLoadingCommunity(true);
+    fetch(`${API_BASE}/community/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(data => setCommunityItems(Array.isArray(data) ? data : []))
+      .catch(() => setCommunityItems([]))
+      .finally(() => setLoadingCommunity(false));
+  }, [accessToken]);
 
-  const loading = activeTab === 'manual' ? loadingManual : loadingQna;
+  useEffect(() => { fetchManual(); fetchQna(); fetchCommunity(); }, [fetchManual, fetchQna, fetchCommunity]);
+
+  const loading = activeTab === 'manual' ? loadingManual : activeTab === 'qna' ? loadingQna : loadingCommunity;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -93,7 +112,16 @@ export default function MyScrapsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.tabBtnText, activeTab === 'qna' && styles.tabBtnTextActive]}>
-            QNA
+            QnA
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, activeTab === 'community' && styles.tabBtnActive]}
+          onPress={() => setActiveTab('community')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]}>
+            커뮤니티
           </Text>
         </TouchableOpacity>
       </View>
@@ -129,7 +157,7 @@ export default function MyScrapsScreen() {
               </TouchableOpacity>
             )}
           />
-        ) : (
+        ) : activeTab === 'qna' ? (
           <FlatList
             key="qna"
             data={qnaItems}
@@ -156,6 +184,32 @@ export default function MyScrapsScreen() {
                       </Text>
                     </View>
                   ) : null}
+                </View>
+                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                {item.content ? (
+                  <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>
+                ) : null}
+              </TouchableOpacity>
+            )}
+          />
+        ) : (
+          <FlatList
+            key="community"
+            data={communityItems}
+            keyExtractor={item => `c-${item.id}`}
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={<EmptyState />}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/community/${item.id}` as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.cardTop}>
+                  <View style={styles.badge}>
+                    <Ionicons name="people-outline" size={11} color="#3C6802" />
+                    <Text style={styles.badgeText}>커뮤니티</Text>
+                  </View>
                 </View>
                 <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
                 {item.content ? (

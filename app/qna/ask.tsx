@@ -6,7 +6,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
-import { BottomNav } from '../../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -28,7 +27,7 @@ const NOTICE_ITEMS = [
   '상황을 구체적으로 설명할수록 더 정확한 답변을 받을 수 있어요.',
   '욕설, 비방, 장난성 질문은 삼가 주세요.',
   '변호사님의 답변은 보통 1~3일 정도 걸릴 수 있어요.',
-  '지금 바로 위험한 상황이라면 앱에 질문하기보다\n  112 또는 관련 기관에 먼저 연락해 주세요.',
+  '지금 바로 위험한 상황이라면 앱에 질문하기보다\n112 또는 관련 기관에 먼저 연락해 주세요.',
 ];
 
 export default function AskPage() {
@@ -130,7 +129,10 @@ export default function AskPage() {
                 <Text style={styles.placeholderMain}>내용을 입력하세요</Text>
                 <Text style={styles.placeholderSub}>{'\n'}질문 전 꼭 확인해 주세요</Text>
                 {NOTICE_ITEMS.map((item, i) => (
-                  <Text key={i} style={styles.placeholderNote}>• {item}</Text>
+                  <View key={i} style={styles.noteRow}>
+                    <Text style={styles.noteBullet}>•</Text>
+                    <Text style={styles.placeholderNote}>{item}</Text>
+                  </View>
                 ))}
               </View>
             )}
@@ -190,7 +192,6 @@ export default function AskPage() {
         </View>
       </ScrollView>
 
-      <BottomNav activeTab="qna" />
 
       <Modal visible={showSuccess} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -260,8 +261,10 @@ const styles = StyleSheet.create({
   },
   contentPlaceholder: { position: 'absolute', top: 0, left: 0, right: 0 },
   placeholderMain: { fontSize: 14, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
-  placeholderSub: { fontSize: 10, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
-  placeholderNote: { fontSize: 10, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
+  placeholderSub: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312 },
+  noteRow: { flexDirection: 'row', gap: 4 },
+  noteBullet: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, width: 12 },
+  placeholderNote: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312, flex: 1 },
 
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
   photoBtn: {

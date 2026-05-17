@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function SplashScreen() {
   return (
@@ -10,20 +10,19 @@ export default function SplashScreen() {
         <Text style={styles.appName}>아이로</Text>
       </View>
 
-      <View style={styles.circleWrapper}>
-        <View style={styles.circle} />
+      <View style={styles.robotArea}>
+        <Image
+          source={require('../assets/splash-robot.png')}
+          style={styles.robotImage}
+          resizeMode="contain"
+        />
       </View>
     </View>
   );
 }
 
-const CIRCLE_SIZE = width * 0.85;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FDFFF8',
-  },
+  container: { flex: 1, backgroundColor: '#FDFFF8' },
   textArea: {
     paddingTop: height * 0.22,
     paddingHorizontal: 36,
@@ -43,20 +42,15 @@ const styles = StyleSheet.create({
     lineHeight: 72,
     letterSpacing: 0.123,
   },
-  circleWrapper: {
-    position: 'absolute',
-    bottom: -CIRCLE_SIZE * 0.25,
-    right: -CIRCLE_SIZE * 0.1,
+  robotArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  circle: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    borderRadius: CIRCLE_SIZE / 2,
-    backgroundColor: '#DFEDBE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 3,
+  robotImage: {
+    width: 328,
+    height: 356,
+    transform: [{ rotate: '8deg' }],
+    marginBottom: 40,
   },
 });

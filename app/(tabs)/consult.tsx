@@ -176,6 +176,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardText: { flex: 1, paddingHorizontal: 14 },
-  cardLabel: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 3 },
-  cardDesc: { fontSize: 12, color: '#9CAF88' },
+  cardLabel: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
+  cardDesc: { fontSize: 12, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
 });

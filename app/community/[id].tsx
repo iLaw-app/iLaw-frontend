@@ -230,7 +230,7 @@ export default function CommunityDetailScreen() {
         setBookmarked(data.bookmarked ?? false);
         setScrapCount(data.bookmarks ?? 0);
         setVotedIdx(poll?.votedOptionIndex ?? null);
-        setComments((data.comments ?? []).map(mapComment));
+        setComments((data.comments ?? []).map(mapComment).reverse());
       })
       .finally(() => setLoading(false));
   }, [postId, accessToken]);
@@ -341,7 +341,7 @@ export default function CommunityDetailScreen() {
             : comment
           );
         }
-        return [newComment, ...prev];
+        return [...prev, newComment];
       });
     }
     setReplyingTo(null);
@@ -551,7 +551,7 @@ export default function CommunityDetailScreen() {
                 {(comments.find(c => c.id === replyingTo)?.nickname ?? '댓글')}님에게 답글 작성 중
               </Text>
               <TouchableOpacity onPress={() => setReplyingTo(null)}>
-                <Ionicons name="close" size={14} color="#9CAF88" />
+                <Text style={s.cancelText}>취소</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -564,7 +564,11 @@ export default function CommunityDetailScreen() {
               onChangeText={setCommentText}
               multiline={false}
             />
-            <TouchableOpacity style={s.sendBtn} onPress={handleSend} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[s.sendBtn, commentText.trim().length > 0 && s.sendBtnActive]}
+              onPress={handleSend}
+              activeOpacity={0.8}
+            >
               <SendIcon />
             </TouchableOpacity>
           </View>
@@ -640,9 +644,16 @@ const s = StyleSheet.create({
   replyBtn: { fontSize: 12, color: '#6A7282', fontWeight: '600' },
 
   inputBar: { borderTopWidth: 1, borderTopColor: '#F0F5E8', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10 },
-  replyingBanner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 6 },
-  replyingText: { fontSize: 12, color: '#9CAF88' },
+  replyingBanner: {
+    height: 36, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 10, backgroundColor: '#EFF4E1',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 8,
+  },
+  replyingText: { color: '#586144', fontSize: 14, fontWeight: '400', lineHeight: 20, letterSpacing: -0.15 },
+  cancelText: { color: '#586144', fontSize: 12, fontWeight: '700', lineHeight: 16 },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   input: { flex: 1, height: 44, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 9999, backgroundColor: '#F3F4F6', fontSize: 16, color: '#0a0a0a', letterSpacing: -0.312 },
   sendBtn: { width: 40, height: 40, borderRadius: 9999, backgroundColor: '#D1D5DC', justifyContent: 'center', alignItems: 'center' },
+  sendBtnActive: { backgroundColor: '#678720' },
 });

@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, ActivityIndicator, PanResponder,
+  ScrollView, TextInput, ActivityIndicator, PanResponder, BackHandler, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -50,22 +50,38 @@ function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
   );
 }
 
-function AiChatFabIcon() {
-  return (
-    <Svg width={32} height={32} viewBox="0 0 32 32" fill="none">
-      <Path d="M10.5306 26.6595C13.0748 27.9646 16.0013 28.3181 18.783 27.6563C21.5647 26.9945 24.0185 25.361 25.7024 23.0501C27.3862 20.7391 28.1893 17.9028 27.9669 15.0521C27.7445 12.2014 26.5113 9.52395 24.4894 7.50211C22.4676 5.48026 19.7901 4.24703 16.9394 4.02464C14.0888 3.80225 11.2524 4.60533 8.94148 6.28916C6.63054 7.97299 4.997 10.4268 4.33521 13.2085C3.67343 15.9902 4.02692 18.9168 5.33199 21.4609L2.66602 29.3255L10.5306 26.6595Z" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
-      <Path d="M10.6638 15.9961H10.6771" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
-      <Path d="M15.9958 15.9961H16.0092" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
-      <Path d="M21.3279 15.9961H21.3412" stroke="white" strokeWidth="2.66598" strokeLinecap="round" strokeLinejoin="round"/>
-    </Svg>
-  );
-}
+const RECOMMEND_ITEMS = [
+  { type: 'manual' as const, id: 352, label: '알바비를 제때 받지 못했을 때',          category: '노동' },
+  { type: 'qna'    as const, id: 6,   label: '편의점 알바 3개월치 월급을 못 받았어요', category: '노동' },
+  { type: 'manual' as const, id: 391, label: 'SNS에서 괴롭힘을 당할 때',             category: '온라인폭력' },
+  { type: 'qna'    as const, id: 8,   label: '학교 단톡방에서 욕을 먹고 있어요',      category: '온라인폭력' },
+  { type: 'manual' as const, id: 358, label: '최저임금보다 적게 받았을 때',           category: '노동' },
+];
 
 function ManualIcon() {
   return (
     <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
-      <Path d="M7.99963 4.66602V13.9989" stroke="#678720" strokeWidth="1.33327" strokeLinecap="round" strokeLinejoin="round"/>
-      <Path d="M1.99989 11.9996C1.82309 11.9996 1.65352 11.9293 1.52851 11.8043C1.40349 11.6793 1.33325 11.5097 1.33325 11.3329V2.66664C1.33325 2.48983 1.40349 2.32027 1.52851 2.19525C1.65352 2.07023 1.82309 2 1.99989 2H5.33308C6.04029 2 6.71854 2.28094 7.21861 2.78101C7.71869 3.28109 7.99963 3.95934 7.99963 4.66655C7.99963 3.95934 8.28057 3.28109 8.78064 2.78101C9.28072 2.28094 9.95896 2 10.6662 2H13.9994C14.1762 2 14.3457 2.07023 14.4707 2.19525C14.5958 2.32027 14.666 2.48983 14.666 2.66664V11.3329C14.666 11.5097 14.5958 11.6793 14.4707 11.8043C14.3457 11.9293 14.1762 11.9996 13.9994 11.9996H9.99954C9.46913 11.9996 8.96044 12.2103 8.58539 12.5853C8.21033 12.9604 7.99963 13.4691 7.99963 13.9995C7.99963 13.4691 7.78892 12.9604 7.41387 12.5853C7.03881 12.2103 6.53012 11.9996 5.99971 11.9996H1.99989Z" stroke="#678720" strokeWidth="1.33327" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M9.99805 1.33301H3.99921C3.64566 1.33301 3.30659 1.47346 3.05659 1.72346C2.80659 1.97346 2.66614 2.31253 2.66614 2.66608V13.3307C2.66614 13.6842 2.80659 14.0233 3.05659 14.2733C3.30659 14.5233 3.64566 14.6638 3.99921 14.6638H11.9977C12.3512 14.6638 12.6903 14.5233 12.9403 14.2733C13.1903 14.0233 13.3307 13.6842 13.3307 13.3307V4.6657L9.99805 1.33301Z" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M9.33151 1.33301V3.99916C9.33151 4.35271 9.47196 4.69178 9.72196 4.94178C9.97196 5.19178 10.311 5.33223 10.6646 5.33223H13.3307" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M6.66538 5.99902H5.33231" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M10.6646 8.66504H5.33231" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M10.6646 11.3311H5.33231" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <Svg width={15} height={20} viewBox="0 0 15 19.9931" fill="none">
+      <G clipPath="url(#book_clip)">
+        <Path d="M7.5 5.83105V17.4937" stroke="#678720" strokeWidth="1.66609" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M1.875 14.9947C1.70924 14.9947 1.55027 14.9069 1.43306 14.7507C1.31585 14.5945 1.25 14.3826 1.25 14.1617V3.33207C1.25 3.11113 1.31585 2.89924 1.43306 2.74302C1.55027 2.58679 1.70924 2.49902 1.875 2.49902H5.00001C5.66305 2.49902 6.29893 2.85009 6.76777 3.475C7.23662 4.0999 7.50001 4.94746 7.50001 5.83121C7.50001 4.94746 7.7634 4.0999 8.23224 3.475C8.70108 2.85009 9.33697 2.49902 10 2.49902H13.125C13.2908 2.49902 13.4497 2.58679 13.567 2.74302C13.6842 2.89924 13.75 3.11113 13.75 3.33207V14.1617C13.75 14.3826 13.6842 14.5945 13.567 14.7507C13.4497 14.9069 13.2908 14.9947 13.125 14.9947H9.37501C8.87773 14.9947 8.40081 15.258 8.04918 15.7267C7.69755 16.1954 7.50001 16.831 7.50001 17.4938C7.50001 16.831 7.30246 16.1954 6.95083 15.7267C6.5992 15.258 6.12229 14.9947 5.62501 14.9947H1.875Z" stroke="#678720" strokeWidth="1.66609" strokeLinecap="round" strokeLinejoin="round"/>
+      </G>
+      <Defs>
+        <ClipPath id="book_clip">
+          <Rect width="15" height="19.9931" fill="white"/>
+        </ClipPath>
+      </Defs>
     </Svg>
   );
 }
@@ -154,6 +170,17 @@ export default function HomeScreen() {
 
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
+
+  useEffect(() => {
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isSearchingRef.current) {
+        handleClearSearch();
+        return true;
+      }
+      return false;
+    });
+    return () => handler.remove();
+  }, []);
 
   const swipeBackPan = useRef(
     PanResponder.create({
@@ -318,19 +345,18 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.bellBtn}
-            onPress={() => router.push('/notifications')}
-          >
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mainTitle}>혼자 고민하지 않아도 괜찮아요</Text>
+            <Text style={styles.mainSub}>필요한 도움을 찾아보세요</Text>
+          </View>
+          <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')}>
             <Ionicons name="notifications-outline" size={20} color="#586144" />
             {hasNotification && <View style={styles.notiBadge} />}
           </TouchableOpacity>
         </View>
-
-        <View style={styles.decorCircle} />
 
         <View style={styles.searchArea}>
           <View style={styles.searchBox}>
@@ -348,11 +374,37 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={styles.searchExample}>ex) 알바비 미지급</Text>
+
+        <Text style={styles.recommendTitle}>추천 콘텐츠</Text>
+
+        <View style={styles.recommendContainer}>
+          {RECOMMEND_ITEMS.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.recommendItem, index === RECOMMEND_ITEMS.length - 1 && styles.recommendItemLast]}
+              activeOpacity={0.7}
+              onPress={() => item.type === 'qna'
+                ? router.push(`/qna/${item.id}` as any)
+                : router.push(`/manual-detail?articleId=${item.id}` as any)
+              }
+            >
+              <Text style={styles.recommendNum}>{index + 1}</Text>
+              <View style={styles.recommendContent}>
+                <View style={styles.recommendMeta}>
+                  {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                  </View>
+                </View>
+                <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.85}>
-        <AiChatFabIcon />
+      <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
+        <Image source={require('../../assets/ai-robot.png')} style={styles.aiFabImage} resizeMode="contain" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -371,24 +423,44 @@ const styles = StyleSheet.create({
   },
   notiBadge: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' },
 
-  decorCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 9999,
-    backgroundColor: '#DFEDBE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 4,
-    alignSelf: 'center',
-    marginTop: 24,
-    marginBottom: 28,
+  titleRow: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 12,
   },
+  mainTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  mainSub: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
 
-  searchArea: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 4 },
+  recommendTitle: {
+    fontSize: 18, fontWeight: '700', color: '#586144',
+    lineHeight: 30, letterSpacing: -0.449,
+    marginHorizontal: 20, marginTop: 20, marginBottom: 8,
+  },
+  recommendContainer: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1.356, borderColor: '#FFF',
+    backgroundColor: '#FFF',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18, shadowRadius: 10, elevation: 6,
+  },
+  recommendItem: {
+    flexDirection: 'row', alignItems: 'center',
+    minHeight: 84.646, paddingHorizontal: 15.997, paddingVertical: 16, gap: 15.997,
+    borderBottomWidth: 0.678, borderBottomColor: '#EEF8D9',
+  },
+  recommendItemLast: { borderBottomWidth: 0 },
+  recommendNum: { fontSize: 16, fontWeight: '700', color: '#586144', width: 18, textAlign: 'center' },
+  recommendContent: { flex: 1, gap: 4 },
+  recommendMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  categoryBadge: {
+    backgroundColor: '#EEF8D9', borderRadius: 9999,
+    paddingHorizontal: 8, paddingVertical: 2,
+  },
+  categoryBadgeText: { fontSize: 11, fontWeight: '600', color: '#678720' },
+  recommendLabel: { fontSize: 16, fontWeight: '500', color: '#678720', lineHeight: 24, letterSpacing: -0.312 },
+
+  searchArea: { paddingHorizontal: 20, marginBottom: 4 },
   searchBox: {
-    flex: 1,
     height: 59,
     flexDirection: 'row',
     alignItems: 'center',
@@ -476,13 +548,7 @@ const styles = StyleSheet.create({
 
   aiFab: {
     position: 'absolute', right: 20, bottom: 20,
-    width: 56, height: 56, borderRadius: 9999,
-    backgroundColor: '#586144',
-    justifyContent: 'center', alignItems: 'center',
-    elevation: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 15,
+    width: 103, height: 111,
   },
+  aiFabImage: { width: 103, height: 111 },
 });

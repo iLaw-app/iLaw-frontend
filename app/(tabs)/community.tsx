@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,22 @@ import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
+
+function ClockIcon() {
+  return (
+    <Svg width={13} height={13} viewBox="0 0 13 13" fill="none">
+      <G clipPath="url(#clock_clip)">
+        <Path d="M6.49998 11.9163C9.49152 11.9163 11.9166 9.49122 11.9166 6.49967C11.9166 3.50813 9.49152 1.08301 6.49998 1.08301C3.50844 1.08301 1.08331 3.50813 1.08331 6.49967C1.08331 9.49122 3.50844 11.9163 6.49998 11.9163Z" stroke="#6A7282" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M6.5 3.25V6.5L8.66667 7.58333" stroke="#6A7282" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      </G>
+      <Defs>
+        <ClipPath id="clock_clip">
+          <Rect width="13" height="13" fill="white"/>
+        </ClipPath>
+      </Defs>
+    </Svg>
+  );
+}
 
 function ThumbsUpIcon() {
   return (
@@ -77,7 +93,19 @@ function PollBar({ option, total }: { option: PollOption; total: number }) {
   );
 }
 
-function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void }) {
+function PostCard({ item, onPress, isOwner, onMenuPress }: {
+  item: CommunityPost;
+  onPress: () => void;
+  isOwner: boolean;
+  onMenuPress: (postId: number, y: number) => void;
+}) {
+  const moreRef = useRef<View>(null);
+  const handleMorePress = () => {
+    moreRef.current?.measure((_fx, _fy, _w, _h, _px, py) => {
+      onMenuPress(item.id, py);
+    });
+  };
+
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.cardTop}>
@@ -87,7 +115,16 @@ function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void 
           </View>
           <Text style={styles.nickname}>{item.nickname}</Text>
         </View>
-        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          {isOwner && (
+            <View ref={moreRef}>
+              <TouchableOpacity onPress={handleMorePress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="ellipsis-vertical" size={16} color="#9CAF88" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
@@ -119,9 +156,43 @@ function PostCard({ item, onPress }: { item: CommunityPost; onPress: () => void 
 
 export default function CommunityScreen() {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<'latest' | 'popular'>('latest');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [menuPostId, setMenuPostId] = useState<number | null>(null);
+  const [menuY, setMenuY] = useState(0);
+
+  const handleMenuPress = (postId: number, y: number) => {
+    setMenuPostId(postId);
+    setMenuY(y);
+  };
+
+  const handleDelete = async () => {
+    const id = menuPostId;
+    setMenuPostId(null);
+    if (!id || !accessToken) return;
+    try {
+      await fetch(`${API_BASE}/community/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setPosts(prev => prev.filter(p => p.id !== id));
+    } catch {}
+  };
+
+  const handleEdit = () => {
+    const id = menuPostId;
+    setMenuPostId(null);
+    if (!id) return;
+    const post = posts.find(p => p.id === id);
+    if (!post) return;
+    router.push({
+      pathname: '/community/write' as any,
+      params: { editId: String(id), editTitle: post.title, editContent: post.content },
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -145,15 +216,38 @@ export default function CommunityScreen() {
     }, [accessToken])
   );
 
+  const displayPosts = [...posts]
+    .filter(p => !searchQuery.trim() || p.title.includes(searchQuery) || p.content.includes(searchQuery))
+    .sort((a, b) => sort === 'popular' ? b.likes - a.likes : 0);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>커뮤니티</Text>
-        <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
-        <TouchableOpacity style={styles.sortBtn} activeOpacity={0.7}>
-          <Ionicons name="swap-vertical-outline" size={12} color="#586144" />
-          <Text style={styles.sortText}>최신순</Text>
-        </TouchableOpacity>
+        <View style={styles.subRow}>
+          <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
+          <TouchableOpacity style={styles.sortBtn} activeOpacity={0.7} onPress={() => setSort(s => s === 'latest' ? 'popular' : 'latest')}>
+            <ClockIcon />
+            <Text style={styles.sortText}>{sort === 'latest' ? '최신순' : '인기순'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.divider} />
+
+      <View style={styles.searchArea}>
+        <View style={styles.searchBox}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="키워드로 검색해보세요!"
+            placeholderTextColor="#9CAF88"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <View style={styles.searchBtn}>
+            <Ionicons name="search" size={16} color="#fff" />
+          </View>
+        </View>
       </View>
 
       <View style={{ flex: 1 }}>
@@ -161,9 +255,16 @@ export default function CommunityScreen() {
           <ActivityIndicator style={{ marginTop: 40 }} color="#9CAF88" />
         ) : (
           <FlatList
-            data={posts}
+            data={displayPosts}
             keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => <PostCard item={item} onPress={() => router.push(`/community/${item.id}` as any)} />}
+            renderItem={({ item }) => (
+              <PostCard
+                item={item}
+                onPress={() => router.push(`/community/${item.id}` as any)}
+                isOwner={user?.nickname === item.nickname}
+                onMenuPress={handleMenuPress}
+              />
+            )}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
           />
@@ -173,6 +274,22 @@ export default function CommunityScreen() {
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/community/write' as any)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      <Modal visible={menuPostId !== null} transparent animationType="fade" onRequestClose={() => setMenuPostId(null)}>
+        <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>
+          <Pressable style={[menuS.dropdown, { top: menuY + 20, right: 16 }]} onPress={() => {}}>
+            <TouchableOpacity style={menuS.item} activeOpacity={0.7} onPress={handleDelete}>
+              <Ionicons name="trash-outline" size={16} color="#F44336" />
+              <Text style={menuS.deleteText}>삭제하기</Text>
+            </TouchableOpacity>
+            <View style={menuS.sep} />
+            <TouchableOpacity style={menuS.item} activeOpacity={0.7} onPress={handleEdit}>
+              <Ionicons name="create-outline" size={16} color="#FB8C00" />
+              <Text style={menuS.editText}>수정하기</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -198,25 +315,41 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
 
   header: {
-    height: 140,
     paddingTop: 19.991,
     paddingHorizontal: 19.991,
-    paddingBottom: 0,
+    paddingBottom: 16,
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 3.994,
     flexShrink: 0,
   },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
-  headerSub: { fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
+  headerSub: { flex: 1, fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
   sortBtn: {
-    position: 'absolute', bottom: 16, right: 19.991,
-    width: 74, height: 25,
+    height: 32, paddingHorizontal: 10,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
-    borderRadius: 8, borderWidth: 1, borderColor: '#CCD9BA',
+    borderRadius: 8, borderWidth: 1, borderColor: '#D1D5DC',
     backgroundColor: '#fff',
   },
-  sortText: { fontSize: 12, color: '#586144', fontWeight: '500' },
+  sortText: { fontSize: 14, fontWeight: '500', color: '#6A7282', lineHeight: 20, letterSpacing: 0.1 },
+  divider: { height: 1, backgroundColor: '#F3F4F6' },
+  searchArea: { paddingHorizontal: 16, paddingVertical: 12 },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center',
+    height: 52, borderRadius: 9999,
+    borderWidth: 1.5, borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+    paddingLeft: 20, paddingRight: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
+  searchBtn: {
+    width: 32, height: 32, borderRadius: 9999,
+    backgroundColor: '#CCD9BA',
+    justifyContent: 'center', alignItems: 'center',
+  },
 
   list: { paddingBottom: 100 },
 
@@ -265,4 +398,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35, shadowRadius: 15,
   },
   fabText: { fontSize: 30, color: '#fff', lineHeight: 34 },
+});
+
+const menuS = StyleSheet.create({
+  dropdown: {
+    position: 'absolute',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 8, elevation: 8,
+    minWidth: 140,
+    overflow: 'hidden',
+  },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13 },
+  sep: { height: 1, backgroundColor: '#F3F4F6' },
+  deleteText: { fontSize: 14, fontWeight: '500', color: '#F44336' },
+  editText: { fontSize: 14, fontWeight: '500', color: '#586144' },
 });

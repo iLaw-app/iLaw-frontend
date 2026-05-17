@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Alert, Modal, FlatList,
+  StyleSheet, ScrollView, Alert, Modal, FlatList, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -158,7 +158,11 @@ export default function OnboardingScreen() {
         contentContainerStyle={styles.inner}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.decorCircle} />
+        <Image
+          source={require('../assets/robot-head.png')}
+          style={styles.robotHead}
+          resizeMode="contain"
+        />
 
         {/* 아이디 */}
         <View style={styles.fieldGroup}>
@@ -286,16 +290,9 @@ const styles = StyleSheet.create({
     paddingLeft: 47,
     alignItems: 'center',
   },
-  decorCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 9999,
-    backgroundColor: '#DFEDBE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 4,
+  robotHead: {
+    width: 120,
+    height: 120,
     marginBottom: 36,
   },
   fieldGroup: { width: '100%', marginBottom: 16 },
@@ -315,6 +312,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     fontSize: 15,
     color: '#1a1a1a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   inputError: { borderWidth: 1, borderColor: '#f44336' },
   errorText: { fontSize: 12, color: '#f44336', marginTop: 4 },
@@ -331,6 +333,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
   genderBtnActive: { backgroundColor: '#f4faed' },
   genderText: { fontSize: 14, color: '#888' },

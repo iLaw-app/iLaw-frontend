@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -61,10 +61,13 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.inner}>
 
-        <View style={styles.decorCircle} />
+        <Image
+          source={require('../assets/robot-head.png')}
+          style={styles.robotHead}
+          resizeMode="contain"
+        />
 
-        <Text style={styles.appName}>아이로</Text>
-        <Text style={styles.tagline}>소셜 계정으로 로그인해요</Text>
+        <Text style={styles.tagline}>아이로와 함께 시작해요</Text>
 
         <View style={styles.buttons}>
           <TouchableOpacity
@@ -108,28 +111,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  decorCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 9999,
-    backgroundColor: '#DFEDBE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 32,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 6,
+  robotHead: {
+    width: 220,
+    height: 220,
+    marginBottom: 8,
   },
   tagline: {
-    fontSize: 14,
-    color: '#888',
-    marginBottom: 48,
+    width: 264,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#586144',
+    textAlign: 'center',
+    lineHeight: 72,
+    letterSpacing: 0.123,
+    marginBottom: 32,
   },
   buttons: {
     width: '100%',

@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../context/auth';
@@ -124,27 +123,27 @@ export default function CommunityScreen() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadPosts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const headers: Record<string, string> = {};
-      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-      const res = await fetch(`${API_BASE}/community?limit=50`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setPosts(
-          data.posts.map((p: any) => ({
-            ...p,
-            poll: mapPoll(p.poll),
-          }))
-        );
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function loadPosts() {
+        setLoading(true);
+        try {
+          const headers: Record<string, string> = {};
+          if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+          const res = await fetch(`${API_BASE}/community?limit=50`, { headers });
+          if (res.ok && !cancelled) {
+            const data = await res.json();
+            setPosts(data.posts.map((p: any) => ({ ...p, poll: mapPoll(p.poll) })));
+          }
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
-
-  useFocusEffect(loadPosts);
+      loadPosts();
+      return () => { cancelled = true; };
+    }, [accessToken])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

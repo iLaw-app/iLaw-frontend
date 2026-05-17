@@ -109,12 +109,19 @@ export default function AiChatScreen() {
         body: JSON.stringify({ message: text }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1, from: 'ai', time: nowStr(),
-        summary: data.summary,
-        text: data.summary ? undefined : (data.message ?? '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.'),
-        suggestions: data.suggestions,
-      }]);
+      const now = nowStr();
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1, from: 'ai', time: now,
+          summary: data.situationSummary ?? data.summary ?? '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.',
+        },
+        {
+          id: Date.now() + 2, from: 'ai', time: now,
+          text: data.legalAdvice,
+          suggestions: data.suggestions,
+        },
+      ]);
     } catch {
       setMessages(prev => [...prev, {
         id: Date.now() + 1, from: 'ai', time: nowStr(),
@@ -182,9 +189,26 @@ export default function AiChatScreen() {
                     )}
                   </View>
                 ) : (
-                  /* Plain text bubble */
-                  <View style={s.aiBubble}>
-                    <Text style={s.aiBubbleText}>{msg.text}</Text>
+                  /* Plain text bubble + optional suggestions */
+                  <View style={s.aiBoxes}>
+                    <View style={s.aiBubble}>
+                      <Text style={s.aiBubbleText}>{msg.text}</Text>
+                    </View>
+                    {(msg.suggestions ?? []).length > 0 && (
+                      <View style={s.sgBox}>
+                        <Text style={s.sgBoxHeader}>관련 콘텐츠를 클릭하여 도움 받아보세요!</Text>
+                        {msg.suggestions!.map((sg, i) => (
+                          <SuggestionCard
+                            key={i}
+                            sg={sg}
+                            onPress={() => sg.type === 'qna'
+                              ? router.push(`/qna/${sg.id}` as any)
+                              : router.push(`/manual-detail?articleId=${sg.id}` as any)
+                            }
+                          />
+                        ))}
+                      </View>
+                    )}
                   </View>
                 )}
               </View>

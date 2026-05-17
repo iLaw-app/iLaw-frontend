@@ -78,6 +78,18 @@ export default function QnaDetailPage() {
         return;
       }
       if (!res.ok) throw new Error();
+      const answer = await res.json();
+      setPost(prev => prev ? {
+        ...prev,
+        status: 'answered',
+        answer: {
+          ...answer,
+          lawyer: {
+            nickname: prev.answer?.lawyer.nickname ?? null,
+            role: 'lawyer',
+          },
+        },
+      } : prev);
       Alert.alert('답변이 등록되었습니다.', '', [
         { text: '확인', onPress: () => router.back() },
       ]);
@@ -117,7 +129,7 @@ export default function QnaDetailPage() {
         .then(data => setScrapped(data.scrapped ?? false))
         .catch(() => {});
     }
-  }, [id]));
+  }, [id, accessToken]));
 
   if (loading) {
     return (

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
@@ -73,14 +73,25 @@ export default function QnaPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
-    fetch(`${API_BASE}/qna`, options)
-      .then(r => r.json())
-      .then(data => setPosts(Array.isArray(data) ? data : []))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [accessToken]);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      setLoading(true);
+      const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
+      fetch(`${API_BASE}/qna`, options)
+        .then(r => r.json())
+        .then(data => {
+          if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+        })
+        .catch(() => {
+          if (!cancelled) setPosts([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => { cancelled = true; };
+    }, [accessToken])
+  );
 
   const filteredPosts = searchQuery.trim()
     ? posts.filter(p => p.title.includes(searchQuery) || p.content?.includes(searchQuery) || p.category.includes(searchQuery))

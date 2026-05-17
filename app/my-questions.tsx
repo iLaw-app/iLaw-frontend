@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
 import { BottomNav } from '../components/BottomNav';
@@ -23,16 +23,30 @@ export default function MyQuestionsScreen() {
   const [posts, setPosts] = useState<QnAPost[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    fetch(`${API_BASE}/qna/mine`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then(r => r.json())
-      .then(data => setPosts(Array.isArray(data) ? data : []))
-      .catch(() => setPosts([]))
-      .finally(() => setLoading(false));
-  }, [accessToken]);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      if (!accessToken) {
+        setLoading(false);
+        return () => { cancelled = true; };
+      }
+      setLoading(true);
+      fetch(`${API_BASE}/qna/mine`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+        })
+        .catch(() => {
+          if (!cancelled) setPosts([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => { cancelled = true; };
+    }, [accessToken])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

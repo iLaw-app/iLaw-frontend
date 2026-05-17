@@ -163,7 +163,12 @@ export default function CommunityWriteScreen() {
             {/* Poll container — inside the card */}
             {pollActive && (
               <View style={s.pollCard}>
-                <Text style={s.pollLabel}>선택지 (2~5개)</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={s.pollLabel}>선택지 (2~5개)</Text>
+                  <TouchableOpacity onPress={() => { setPollActive(false); setPollOptions(['', '']); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={18} color="#99A1AF" />
+                  </TouchableOpacity>
+                </View>
                 {pollOptions.map((opt, i) => (
                   <TextInput
                     key={i}

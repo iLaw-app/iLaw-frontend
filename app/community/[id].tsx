@@ -91,11 +91,6 @@ function mapPoll(poll: any): { options: PollOption[]; total: number; votedOption
   };
 }
 
-function imageSourceUrl(url: string): string {
-  if (!url.includes('.amazonaws.com/')) return url;
-  return `${API_BASE}/upload/image-proxy?url=${encodeURIComponent(url)}`;
-}
-
 function Avatar({ size = 32 }: { size?: number }) {
   return (
     <View style={[s.avatar, { width: size, height: size }]}>
@@ -385,7 +380,7 @@ export default function CommunityDetailScreen() {
           {post.imageUrls && post.imageUrls.length > 0 && (
             <View style={s.imageRow}>
               {post.imageUrls.map((url, i) => (
-                <Image key={i} source={{ uri: imageSourceUrl(url) }} style={s.postImage} resizeMode="cover" />
+                <Image key={i} source={{ uri: url }} style={s.postImage} resizeMode="cover" />
               ))}
             </View>
           )}

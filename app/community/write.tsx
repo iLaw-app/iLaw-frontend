@@ -61,9 +61,9 @@ export default function CommunityWriteScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      mediaTypes: ['images'],
       quality: 0.8,
+      allowsMultipleSelection: false,
     });
     if (!result.canceled) {
       const asset = result.assets[0];

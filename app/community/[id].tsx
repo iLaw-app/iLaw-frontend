@@ -58,7 +58,7 @@ function BarChartIcon() {
 }
 
 type PollOption = { label: string; votes: number };
-type Comment = { id: number; nickname: string; date: string; text: string; likes: number; replies?: Comment[] };
+type Comment = { id: number; nickname: string; date: string; text: string; likes: number; parentId?: number | null; replies?: Comment[] };
 type Post = {
   id: number; nickname: string; createdAt: string; title: string; content: string;
   likes: number; bookmarks: number; bookmarked: boolean;
@@ -78,7 +78,15 @@ function formatDate(iso: string): string {
 }
 
 function mapComment(c: any): Comment {
-  return { id: c.id, nickname: c.nickname, date: formatDate(c.createdAt), text: c.content, likes: 0, replies: [] };
+  return {
+    id: c.id,
+    nickname: c.nickname,
+    date: formatDate(c.createdAt),
+    text: c.content,
+    likes: 0,
+    parentId: c.parentId ?? null,
+    replies: (c.replies ?? []).map(mapComment),
+  };
 }
 
 function mapPoll(poll: any): { options: PollOption[]; total: number; votedOptionIndex: number | null } | undefined {
@@ -294,11 +302,20 @@ export default function CommunityDetailScreen() {
     const res = await fetch(`${API_BASE}/community/${postId}/comments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ content: text }),
+      body: JSON.stringify({ content: text, parentId: replyingTo ?? undefined }),
     });
     if (res.ok) {
       const data = await res.json();
-      setComments(prev => [...prev, mapComment(data)]);
+      const newComment = mapComment(data);
+      setComments(prev => {
+        if (newComment.parentId) {
+          return prev.map(comment => comment.id === newComment.parentId
+            ? { ...comment, replies: [...(comment.replies ?? []), newComment] }
+            : comment
+          );
+        }
+        return [newComment, ...prev];
+      });
     }
     setReplyingTo(null);
   };
@@ -438,7 +455,9 @@ export default function CommunityDetailScreen() {
         <View style={s.inputBar}>
           {replyingTo !== null && (
             <View style={s.replyingBanner}>
-              <Text style={s.replyingText}>답글 작성 중</Text>
+              <Text style={s.replyingText}>
+                {(comments.find(c => c.id === replyingTo)?.nickname ?? '댓글')}님에게 답글 작성 중
+              </Text>
               <TouchableOpacity onPress={() => setReplyingTo(null)}>
                 <Ionicons name="close" size={14} color="#9CAF88" />
               </TouchableOpacity>

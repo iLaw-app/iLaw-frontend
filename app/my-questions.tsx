@@ -31,7 +31,7 @@ export default function MyQuestionsScreen() {
         return () => { cancelled = true; };
       }
       setLoading(true);
-      fetch(`${API_BASE}/qna/mine`, {
+      fetch(`${API_BASE}/qa/mine`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
         .then(r => r.json())

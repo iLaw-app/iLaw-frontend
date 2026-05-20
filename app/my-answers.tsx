@@ -23,7 +23,7 @@ export default function MyAnswersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/qna/my-answers`, {
+    fetch(`${API_BASE}/qa/my-answers`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
       .then(r => r.json())

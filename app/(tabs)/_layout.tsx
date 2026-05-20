@@ -5,7 +5,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 const TAB_SCREENS = [
   { name: 'home',      title: '홈',       icon: 'home-outline'        } as const,
   { name: 'consult',   title: '매뉴얼',   icon: 'book-outline'        } as const,
-  { name: 'qna',       title: 'QnA',      icon: 'chatbubbles-outline' } as const,
+  { name: 'qna',       title: 'Q&A',      icon: 'chatbubbles-outline' } as const,
   { name: 'community', title: '커뮤니티', icon: 'people-outline'      } as const,
   { name: 'profile',   title: '마이페이지', icon: 'person-outline'   } as const,
 ];

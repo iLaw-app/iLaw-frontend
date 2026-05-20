@@ -79,7 +79,7 @@ export default function QnaPage() {
       let cancelled = false;
       if (!loadedOnce) setLoading(true);
       const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
-      fetch(`${API_BASE}/qna`, options)
+      fetch(`${API_BASE}/qa`, options)
         .then(r => r.json())
         .then(data => {
           if (!cancelled) {
@@ -108,7 +108,7 @@ export default function QnaPage() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>QnA 답변 관리</Text>
+          <Text style={styles.headerTitle}>Q&A 답변 관리</Text>
           <Text style={styles.headerSub}>학생들의 질문에 답변해주세요</Text>
         </View>
 
@@ -146,7 +146,7 @@ export default function QnaPage() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>QnA</Text>
+        <Text style={styles.headerTitle}>Q&A</Text>
         <Text style={styles.headerSub}>변호사님이 직접 답변해 드립니다</Text>
       </View>
 

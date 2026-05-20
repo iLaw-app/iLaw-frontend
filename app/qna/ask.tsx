@@ -80,7 +80,7 @@ export default function AskPage() {
     setSubmitting(true);
     try {
       const imageUrls = await uploadImages();
-      const res = await fetch(`${API_BASE}/qna`, {
+      const res = await fetch(`${API_BASE}/qa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ title, content, category: selectedCategories.join(','), imageUrls }),

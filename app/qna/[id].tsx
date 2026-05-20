@@ -67,7 +67,7 @@ export default function QnaDetailPage() {
     }
     setAnswerSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/qna/${id}/answer`, {
+      const res = await fetch(`${API_BASE}/qa/${id}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ content: answerText }),
@@ -105,7 +105,7 @@ export default function QnaDetailPage() {
     if (!accessToken) return;
     setScrapLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/qna/${id}/scrap`, {
+      const res = await fetch(`${API_BASE}/qa/${id}/scrap`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -118,14 +118,14 @@ export default function QnaDetailPage() {
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    fetch(`${API_BASE}/qna/${id}`)
+    fetch(`${API_BASE}/qa/${id}`)
       .then(r => r.json())
       .then(data => setPost(data?.id ? data : null))
       .catch(() => setPost(null))
       .finally(() => setLoading(false));
 
     if (accessToken) {
-      fetch(`${API_BASE}/qna/${id}/scrap`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      fetch(`${API_BASE}/qa/${id}/scrap`, { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(r => r.json())
         .then(data => setScrapped(data.scrapped ?? false))
         .catch(() => {});
@@ -160,7 +160,7 @@ export default function QnaDetailPage() {
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color="#586144" />
-          <Text style={role === 'lawyer' ? styles.lawyerBackText : styles.backText}>{role === 'lawyer' ? '질문 상세' : 'QnA'}</Text>
+          <Text style={role === 'lawyer' ? styles.lawyerBackText : styles.backText}>{role === 'lawyer' ? '질문 상세' : 'Q&A'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
           <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={28} color={scrapped ? '#3C6802' : '#9CAF88'} />

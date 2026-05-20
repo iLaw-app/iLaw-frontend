@@ -25,7 +25,7 @@ export default function MyQnAScrapsPage() {
   useFocusEffect(useCallback(() => {
     if (!accessToken) return;
     setLoading(true);
-    fetch(`${API_BASE}/qna/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    fetch(`${API_BASE}/qa/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
       .then(data => setPosts(Array.isArray(data) ? data : []))
       .catch(() => setPosts([]))

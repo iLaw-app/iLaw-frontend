@@ -65,7 +65,7 @@ export default function MyScrapsScreen() {
   const fetchQna = useCallback(() => {
     if (!accessToken) { setLoadingQna(false); return; }
     setLoadingQna(true);
-    fetch(`${API_BASE}/qna/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    fetch(`${API_BASE}/qa/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
       .then(data => setQnaItems(Array.isArray(data) ? data : []))
       .catch(() => setQnaItems([]))
@@ -112,7 +112,7 @@ export default function MyScrapsScreen() {
           activeOpacity={0.8}
         >
           <Text style={[styles.tabBtnText, activeTab === 'qna' && styles.tabBtnTextActive]}>
-            QnA
+            Q&A
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -174,7 +174,7 @@ export default function MyScrapsScreen() {
                   <View style={styles.badge}>
                     <Ionicons name="chatbubbles-outline" size={11} color="#3C6802" />
                     <Text style={styles.badgeText}>
-                      {item.category?.name ?? 'QnA'}
+                      {item.category?.name ?? 'Q&A'}
                     </Text>
                   </View>
                   {item.status ? (

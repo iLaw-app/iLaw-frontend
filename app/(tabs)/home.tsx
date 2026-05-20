@@ -26,7 +26,7 @@ type SearchResult = {
 const TABS: { key: TabType; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'manual', label: '매뉴얼' },
-  { key: 'qna', label: 'QnA' },
+  { key: 'qna', label: 'Q&A' },
 ];
 
 function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
@@ -108,7 +108,7 @@ function ResultCard({ item, keywords, accessToken, onPress }: {
     if (!accessToken) return;
     const url = item.type === 'manual'
       ? `${API_BASE}/manual/articles/${item.id}/scrap`
-      : `${API_BASE}/qna/${item.id}/scrap`;
+      : `${API_BASE}/qa/${item.id}/scrap`;
     try {
       const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
       const data = await res.json();
@@ -123,7 +123,7 @@ function ResultCard({ item, keywords, accessToken, onPress }: {
         <View style={item.type === 'qna' ? styles.tagQna : styles.tagManual}>
           {item.type === 'qna' ? <QnaIcon /> : <ManualIcon />}
           <Text style={item.type === 'qna' ? styles.tagTextQna : styles.tagTextManual}>
-            {item.type === 'qna' ? 'QnA' : '매뉴얼'}
+            {item.type === 'qna' ? 'Q&A' : '매뉴얼'}
           </Text>
         </View>
         <View style={{ flex: 1 }} />
@@ -199,7 +199,7 @@ export default function HomeScreen() {
     try {
       const [manualData, qnaData] = await Promise.all([
         fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
-        fetch(`${API_BASE}/qna/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
+        fetch(`${API_BASE}/qa/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
       ]);
       const mergedTerms = Array.from(new Set([
         ...(manualData.expandedTerms ?? []),
@@ -224,7 +224,7 @@ export default function HomeScreen() {
           combined.map(item => {
             const url = item.type === 'manual'
               ? `${API_BASE}/manual/articles/${item.id}/scrap`
-              : `${API_BASE}/qna/${item.id}/scrap`;
+              : `${API_BASE}/qa/${item.id}/scrap`;
             return fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
               .then(r => r.json())
               .then(data => ({ scrapped: data.scrapped ?? false, count: data.count ?? 0 }))

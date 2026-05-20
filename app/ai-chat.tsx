@@ -11,7 +11,7 @@ import { useAuth } from './context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-type Suggestion = { type: 'manual' | 'qna'; id: number; label: string };
+type Suggestion = { type: 'manual' | 'qa'; id: number; label: string };
 type Message = {
   id: number; from: 'ai' | 'user'; time: string;
   text?: string;
@@ -52,7 +52,7 @@ function SuggestionCard({ sg, onPress }: { sg: Suggestion; onPress: () => void }
           size={12}
           color="#9CAF88"
         />
-        <Text style={s.sgTypeText}>{sg.type === 'manual' ? '매뉴얼' : 'QNA'}</Text>
+        <Text style={s.sgTypeText}>{sg.type === 'manual' ? '매뉴얼' : 'Q&A'}</Text>
       </View>
       <Text style={s.sgTitle}>{sg.label}</Text>
     </TouchableOpacity>
@@ -195,7 +195,7 @@ export default function AiChatScreen() {
                           <SuggestionCard
                             key={i}
                             sg={sg}
-                            onPress={() => sg.type === 'qna'
+                            onPress={() => sg.type === 'qa'
                               ? router.push(`/qna/${sg.id}` as any)
                               : router.push(`/manual-detail?articleId=${sg.id}` as any)
                             }
@@ -217,7 +217,7 @@ export default function AiChatScreen() {
                           <SuggestionCard
                             key={i}
                             sg={sg}
-                            onPress={() => sg.type === 'qna'
+                            onPress={() => sg.type === 'qa'
                               ? router.push(`/qna/${sg.id}` as any)
                               : router.push(`/manual-detail?articleId=${sg.id}` as any)
                             }

@@ -21,7 +21,7 @@ export default function AnswerPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/qna/${id}/answer`, {
+      const res = await fetch(`${API_BASE}/qa/${id}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ content: answer }),

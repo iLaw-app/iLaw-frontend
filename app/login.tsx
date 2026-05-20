@@ -34,7 +34,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setAuthTokens, setUser } = useAuth();
 
-  const handleLogin = async (provider: 'kakao' | 'naver' | 'google') => {
+  const handleLogin = async (provider: 'kakao' | 'google') => {
     const appRedirectUri = Linking.createURL('auth');
     const url = `${API_BASE_URL}/auth/${provider}?redirectUri=${encodeURIComponent(appRedirectUri)}`;
     const result = await WebBrowser.openAuthSessionAsync(url, appRedirectUri);
@@ -76,14 +76,6 @@ export default function LoginScreen() {
           >
             <KakaoIcon />
             <Text style={[styles.btnText, { color: '#191919' }]}>카카오 로그인</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.btn, styles.naver]}
-            onPress={() => handleLogin('naver')}
-          >
-            <Text style={styles.naverN}>N</Text>
-            <Text style={[styles.btnText, { color: '#fff' }]}>네이버 로그인</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -155,18 +147,10 @@ const styles = StyleSheet.create({
   kakao: {
     backgroundColor: '#FEE500',
   },
-  naver: {
-    backgroundColor: '#03C75A',
-  },
   google: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
-  },
-  naverN: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#fff',
   },
   demoBtn: {
     width: '100%',

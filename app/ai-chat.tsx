@@ -25,6 +25,12 @@ function nowStr() {
   return `${h < 12 ? '오전' : '오후'} ${h === 0 ? 12 : h > 12 ? h - 12 : h}:${m}`;
 }
 
+function toTimeStr(iso: string) {
+  const d = new Date(iso);
+  const h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+  return `${h < 12 ? '오전' : '오후'} ${h === 0 ? 12 : h > 12 ? h - 12 : h}:${m}`;
+}
+
 function SendIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
@@ -53,20 +59,39 @@ function SuggestionCard({ sg, onPress }: { sg: Suggestion; onPress: () => void }
   );
 }
 
+const GREETING: Message = {
+  id: 0, from: 'ai', time: '',
+  text: '안녕하세요!\n\n저는 상황을 요약하고 관련 콘텐츠를 찾아드리는 아이로 AI 챗봇입니다.\n\n지금 겪고 있는 일이나 궁금한 점을 편하게 물어보세요.\n자세히 알려주시면 상황에 맞는 정보를 더 빠르게 찾아드릴 수 있어요.\n\n예시\n"학교에서 친구에게 협박을 받고 있어요. 어떻게 해야 하나요?"\n"집에서 힘든 일이 있는데 도움받을 수 있는 곳이 궁금해요."\n\n⚠️ 심각하거나 긴급한 상황이라면 먼저 112에 신고해주세요.\n또한 정확한 답변이 필요하다면 Q&A 게시판에서 변호사님께 질문할 수 있어요.',
+};
+
 export default function AiChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { accessToken } = useAuth();
-  const [messages, setMessages] = useState<Message[]>(() => [
-    {
-      id: 0, from: 'ai', time: nowStr(),
-      text: '안녕하세요!\n\n저는 상황을 요약하고 관련 콘텐츠를 찾아드리는 아이로 AI 챗봇입니다.\n\n지금 겪고 있는 일이나 궁금한 점을 편하게 물어보세요.\n자세히 알려주시면 상황에 맞는 정보를 더 빠르게 찾아드릴 수 있어요.\n\n예시\n"학교에서 친구에게 협박을 받고 있어요. 어떻게 해야 하나요?"\n"집에서 힘든 일이 있는데 도움받을 수 있는 곳이 궁금해요."\n\n⚠️ 심각하거나 긴급한 상황이라면 먼저 112에 신고해주세요.\n또한 정확한 답변이 필요하다면 Q&A 게시판에서 변호사님께 질문할 수 있어요.',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [kbVisible, setKbVisible] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    fetch(`${API_BASE}/ai/history`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then(r => r.json())
+      .then((history: any[]) => {
+        if (!history.length) return;
+        const historyMessages: Message[] = history.flatMap((h, i) => [
+          { id: -(i * 3 + 1), from: 'user' as const, time: toTimeStr(h.createdAt), text: h.question },
+          { id: -(i * 3 + 2), from: 'ai' as const, time: toTimeStr(h.createdAt), summary: h.situationSummary },
+          { id: -(i * 3 + 3), from: 'ai' as const, time: toTimeStr(h.createdAt), text: h.legalAdvice, suggestions: h.suggestions },
+        ]);
+        setMessages([GREETING, ...historyMessages]);
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
+      })
+      .catch(() => {});
+  }, [accessToken]);
 
   useEffect(() => {
     const show = Keyboard.addListener(

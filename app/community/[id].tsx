@@ -70,7 +70,7 @@ type Comment = {
   replies?: Comment[];
 };
 type Post = {
-  id: number; nickname: string; createdAt: string; title: string; content: string;
+  id: number; nickname: string; createdAt: string; updatedAt?: string; title: string; content: string;
   isAuthor: boolean;
   likes: number; bookmarks: number; bookmarked: boolean;
   imageUrls?: string[];
@@ -474,7 +474,9 @@ export default function CommunityDetailScreen() {
             <Avatar size={36} />
             <View>
               <Text style={s.nickname}>{post.nickname}</Text>
-              <Text style={s.date}>{formatDate(post.createdAt)}</Text>
+              <Text style={s.date}>
+                {formatDate(post.createdAt)}{post.updatedAt && new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() > 1000 ? ' (수정됨)' : ''}
+              </Text>
             </View>
           </View>
 

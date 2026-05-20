@@ -57,6 +57,7 @@ type CommunityPost = {
   id: number;
   nickname: string;
   createdAt: string;
+  updatedAt?: string;
   title: string;
   content: string;
   likes: number;
@@ -116,7 +117,9 @@ function PostCard({ item, onPress, isOwner, onMenuPress }: {
           <Text style={styles.nickname}>{item.nickname}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.date}>
+            {formatDate(item.createdAt)}{item.updatedAt && new Date(item.updatedAt).getTime() - new Date(item.createdAt).getTime() > 1000 ? ' (수정됨)' : ''}
+          </Text>
           {isOwner && (
             <View ref={moreRef}>
               <TouchableOpacity onPress={handleMorePress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

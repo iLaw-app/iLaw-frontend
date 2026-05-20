@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
+import { useAuth } from './context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -55,6 +56,7 @@ function SuggestionCard({ sg, onPress }: { sg: Suggestion; onPress: () => void }
 export default function AiChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { accessToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 0, from: 'ai', time: nowStr(),
@@ -90,9 +92,11 @@ export default function AiChatScreen() {
     scroll();
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ message: text }),
       });
       const data = await res.json();

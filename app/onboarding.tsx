@@ -159,10 +159,12 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Image
-          source={require('../assets/robot-head.png')}
+          source={require('../assets/logo3.png')}
           style={styles.robotHead}
           resizeMode="contain"
         />
+
+        <Text style={styles.subtitle}>아이로가 더 잘 도와드릴 수 있도록{'\n'}기본 정보를 입력해주세요</Text>
 
         {/* 아이디 */}
         <View style={styles.fieldGroup}>
@@ -293,7 +295,16 @@ const styles = StyleSheet.create({
   robotHead: {
     width: 120,
     height: 120,
-    marginBottom: 36,
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#586144',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 28,
+    fontFamily: 'AiroFont',
   },
   fieldGroup: { width: '100%', marginBottom: 16 },
   label: {

@@ -12,6 +12,8 @@ import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
+type Photo = { uri: string; type: string; name: string; isRemote?: boolean };
+
 function PhotoIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
@@ -35,14 +37,26 @@ function PollIcon() {
 
 export default function CommunityWriteScreen() {
   const router = useRouter();
-  const { editId, editTitle, editContent } = useLocalSearchParams<{ editId?: string; editTitle?: string; editContent?: string }>();
+  const { editId, editTitle, editContent, editImageUrls, editPoll } = useLocalSearchParams<{
+    editId?: string; editTitle?: string; editContent?: string;
+    editImageUrls?: string; editPoll?: string;
+  }>();
   const isEditing = !!editId;
   const { accessToken } = useAuth();
   const [title, setTitle] = useState(editTitle ?? '');
   const [content, setContent] = useState(editContent ?? '');
-  const [pollActive, setPollActive] = useState(false);
-  const [pollOptions, setPollOptions] = useState(['', '']);
-  const [photos, setPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
+  const initPollOptions = editPoll ? (() => { try { const p = JSON.parse(editPoll) as string[]; return p.length >= 2 ? p : null; } catch { return null; } })() : null;
+  const [pollActive, setPollActive] = useState(!!initPollOptions);
+  const [pollOptions, setPollOptions] = useState<string[]>(initPollOptions ?? ['', '']);
+  const [photos, setPhotos] = useState<Photo[]>(() => {
+    if (editImageUrls) {
+      try {
+        const urls = JSON.parse(editImageUrls) as string[];
+        return urls.map(uri => ({ uri, type: 'image/jpeg', name: 'photo.jpg', isRemote: true }));
+      } catch { return []; }
+    }
+    return [];
+  });
   const [submitting, setSubmitting] = useState(false);
   const [contentFocused, setContentFocused] = useState(false);
 
@@ -52,6 +66,11 @@ export default function CommunityWriteScreen() {
 
   const updateOption = (idx: number, val: string) => {
     setPollOptions(prev => prev.map((o, i) => i === idx ? val : o));
+  };
+
+  const removeOption = (idx: number) => {
+    if (pollOptions.length <= 2) return;
+    setPollOptions(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleAddPhoto = async () => {
@@ -75,7 +94,8 @@ export default function CommunityWriteScreen() {
 
   const removePhoto = (idx: number) => setPhotos(prev => prev.filter((_, i) => i !== idx));
 
-  const uploadPhoto = async (photo: { uri: string; type: string; name: string }): Promise<string> => {
+  const uploadPhoto = async (photo: Photo): Promise<string> => {
+    if (photo.isRemote) return photo.uri;
     const formData = new FormData();
     formData.append('image', { uri: photo.uri, type: photo.type, name: photo.name } as any);
     const res = await fetch(`${API_BASE}/upload/image`, {
@@ -198,14 +218,20 @@ export default function CommunityWriteScreen() {
                   </TouchableOpacity>
                 </View>
                 {pollOptions.map((opt, i) => (
-                  <TextInput
-                    key={i}
-                    style={s.pollOptionInput}
-                    placeholder={`선택지 ${i + 1}`}
-                    placeholderTextColor="#9CAF88"
-                    value={opt}
-                    onChangeText={v => updateOption(i, v)}
-                  />
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TextInput
+                      style={[s.pollOptionInput, { flex: 1 }]}
+                      placeholder={`선택지 ${i + 1}`}
+                      placeholderTextColor="#9CAF88"
+                      value={opt}
+                      onChangeText={v => updateOption(i, v)}
+                    />
+                    {pollOptions.length > 2 && (
+                      <TouchableOpacity onPress={() => removeOption(i)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close" size={18} color="#99A1AF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 ))}
                 {pollOptions.length < 5 && (
                   <TouchableOpacity onPress={addOption} activeOpacity={0.7}>
@@ -266,14 +292,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
 
   topBar: {
-    height: 66,
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 17,
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start',
+    height: 56,
+    paddingHorizontal: 16,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
     position: 'relative',
     borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
-  backBtn: { position: 'absolute', left: 16, top: 16, zIndex: 1, padding: 4 },
-  topBarTitle: { fontSize: 20, fontWeight: '700', color: '#586144', lineHeight: 36, letterSpacing: 0.07 },
+  backBtn: { position: 'absolute', left: 16, zIndex: 1, padding: 4 },
+  topBarTitle: { fontSize: 20, fontWeight: '700', color: '#586144', lineHeight: 28, letterSpacing: 0.07 },
 
   scroll: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, gap: 12 },
 
@@ -310,7 +336,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: '#D0D8E3',
     backgroundColor: '#F2F6F9',
     paddingTop: 16, paddingHorizontal: 16, paddingBottom: 0,
-    gap: 16,
+    gap: 8,
   },
   pollLabel: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
   pollOptionInput: {
@@ -340,9 +366,9 @@ const s = StyleSheet.create({
     backgroundColor: '#B2D36E', alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 10,
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
+    elevation: 4,
     marginTop: 8,
   },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },

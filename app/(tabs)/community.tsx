@@ -8,6 +8,22 @@ import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
+function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
+  const active = keywords.map(k => k.trim()).filter(k => k);
+  if (active.length === 0) return <Text style={style}>{text}</Text>;
+  const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <Text style={style}>
+      {parts.map((part, i) =>
+        active.some(k => part.toLowerCase() === k.toLowerCase())
+          ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
+          : part
+      )}
+    </Text>
+  );
+}
+
 function ClockIcon() {
   return (
     <Svg width={13} height={13} viewBox="0 0 13 13" fill="none">
@@ -26,11 +42,9 @@ function ClockIcon() {
 
 function ThumbsUpIcon() {
   return (
-    <Svg width={14} height={14} viewBox="0 0 19 19" fill="none">
-      <Path
-        d="M11.6614 4.06485L10.8284 7.49661H15.6845C15.9431 7.49661 16.1982 7.55682 16.4295 7.67248C16.6608 7.78814 16.8621 7.95607 17.0172 8.16297C17.1724 8.36987 17.2773 8.61005 17.3235 8.8645C17.3698 9.11895 17.3562 9.38068 17.2838 9.62896L15.343 16.2926C15.2421 16.6386 15.0316 16.9426 14.7433 17.1588C14.4549 17.3751 14.1042 17.492 13.7437 17.492H2.49891C2.05708 17.492 1.63336 17.3165 1.32094 17.0041C1.00852 16.6917 0.833008 16.2679 0.833008 15.8261V9.16251C0.833008 8.72068 1.00852 8.29696 1.32094 7.98454C1.63336 7.67212 2.05708 7.49661 2.49891 7.49661H4.79785C5.10778 7.49644 5.41151 7.40982 5.67491 7.24649C5.9383 7.08316 6.15091 6.84958 6.28883 6.57203L9.16251 0.833008C9.55531 0.837872 9.94193 0.931437 10.2935 1.10671C10.6451 1.28199 10.9525 1.53444 11.1927 1.84521C11.433 2.15598 11.6 2.51703 11.6811 2.90139C11.7623 3.28575 11.7555 3.68348 11.6614 4.06485Z"
-        stroke="#9CAF88" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"
-      />
+    <Svg width={14} height={14} viewBox="0 0 20 20" fill="none">
+      <Path d="M5.83069 8.3291V18.3245" stroke="#6A7282" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M12.4942 4.89786L11.6613 8.32962H16.5174C16.776 8.32962 17.0311 8.38983 17.2624 8.50549C17.4937 8.62115 17.6949 8.78908 17.8501 8.99598C18.0053 9.20287 18.1102 9.44306 18.1564 9.69751C18.2027 9.95196 18.1891 10.2137 18.1167 10.462L16.1759 17.1256C16.075 17.4716 15.8645 17.7756 15.5762 17.9918C15.2878 18.2081 14.9371 18.325 14.5766 18.325H3.33179C2.88997 18.325 2.46624 18.1495 2.15382 17.8371C1.84141 17.5247 1.66589 17.1009 1.66589 16.6591V9.99552C1.66589 9.55369 1.84141 9.12996 2.15382 8.81755C2.46624 8.50513 2.88997 8.32962 3.33179 8.32962H5.63074C5.94066 8.32945 6.2444 8.24283 6.50779 8.0795C6.77119 7.91616 6.9838 7.68259 7.12172 7.40504L9.99539 1.66602C10.3882 1.67088 10.7748 1.76444 11.1264 1.93972C11.4779 2.11499 11.7853 2.36745 12.0256 2.67822C12.2659 2.98899 12.4329 3.35004 12.514 3.7344C12.5952 4.11876 12.5884 4.51648 12.4942 4.89786Z" stroke="#6A7282" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"/>
     </Svg>
   );
 }
@@ -89,16 +103,17 @@ function PollBar({ option, total }: { option: PollOption; total: number }) {
         <View style={[ps.barFill, { width: `${pct}%` }]} />
         <Text style={ps.barLabel}>{option.label}</Text>
       </View>
-      <Text style={ps.pct}>{pct}%</Text>
+      <Text style={ps.pct} numberOfLines={1}>{pct}%</Text>
     </View>
   );
 }
 
-function PostCard({ item, onPress, isOwner, onMenuPress }: {
+function PostCard({ item, onPress, isOwner, onMenuPress, keywords = [] }: {
   item: CommunityPost;
   onPress: () => void;
   isOwner: boolean;
   onMenuPress: (postId: number, y: number) => void;
+  keywords?: string[];
 }) {
   const moreRef = useRef<View>(null);
   const handleMorePress = () => {
@@ -130,9 +145,9 @@ function PostCard({ item, onPress, isOwner, onMenuPress }: {
         </View>
       </View>
 
-      <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+      <HighlightText text={item.title} keywords={keywords} style={styles.title} />
       {item.content ? (
-        <Text style={styles.content} numberOfLines={2}>{item.content}</Text>
+        <HighlightText text={item.content} keywords={keywords} style={styles.content} />
       ) : null}
 
       {item.poll && (
@@ -149,7 +164,7 @@ function PostCard({ item, onPress, isOwner, onMenuPress }: {
           <Text style={styles.metaText}>{item.likes}</Text>
         </View>
         <View style={styles.metaItem}>
-          <Ionicons name="chatbubble-outline" size={14} color="#9CAF88" />
+          <Ionicons name="chatbubble-outline" size={14} color="#6A7282" />
           <Text style={styles.metaText}>{item.comments}</Text>
         </View>
       </View>
@@ -230,13 +245,11 @@ export default function CommunityScreen() {
         <View style={styles.subRow}>
           <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
           <TouchableOpacity style={styles.sortBtn} activeOpacity={0.7} onPress={() => setSort(s => s === 'latest' ? 'popular' : 'latest')}>
-            <ClockIcon />
+            {sort === 'latest' ? <ClockIcon /> : <ThumbsUpIcon />}
             <Text style={styles.sortText}>{sort === 'latest' ? '최신순' : '인기순'}</Text>
           </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.divider} />
 
       <View style={styles.searchArea}>
         <View style={styles.searchBox}>
@@ -266,6 +279,7 @@ export default function CommunityScreen() {
                 onPress={() => router.push(`/community/${item.id}` as any)}
                 isOwner={user?.nickname === item.nickname}
                 onMenuPress={handleMenuPress}
+                keywords={searchQuery.trim() ? [searchQuery] : []}
               />
             )}
             contentContainerStyle={styles.list}
@@ -282,7 +296,7 @@ export default function CommunityScreen() {
         <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>
           <Pressable style={[menuS.dropdown, { top: menuY + 20, right: 16 }]} onPress={() => {}}>
             <TouchableOpacity style={menuS.item} activeOpacity={0.7} onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={16} color="#F44336" />
+              <Ionicons name="trash-outline" size={16} color="#586144" />
               <Text style={menuS.deleteText}>삭제하기</Text>
             </TouchableOpacity>
             <View style={menuS.sep} />
@@ -311,7 +325,7 @@ const ps = StyleSheet.create({
     backgroundColor: '#EFF4E1', borderRadius: 10,
   },
   barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
-  pct: { fontSize: 13, color: '#586144', fontWeight: '600', width: 36, textAlign: 'right' },
+  pct: { fontSize: 13, color: '#586144', fontWeight: '600', width: 40, textAlign: 'right' },
 });
 
 const styles = StyleSheet.create({
@@ -320,7 +334,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 19.991,
     paddingHorizontal: 19.991,
-    paddingBottom: 16,
+    paddingBottom: 8,
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 3.994,
@@ -328,16 +342,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
-  headerSub: { flex: 1, fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  headerSub: { flex: 1, fontSize: 15, fontWeight: '500', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
   sortBtn: {
-    height: 32, paddingHorizontal: 10,
+    height: 32, paddingHorizontal: 7,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
     borderRadius: 8, borderWidth: 1, borderColor: '#D1D5DC',
     backgroundColor: '#fff',
   },
   sortText: { fontSize: 14, fontWeight: '500', color: '#6A7282', lineHeight: 20, letterSpacing: 0.1 },
   divider: { height: 1, backgroundColor: '#F3F4F6' },
-  searchArea: { paddingHorizontal: 16, paddingVertical: 12 },
+  searchArea: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
     height: 52, borderRadius: 9999,
@@ -376,7 +390,7 @@ const styles = StyleSheet.create({
   date: { fontSize: 12, fontWeight: '500', color: '#99A1AF', lineHeight: 16 },
 
   title: {
-    fontSize: 16, fontWeight: '700', color: '#1a1a1a',
+    fontSize: 16, fontWeight: '700', color: '#586144',
     lineHeight: 24, marginBottom: 4,
   },
   content: {
@@ -388,7 +402,7 @@ const styles = StyleSheet.create({
 
   cardBottom: { flexDirection: 'row', gap: 12, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 13, color: '#9CAF88' },
+  metaText: { fontSize: 13, color: '#6A7282' },
 
   fab: {
     position: 'absolute', right: 20, bottom: 20,
@@ -398,7 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     elevation: 16,
     shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35, shadowRadius: 15,
+    shadowOpacity: 0.12, shadowRadius: 15,
   },
   fabText: { fontSize: 30, color: '#fff', lineHeight: 34 },
 });
@@ -415,6 +429,6 @@ const menuS = StyleSheet.create({
   },
   item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13 },
   sep: { height: 1, backgroundColor: '#F3F4F6' },
-  deleteText: { fontSize: 14, fontWeight: '500', color: '#F44336' },
+  deleteText: { fontSize: 14, fontWeight: '500', color: '#586144' },
   editText: { fontSize: 14, fontWeight: '500', color: '#586144' },
 });

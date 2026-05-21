@@ -5,6 +5,7 @@ type NotificationSettings = {
   scrap: boolean;
   manual: boolean;
   newQuestion: boolean;
+  community: boolean;
 };
 
 type NotificationSettingsContextType = {
@@ -20,6 +21,7 @@ export function NotificationSettingsProvider({ children }: { children: React.Rea
     scrap: true,
     manual: false,
     newQuestion: true,
+    community: true,
   });
 
   const toggle = (key: keyof NotificationSettings) =>

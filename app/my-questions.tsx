@@ -31,12 +31,25 @@ export default function MyQuestionsScreen() {
         return () => { cancelled = true; };
       }
       setLoading(true);
-      fetch(`${API_BASE}/qa/mine`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
+      const headers = { Authorization: `Bearer ${accessToken}` };
+      fetch(`${API_BASE}/qa/mine`, { headers })
         .then(r => r.json())
-        .then(data => {
-          if (!cancelled) setPosts(Array.isArray(data) ? data : []);
+        .then(async (data) => {
+          if (cancelled) return;
+          const list: QnAPost[] = Array.isArray(data) ? data : [];
+          const withContent = await Promise.all(
+            list.map(async (post) => {
+              try {
+                const res = await fetch(`${API_BASE}/qa/${post.id}`, { headers });
+                if (res.ok) {
+                  const detail = await res.json();
+                  return { ...post, content: detail.content ?? undefined };
+                }
+              } catch {}
+              return post;
+            })
+          );
+          if (!cancelled) setPosts(withContent);
         })
         .catch(() => {
           if (!cancelled) setPosts([]);
@@ -67,7 +80,7 @@ export default function MyQuestionsScreen() {
             contentContainerStyle={styles.list}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="chatbubble-outline" size={48} color="#CCD9BA" />
+                <Ionicons name="chatbubble-outline" size={40} color="#CCD9BA" />
                 <Text style={styles.emptyText}>아직 작성한 질문이 없습니다</Text>
               </View>
             }
@@ -98,17 +111,12 @@ export default function MyQuestionsScreen() {
                 <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
 
                 {item.content ? (
-                  <>
-                    <View style={styles.divider} />
-                    <View style={styles.contentBox}>
-                      <Text style={styles.contentPreview} numberOfLines={3}>{item.content}</Text>
-                    </View>
-                  </>
+                  <Text style={styles.contentPreview} numberOfLines={2}>{item.content}</Text>
                 ) : null}
 
                 <View style={styles.cardBottom}>
                   <Ionicons name="time-outline" size={12} color="#9CAF88" />
-                  <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('ko-KR')}</Text>
+                  <Text style={styles.date}>{new Date(item.createdAt).toISOString().slice(0, 10)}</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -159,14 +167,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   emptyContainer: {
-    margin: 16,
-    padding: 49,
-    flexDirection: 'column',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
-    borderRadius: 24,
-    backgroundColor: '#FFF',
+    paddingTop: 60,
+    gap: 12,
   },
   emptyText: { fontSize: 14, color: '#9CAF88' },
 });

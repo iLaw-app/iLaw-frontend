@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Alert, View, Platform, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
+import { useFonts } from 'expo-font';
 import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth';
 import { NotificationSettingsProvider } from './context/notificationSettings';
 
@@ -52,6 +53,7 @@ const webStyles = StyleSheet.create({
 });
 
 function AppNavigator() {
+  useFonts({ AiroFont: require('../assets/font.ttf') });
   const router = useRouter();
   const { setAuthTokens, clearAuth, setUser } = useAuth();
 

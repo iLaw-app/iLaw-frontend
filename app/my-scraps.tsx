@@ -15,6 +15,7 @@ type ManualScrap = {
   question: string;
   summary: string | null;
   category: { name: string; slug: string };
+  scrapCount?: number;
 };
 
 type QnaScrap = {
@@ -22,8 +23,9 @@ type QnaScrap = {
   title: string;
   content?: string;
   status: string;
-  category?: { name: string };
+  category?: string;
   scrapCount?: number;
+  createdAt?: string;
 };
 
 type CommunityScrap = {
@@ -34,12 +36,6 @@ type CommunityScrap = {
 };
 
 type Tab = 'manual' | 'qna' | 'community';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: '답변 대기',
-  answered: '답변 완료',
-  closed: '종료',
-};
 
 export default function MyScrapsScreen() {
   const router = useRouter();
@@ -55,9 +51,25 @@ export default function MyScrapsScreen() {
   const fetchManual = useCallback(() => {
     if (!accessToken) { setLoadingManual(false); return; }
     setLoadingManual(true);
-    fetch(`${API_BASE}/manual/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    fetch(`${API_BASE}/manual/my-scraps`, { headers })
       .then(r => r.json())
-      .then(data => setManualItems(Array.isArray(data) ? data : []))
+      .then(async (data) => {
+        const list: ManualScrap[] = Array.isArray(data) ? data : [];
+        const withScrap = await Promise.all(
+          list.map(async (item) => {
+            try {
+              const res = await fetch(`${API_BASE}/manual/articles/${item.id}/scrap`, { headers });
+              if (res.ok) {
+                const scrapData = await res.json();
+                return { ...item, scrapCount: scrapData.count };
+              }
+            } catch {}
+            return item;
+          })
+        );
+        setManualItems(withScrap);
+      })
       .catch(() => setManualItems([]))
       .finally(() => setLoadingManual(false));
   }, [accessToken]);
@@ -65,9 +77,34 @@ export default function MyScrapsScreen() {
   const fetchQna = useCallback(() => {
     if (!accessToken) { setLoadingQna(false); return; }
     setLoadingQna(true);
-    fetch(`${API_BASE}/qa/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    const headers = { Authorization: `Bearer ${accessToken}` };
+    fetch(`${API_BASE}/qa/my-scraps`, { headers })
       .then(r => r.json())
-      .then(data => setQnaItems(Array.isArray(data) ? data : []))
+      .then(async (data) => {
+        const list: QnaScrap[] = Array.isArray(data) ? data : [];
+        const withData = await Promise.all(
+          list.map(async (item) => {
+            try {
+              const [detailRes, scrapRes] = await Promise.all([
+                fetch(`${API_BASE}/qa/${item.id}`, { headers }),
+                fetch(`${API_BASE}/qa/${item.id}/scrap`, { headers }),
+              ]);
+              const result = { ...item };
+              if (detailRes.ok) {
+                const detail = await detailRes.json();
+                result.content = detail.content ?? undefined;
+              }
+              if (scrapRes.ok) {
+                const scrapData = await scrapRes.json();
+                result.scrapCount = scrapData.count;
+              }
+              return result;
+            } catch {}
+            return item;
+          })
+        );
+        setQnaItems(withData);
+      })
       .catch(() => setQnaItems([]))
       .finally(() => setLoadingQna(false));
   }, [accessToken]);
@@ -95,34 +132,27 @@ export default function MyScrapsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Tab switcher */}
       <View style={styles.tabSwitcher}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'manual' && styles.tabBtnActive]}
           onPress={() => setActiveTab('manual')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'manual' && styles.tabBtnTextActive]}>
-            매뉴얼
-          </Text>
+          <Text style={[styles.tabBtnText, activeTab === 'manual' && styles.tabBtnTextActive]}>매뉴얼</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'qna' && styles.tabBtnActive]}
           onPress={() => setActiveTab('qna')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'qna' && styles.tabBtnTextActive]}>
-            Q&A
-          </Text>
+          <Text style={[styles.tabBtnText, activeTab === 'qna' && styles.tabBtnTextActive]}>Q&A</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'community' && styles.tabBtnActive]}
           onPress={() => setActiveTab('community')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]}>
-            커뮤니티
-          </Text>
+          <Text style={[styles.tabBtnText, activeTab === 'community' && styles.tabBtnTextActive]}>커뮤니티</Text>
         </TouchableOpacity>
       </View>
 
@@ -142,13 +172,17 @@ export default function MyScrapsScreen() {
                 onPress={() => router.push(`/manual-detail?articleId=${item.id}`)}
                 activeOpacity={0.8}
               >
-                <View style={styles.cardTop}>
+                <View style={styles.manualCardTop}>
                   <View style={styles.badge}>
                     <Ionicons name="book-outline" size={11} color="#3C6802" />
                     <Text style={styles.badgeText}>{item.category.name}</Text>
                   </View>
+                  <View style={styles.scrapRight}>
+                    <Ionicons name="bookmark-outline" size={12} color="#586144" />
+                    <Text style={styles.scrapRightText}>{item.scrapCount ?? 0}</Text>
+                  </View>
                 </View>
-                <Text style={styles.cardTitle} numberOfLines={2}>{item.question}</Text>
+                <Text style={styles.manualCardTitle} numberOfLines={2}>{item.question}</Text>
                 {item.summary ? (
                   <Text style={styles.cardSummary} numberOfLines={2}>
                     {item.summary.replace(/\*\*(.*?)\*\*/g, '$1')}
@@ -166,29 +200,32 @@ export default function MyScrapsScreen() {
             ListEmptyComponent={<EmptyState />}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.card}
+                style={styles.qnaCard}
                 onPress={() => router.push(`/qna/${item.id}` as any)}
                 activeOpacity={0.8}
               >
-                <View style={styles.cardTop}>
-                  <View style={styles.badge}>
-                    <Ionicons name="chatbubbles-outline" size={11} color="#3C6802" />
-                    <Text style={styles.badgeText}>
-                      {item.category?.name ?? 'Q&A'}
-                    </Text>
-                  </View>
-                  {item.status ? (
-                    <View style={[styles.statusBadge, item.status === 'answered' && styles.statusBadgeAnswered]}>
-                      <Text style={[styles.statusText, item.status === 'answered' && styles.statusTextAnswered]}>
-                        {STATUS_LABEL[item.status] ?? item.status}
-                      </Text>
-                    </View>
-                  ) : null}
+                <View style={[styles.qnaStatusBadge, item.status === 'answered' ? styles.qnaStatusAnswered : styles.qnaStatusPending]}>
+                  <Text style={[styles.qnaStatusText, item.status === 'answered' ? styles.qnaStatusTextAnswered : styles.qnaStatusTextPending]}>
+                    {item.status === 'answered' ? '답변완료' : '답변대기'}
+                  </Text>
                 </View>
-                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                {item.content ? (
-                  <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>
-                ) : null}
+                <View style={styles.qnaBadgeRow}>
+                  <View style={styles.qnaBadge}>
+                    <Text style={styles.qnaBadgeText}>{item.category ?? 'Q&A'}</Text>
+                  </View>
+                </View>
+                <Text style={styles.qnaCardTitle}>{item.title}</Text>
+                {item.content ? <Text style={styles.qnaCardContent} numberOfLines={2}>{item.content}</Text> : null}
+                <View style={styles.qnaCardMeta}>
+                  <View style={styles.qnaMetaLeft}>
+                    <Ionicons name="time-outline" size={12} color="#586144" />
+                    <Text style={styles.qnaMetaText}>{item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : ''}</Text>
+                  </View>
+                  <View style={styles.qnaMetaRight}>
+                    <Ionicons name="bookmark-outline" size={12} color="#586144" />
+                    <Text style={styles.qnaMetaText}>{item.scrapCount ?? 0}</Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             )}
           />
@@ -261,12 +298,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  tabBtn: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 9999,
-  },
+  tabBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 9999 },
   tabBtnActive: { backgroundColor: '#B2D36E' },
   tabBtnText: { fontSize: 14, fontWeight: '600', color: '#9CAF88' },
   tabBtnTextActive: { color: '#fff' },
@@ -279,21 +311,42 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  manualCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#EDF5E1', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 3,
   },
   badgeText: { fontSize: 11, color: '#3C6802', fontWeight: '600' },
-  statusBadge: {
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3,
-    backgroundColor: '#FFF3F3',
+  scrapRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  scrapRightText: { fontSize: 12, color: '#586144' },
+  manualCardTitle: {
+    fontSize: 18, fontWeight: '700', color: '#586144',
+    lineHeight: 27, letterSpacing: -0.439,
   },
-  statusBadgeAnswered: { backgroundColor: '#EDF5E1' },
-  statusText: { fontSize: 11, color: '#C10007', fontWeight: '600' },
-  statusTextAnswered: { color: '#3C6802' },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a1a', lineHeight: 22 },
+  cardTitle: { fontSize: 15, fontWeight: '600', color: '#586144', lineHeight: 22 },
   cardSummary: { fontSize: 13, color: '#9CAF88', lineHeight: 20 },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 14, color: '#9CAF88' },
+
+  qnaCard: {
+    backgroundColor: '#FFF', borderRadius: 16, padding: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
+  },
+  qnaStatusBadge: { position: 'absolute', top: 16, right: 16, borderRadius: 9999, paddingHorizontal: 8, paddingVertical: 4 },
+  qnaStatusAnswered: { backgroundColor: '#E9F3FF' },
+  qnaStatusPending: { backgroundColor: '#FEF2F2' },
+  qnaStatusText: { fontSize: 12, fontWeight: '700', lineHeight: 16 },
+  qnaStatusTextAnswered: { color: '#2B56B5' },
+  qnaStatusTextPending: { color: '#C10007' },
+  qnaBadgeRow: { flexDirection: 'row', marginBottom: 10, marginRight: 90 },
+  qnaBadge: { backgroundColor: '#EDF5E1', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
+  qnaBadgeText: { fontSize: 11, color: '#3C6802', fontWeight: '600' },
+  qnaCardTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 27, letterSpacing: -0.439, marginBottom: 6 },
+  qnaCardContent: { fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15, marginBottom: 8 },
+  qnaCardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  qnaMetaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  qnaMetaRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  qnaMetaText: { fontSize: 12, color: '#586144' },
 });

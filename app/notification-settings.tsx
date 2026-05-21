@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
 import { useNotificationSettings } from './context/notificationSettings';
+import { BottomNav } from '../components/BottomNav';
 
 function CustomToggle({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {
   const translateX = useRef(new Animated.Value(value ? 18 : 0)).current;
@@ -56,6 +57,12 @@ const USER_TOGGLES = [
     title: '매뉴얼 업데이트 알림',
     desc: '새로운 법률 정보가 추가되면 알려드려요',
   },
+  {
+    key: 'community',
+    icon: 'document-text-outline' as const,
+    title: '커뮤니티 좋아요, 댓글 알림',
+    desc: '내 글에 댓글이나 좋아요가 달리면 알려드려요',
+  },
 ];
 
 const LAWYER_TOGGLES = [
@@ -88,26 +95,29 @@ export default function NotificationSettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.list}>
-        {toggles.map((item, idx) => (
-          <View key={item.key}>
-            <View style={styles.row}>
-              <View style={styles.iconBox}>
-                <Ionicons name={item.icon} size={20} color="#fff" />
+      <View style={{ flex: 1 }}>
+        <View style={styles.list}>
+          {toggles.map((item, idx) => (
+            <View key={item.key}>
+              <View style={styles.row}>
+                <View style={styles.iconBox}>
+                  <Ionicons name={item.icon} size={20} color="#fff" />
+                </View>
+                <View style={styles.textGroup}>
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowDesc}>{item.desc}</Text>
+                </View>
+                <CustomToggle
+                  value={enabled[item.key as keyof typeof enabled]}
+                  onValueChange={() => toggle(item.key as keyof typeof enabled)}
+                />
               </View>
-              <View style={styles.textGroup}>
-                <Text style={styles.rowTitle}>{item.title}</Text>
-                <Text style={styles.rowDesc}>{item.desc}</Text>
-              </View>
-              <CustomToggle
-                value={enabled[item.key as keyof typeof enabled]}
-                onValueChange={() => toggle(item.key as keyof typeof enabled)}
-              />
+              {idx < toggles.length - 1 && <View style={styles.divider} />}
             </View>
-            {idx < toggles.length - 1 && <View style={styles.divider} />}
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
+      <BottomNav activeTab="profile" />
     </SafeAreaView>
   );
 }

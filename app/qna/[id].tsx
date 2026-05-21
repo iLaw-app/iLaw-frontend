@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   userDate: { fontSize: 12, fontWeight: '400', color: '#4A5565', lineHeight: 18, letterSpacing: -0.15 },
   questionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 27, letterSpacing: -0.439 },
   contentBox: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 16 },
-  questionBody: { fontSize: 14, color: '#444', lineHeight: 22 },
+  questionBody: { fontSize: 15, color: '#444', lineHeight: 23 },
   imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   imageThumb: { width: 90, height: 90, borderRadius: 10 },
 
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   orgRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   lawyerOrg: { fontSize: 12, color: '#4A5565' },
   answerDivider: { height: 1.544, backgroundColor: '#FFF' },
-  answerContent: { fontSize: 14, color: '#333', lineHeight: 22 },
+  answerContent: { fontSize: 15, color: '#333', lineHeight: 23 },
 
   lawyerBackText: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
 

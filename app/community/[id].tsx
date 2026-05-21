@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { BottomNav } from '../../components/BottomNav';
@@ -25,7 +25,7 @@ function PersonIcon({ size = 15 }: { size?: number }) {
 }
 
 function ThumbsUpIcon({ filled = false, size = 19 }: { filled?: boolean; size?: number }) {
-  const color = filled ? '#3C6802' : '#4A5565';
+  const color = filled ? '#3C6802' : '#6A7282';
   return (
     <Svg width={size} height={size} viewBox="0 0 19 19" fill="none">
       <Path
@@ -33,6 +33,16 @@ function ThumbsUpIcon({ filled = false, size = 19 }: { filled?: boolean; size?: 
         stroke={color} strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"
         fill={filled ? color : 'none'}
       />
+    </Svg>
+  );
+}
+
+function DotsIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 22 22" fill="none">
+      <Path d="M11.0002 11.9167C11.5066 11.9167 11.9171 11.5062 11.9171 10.9999C11.9171 10.4935 11.5066 10.083 11.0002 10.083C10.4939 10.083 10.0834 10.4935 10.0834 10.9999C10.0834 11.5062 10.4939 11.9167 11.0002 11.9167Z" stroke="#586144" strokeWidth="1.99961" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M11.0002 5.50068C11.5066 5.50068 11.9171 5.0902 11.9171 4.58384C11.9171 4.07748 11.5066 3.66699 11.0002 3.66699C10.4939 3.66699 10.0834 4.07748 10.0834 4.58384C10.0834 5.0902 10.4939 5.50068 11.0002 5.50068Z" stroke="#586144" strokeWidth="1.99961" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M11.0002 18.3337C11.5066 18.3337 11.9171 17.9232 11.9171 17.4168C11.9171 16.9105 11.5066 16.5 11.0002 16.5C10.4939 16.5 10.0834 16.9105 10.0834 17.4168C10.0834 17.9232 10.4939 18.3337 11.0002 18.3337Z" stroke="#586144" strokeWidth="1.99961" strokeLinecap="round" strokeLinejoin="round"/>
     </Svg>
   );
 }
@@ -66,6 +76,7 @@ type Comment = {
   likes: number;
   liked: boolean;
   isAuthor: boolean;
+  isPostAuthor?: boolean;
   parentId?: number | null;
   replies?: Comment[];
 };
@@ -81,11 +92,11 @@ type Post = {
 function formatDate(iso: string): string {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return iso;
-  const diffDays = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 7) return diffDays === 0 ? '오늘' : `${diffDays}일 전`;
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
-  return `${mm}.${dd}`;
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${mm}/${dd} ${hh}:${min}`;
 }
 
 function mapComment(c: any): Comment {
@@ -97,6 +108,7 @@ function mapComment(c: any): Comment {
     likes: c.likes ?? 0,
     liked: !!c.liked,
     isAuthor: !!c.isAuthor,
+    isPostAuthor: !!c.isPostAuthor,
     parentId: c.parentId ?? null,
     replies: (c.replies ?? []).map(mapComment),
   };
@@ -124,28 +136,41 @@ function PollBar({ option, total, selected, onVote }: { option: PollOption; tota
   const pct = total > 0 ? Math.round((option.votes / total) * 100) : 0;
   return (
     <TouchableOpacity style={ps.row} onPress={onVote} activeOpacity={0.8}>
-      <View style={[ps.barBg, selected && ps.barSelected]}>
-        <View style={[ps.barFill, { width: `${pct}%` }]} />
+      <View style={ps.barBg}>
+        <View style={[ps.barFill, { width: `${pct}%` }, selected && ps.barFillSelected]} />
         <Text style={ps.barLabel}>{option.label}</Text>
       </View>
-      <Text style={ps.pct}>{pct}%</Text>
+      <Text style={ps.pct} numberOfLines={1}>{pct}%</Text>
     </TouchableOpacity>
   );
 }
 
-function ReplyItem({ reply, onDelete, onLike }: { reply: Comment; onDelete: (id: number) => void; onLike: (id: number) => void }) {
+function ReplyItem({ reply, onDelete, onLike, postNickname, viewerIsPostAuthor }: { reply: Comment; onDelete: (id: number) => void; onLike: (id: number) => void; postNickname: string; viewerIsPostAuthor: boolean }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const isOP = !!reply.isPostAuthor || (reply.isAuthor && viewerIsPostAuthor) || reply.nickname === postNickname;
   return (
     <View style={s.replyRow}>
-      <View style={s.replyLeftLine} />
       <Avatar size={28} />
       <View style={{ flex: 1 }}>
         <View style={s.commentMeta}>
-          <Text style={s.replyNickname}>{reply.nickname}</Text>
-          <Text style={s.replyDate}>{reply.date}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={isOP ? s.authorNickname : s.replyNickname}>{isOP ? '익명(글쓴이)' : reply.nickname}</Text>
+            <Text style={s.replyDate}>{reply.date}</Text>
+          </View>
           {reply.isAuthor && (
-            <TouchableOpacity onPress={() => onDelete(reply.id)} activeOpacity={0.7}>
-              <Text style={s.deleteBtn}>삭제</Text>
-            </TouchableOpacity>
+            <View>
+              <TouchableOpacity onPress={() => setShowMenu(v => !v)} activeOpacity={0.7}>
+                <DotsIcon />
+              </TouchableOpacity>
+              {showMenu && (
+                <View style={s.miniDropdown}>
+                  <TouchableOpacity style={s.miniDropdownItem} activeOpacity={0.7} onPress={() => { setShowMenu(false); onDelete(reply.id); }}>
+                    <Ionicons name="trash-outline" size={14} color="#586144" />
+                    <Text style={s.miniDropdownDeleteText}>삭제하기</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           )}
         </View>
         <Text style={s.commentText}>{reply.text}</Text>
@@ -158,19 +183,33 @@ function ReplyItem({ reply, onDelete, onLike }: { reply: Comment; onDelete: (id:
   );
 }
 
-function CommentItem({ comment, onReply, onDelete, onLike }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void; onLike: (id: number) => void }) {
+function CommentItem({ comment, onReply, onDelete, onLike, postNickname, viewerIsPostAuthor }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void; onLike: (id: number) => void; postNickname: string; viewerIsPostAuthor: boolean }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const isOP = !!comment.isPostAuthor || (comment.isAuthor && viewerIsPostAuthor) || comment.nickname === postNickname;
   return (
     <View>
       <View style={s.commentRow}>
         <Avatar size={32} />
         <View style={{ flex: 1 }}>
           <View style={s.commentMeta}>
-            <Text style={s.commentNickname}>{comment.nickname}</Text>
-            <Text style={s.replyDate}>{comment.date}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={isOP ? s.authorNickname : s.commentNickname}>{isOP ? '익명(글쓴이)' : comment.nickname}</Text>
+              <Text style={s.replyDate}>{comment.date}</Text>
+            </View>
             {comment.isAuthor && (
-              <TouchableOpacity onPress={() => onDelete(comment.id)} activeOpacity={0.7}>
-                <Text style={s.deleteBtn}>삭제</Text>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity onPress={() => setShowMenu(v => !v)} activeOpacity={0.7}>
+                  <DotsIcon />
+                </TouchableOpacity>
+                {showMenu && (
+                  <View style={s.miniDropdown}>
+                    <TouchableOpacity style={s.miniDropdownItem} activeOpacity={0.7} onPress={() => { setShowMenu(false); onDelete(comment.id); }}>
+                      <Ionicons name="trash-outline" size={14} color="#586144" />
+                      <Text style={s.miniDropdownDeleteText}>삭제하기</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             )}
           </View>
           <Text style={s.commentText}>{comment.text}</Text>
@@ -185,7 +224,7 @@ function CommentItem({ comment, onReply, onDelete, onLike }: { comment: Comment;
           </View>
         </View>
       </View>
-      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} onDelete={onDelete} onLike={onLike} />)}
+      {(comment.replies ?? []).map(reply => <ReplyItem key={reply.id} reply={reply} onDelete={onDelete} onLike={onLike} postNickname={postNickname} viewerIsPostAuthor={viewerIsPostAuthor} />)}
     </View>
   );
 }
@@ -209,31 +248,36 @@ export default function CommunityDetailScreen() {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const headers: Record<string, string> = {};
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-    fetch(`${API_BASE}/community/${postId}`, { headers })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data) return;
-        const poll = mapPoll(data.poll);
-        setPost({
-          ...data,
-          bookmarks: data.bookmarks ?? 0,
-          bookmarked: data.bookmarked ?? false,
-          imageUrls: data.imageUrls ?? [],
-          poll,
-          comments: [],
-        });
-        setLiked(data.liked ?? false);
-        setLikeCount(data.likes ?? 0);
-        setBookmarked(data.bookmarked ?? false);
-        setScrapCount(data.bookmarks ?? 0);
-        setVotedIdx(poll?.votedOptionIndex ?? null);
-        setComments((data.comments ?? []).map(mapComment).reverse());
-      })
-      .finally(() => setLoading(false));
-  }, [postId, accessToken]);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      setLoading(true);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+      fetch(`${API_BASE}/community/${postId}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (cancelled || !data) return;
+          const poll = mapPoll(data.poll);
+          setPost({
+            ...data,
+            bookmarks: data.bookmarks ?? 0,
+            bookmarked: data.bookmarked ?? false,
+            imageUrls: data.imageUrls ?? [],
+            poll,
+            comments: [],
+          });
+          setLiked(data.liked ?? false);
+          setLikeCount(data.likes ?? 0);
+          setBookmarked(data.bookmarked ?? false);
+          setScrapCount(data.bookmarks ?? 0);
+          setVotedIdx(poll?.votedOptionIndex ?? null);
+          setComments((data.comments ?? []).map(mapComment).reverse());
+        })
+        .finally(() => { if (!cancelled) setLoading(false); });
+      return () => { cancelled = true; };
+    }, [postId, accessToken])
+  );
 
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
   const pollOptions = post?.poll?.options ?? [];
@@ -432,7 +476,7 @@ export default function CommunityDetailScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'height' : undefined}>
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
@@ -453,13 +497,13 @@ export default function CommunityDetailScreen() {
                   { text: '삭제', style: 'destructive', onPress: handleDelete },
                 ]);
               }}>
-                <Ionicons name="trash-outline" size={14} color="#C10007" />
+                <Ionicons name="trash-outline" size={14} color="#586144" />
                 <Text style={s.dropdownTextRed}>삭제하기</Text>
               </TouchableOpacity>
               <View style={s.dropdownDivider} />
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
                 setShowMenu(false);
-                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '' } } as any);
+                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options.map(o => o.label)) : '' } } as any);
               }}>
                 <Ionicons name="create-outline" size={14} color="#586144" />
                 <Text style={s.dropdownText}>수정하기</Text>
@@ -514,12 +558,12 @@ export default function CommunityDetailScreen() {
                 <Text style={[s.actionText, liked && { color: '#3C6802' }]}>{likeCount}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.actionBtn} activeOpacity={0.7}>
-                <Ionicons name="chatbubble-outline" size={18} color="#4A5565" />
+                <Ionicons name="chatbubble-outline" size={18} color="#6A7282" />
                 <Text style={s.actionText}>{totalComments}</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={s.actionBtn} onPress={handleBookmark} activeOpacity={0.7}>
-              <Ionicons name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={18} color="#4A5565" />
+              <Ionicons name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={18} color="#6A7282" />
               <Text style={[s.actionText, bookmarked && { color: '#3C6802' }]}>{scrapCount}</Text>
             </TouchableOpacity>
           </View>
@@ -535,6 +579,8 @@ export default function CommunityDetailScreen() {
               onReply={(cid) => setReplyingTo(replyingTo === cid ? null : cid)}
               onDelete={handleDeleteComment}
               onLike={handleCommentLike}
+              postNickname={post.nickname}
+              viewerIsPostAuthor={post.isAuthor}
             />
           ))}
         </ScrollView>
@@ -592,9 +638,10 @@ const ps = StyleSheet.create({
     overflow: 'hidden', position: 'relative',
   },
   barFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#EFF4E1', borderRadius: 8 },
-  barSelected: { borderWidth: 1, borderColor: '#9CAF88' },
-  barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
-  pct: { fontSize: 13, color: '#586144', fontWeight: '700', width: 36, textAlign: 'right' },
+  barFillSelected: { backgroundColor: '#C4D99A' },
+  barSelected: {},
+  barLabel: { fontSize: 14, color: 'rgba(10,10,10,0.50)', fontWeight: '400', letterSpacing: -0.312, marginLeft: 12, zIndex: 1 },
+  pct: { fontSize: 13, color: '#586144', fontWeight: '700', width: 40, textAlign: 'right' },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 16 },
   totalText: { fontSize: 12, fontWeight: '400', color: '#6A7282', lineHeight: 16 },
 });
@@ -604,13 +651,13 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, position: 'relative', zIndex: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   backBtn: { padding: 4 },
   menuBtn: { padding: 4 },
-  dropdown: { position: 'absolute', top: 48, right: 16, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 8, minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#F0F5E8' },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
-  dropdownDivider: { height: 1, backgroundColor: '#F0F5E8' },
+  dropdown: { position: 'absolute', top: 48, right: 16, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 8, minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
+  dropdownDivider: { height: 1, backgroundColor: '#E5E7EB' },
   dropdownText: { fontSize: 14, color: '#586144', fontWeight: '500' },
-  dropdownTextRed: { fontSize: 14, color: '#C10007', fontWeight: '500' },
+  dropdownTextRed: { fontSize: 14, color: '#586144', fontWeight: '500' },
 
-  scroll: { paddingHorizontal: 20, paddingBottom: 24 },
+  scroll: { paddingHorizontal: 20, paddingBottom: 140 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 16 },
   avatar: { borderRadius: 9999, backgroundColor: '#CCD9BA', justifyContent: 'center', alignItems: 'center' },
   nickname: { fontSize: 16, fontWeight: '700', color: '#1E2939', lineHeight: 24, letterSpacing: -0.312 },
@@ -625,17 +672,18 @@ const s = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderTopWidth: 0.678, borderTopColor: '#F3F4F6' },
   actionsLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionText: { fontSize: 14, color: '#4A5565', fontWeight: '500' },
+  actionText: { fontSize: 14, color: '#6A7282', fontWeight: '500' },
 
   thickDivider: { height: 7.458, backgroundColor: '#F3F4F6', marginHorizontal: -20, marginBottom: 16 },
   commentsHeader: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 16 },
 
   commentRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  replyRow: { flexDirection: 'row', gap: 8, marginLeft: 16, marginBottom: 16, alignItems: 'flex-start' },
+  replyRow: { flexDirection: 'row', gap: 8, marginLeft: 16, marginBottom: 16, alignItems: 'flex-start', backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10 },
   replyLeftLine: { width: 1.356, backgroundColor: '#F3F4F6', alignSelf: 'stretch', marginRight: 4 },
-  commentMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  commentMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   commentNickname: { fontSize: 13, fontWeight: '700', color: '#1E2939' },
   replyNickname: { fontSize: 13, fontWeight: '700', color: '#6A7282' },
+  authorNickname: { fontSize: 14, fontWeight: '700', color: '#5A7B10', lineHeight: 20, letterSpacing: -0.15 },
   deleteBtn: { fontSize: 12, color: '#C10007', fontWeight: '600' },
   replyDate: { fontSize: 11, color: '#6A7282' },
   commentText: { fontSize: 14, color: '#1a1a1a', lineHeight: 20, marginBottom: 6 },
@@ -645,12 +693,29 @@ const s = StyleSheet.create({
   replyMeta: { fontSize: 12, color: '#6A7282' },
   replyBtn: { fontSize: 12, color: '#6A7282', fontWeight: '600' },
 
-  inputBar: { borderTopWidth: 1, borderTopColor: '#F0F5E8', backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 10 },
+  miniDropdown: {
+    position: 'absolute', top: 24, right: 0, zIndex: 100,
+    backgroundColor: '#FFF', borderRadius: 12,
+    borderWidth: 1, borderColor: '#E5E7EB',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
+    minWidth: 110, overflow: 'hidden',
+  },
+  miniDropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
+  miniDropdownDeleteText: { fontSize: 14, fontWeight: '500', color: '#586144' },
+
+  inputBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    borderTopWidth: 0.678, borderTopColor: '#E5E7EB',
+    backgroundColor: 'rgba(255,255,255,0.70)',
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10,
+    gap: 8,
+  },
   replyingBanner: {
     height: 36, paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: 10, backgroundColor: '#EFF4E1',
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 8,
+    flexShrink: 0, alignSelf: 'stretch',
   },
   replyingText: { color: '#586144', fontSize: 14, fontWeight: '400', lineHeight: 20, letterSpacing: -0.15 },
   cancelText: { color: '#586144', fontSize: 12, fontWeight: '700', lineHeight: 16 },

@@ -8,17 +8,19 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
 import { useAuth } from '../context/auth';
+import * as SecureStore from 'expo-secure-store';
+import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-type TabType = 'all' | 'manual' | 'qna';
+type TabType = 'all' | 'manual' | 'qna' | 'community';
 
 type SearchResult = {
   id: number;
-  type: 'manual' | 'qna';
+  type: 'manual' | 'qna' | 'community';
   question: string;
   summary: string | null;
-  category: { name: string; slug: string };
+  category: { name: string; slug: string } | null;
   scrapCount?: number;
   scrapped?: boolean;
 };
@@ -27,12 +29,13 @@ const TABS: { key: TabType; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'manual', label: '매뉴얼' },
   { key: 'qna', label: 'Q&A' },
+  { key: 'community', label: '커뮤니티' },
 ];
 
 function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
   text: string; keywords: string[]; style?: any; numberOfLines?: number; onTextLayout?: (e: any) => void;
 }) {
-  const active = keywords.filter(k => k.trim());
+  const active = keywords.map(k => k.trim()).filter(k => k);
   if (active.length === 0) {
     return <Text style={style} numberOfLines={numberOfLines} onTextLayout={onTextLayout}>{text}</Text>;
   }
@@ -43,7 +46,7 @@ function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
     <Text style={style} numberOfLines={numberOfLines} onTextLayout={onTextLayout}>
       {parts.map((part, i) =>
         active.some(k => part.toLowerCase() === k.toLowerCase())
-          ? <Text key={i} style={{ backgroundColor: '#FFE566' }}>{part}</Text>
+          ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
           : part
       )}
     </Text>
@@ -94,6 +97,18 @@ function QnaIcon() {
   );
 }
 
+function CommunityIcon() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 20 20" fill="none">
+      <Path d="M12.4937 1.66602H4.9975C4.55569 1.66602 4.13198 1.84152 3.81958 2.15393C3.50717 2.46633 3.33167 2.89004 3.33167 3.33185V16.6585C3.33167 17.1003 3.50717 17.524 3.81958 17.8364C4.13198 18.1488 4.55569 18.3244 4.9975 18.3244H14.9925C15.4343 18.3244 15.858 18.1488 16.1704 17.8364C16.4828 17.524 16.6583 17.1003 16.6583 16.6585V5.8306L12.4937 1.66602Z" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M11.6608 1.66602V4.99768C11.6608 5.43949 11.8363 5.8632 12.1487 6.1756C12.4611 6.48801 12.8849 6.66352 13.3267 6.66352H16.6583" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M8.32916 7.49609H6.66333" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M13.3267 10.8281H6.66333" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M13.3267 14.1592H6.66333" stroke="#678720" strokeWidth="1.33308" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}
+
 function ResultCard({ item, keywords, accessToken, onPress }: {
   item: SearchResult; keywords: string[]; accessToken: string | null; onPress: () => void
 }) {
@@ -117,25 +132,32 @@ function ResultCard({ item, keywords, accessToken, onPress }: {
     } catch {}
   };
 
+  const tagIcon = item.type === 'qna' ? <QnaIcon /> : item.type === 'community' ? <CommunityIcon /> : <ManualIcon />;
+  const tagLabel = item.type === 'qna' ? 'Q&A' : item.type === 'community' ? '커뮤니티' : '매뉴얼';
+  const tagStyle = item.type === 'qna' ? styles.tagQna : styles.tagManual;
+  const tagTextStyle = item.type === 'qna' ? styles.tagTextQna : styles.tagTextManual;
+
   return (
     <TouchableOpacity style={styles.resultCard} activeOpacity={0.7} onPress={onPress}>
       <View style={styles.resultTopRow}>
-        <View style={item.type === 'qna' ? styles.tagQna : styles.tagManual}>
-          {item.type === 'qna' ? <QnaIcon /> : <ManualIcon />}
-          <Text style={item.type === 'qna' ? styles.tagTextQna : styles.tagTextManual}>
-            {item.type === 'qna' ? 'Q&A' : '매뉴얼'}
-          </Text>
+        <View style={tagStyle}>
+          {tagIcon}
+          <Text style={tagTextStyle}>{tagLabel}</Text>
         </View>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={handleScrap} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons
-            name={scrapped ? 'bookmark' : 'bookmark-outline'}
-            size={16}
-            color={scrapped ? '#3C6802' : '#9CAF88'}
-          />
-        </TouchableOpacity>
-        {scrapCount > 0 && (
-          <Text style={styles.scrapCount}>{scrapCount}</Text>
+        {item.type !== 'community' && (
+          <>
+            <TouchableOpacity onPress={handleScrap} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons
+                name={scrapped ? 'bookmark' : 'bookmark-outline'}
+                size={16}
+                color={scrapped ? '#3C6802' : '#9CAF88'}
+              />
+            </TouchableOpacity>
+            {scrapCount > 0 && (
+              <Text style={styles.scrapCount}>{scrapCount}</Text>
+            )}
+          </>
         )}
       </View>
       <HighlightText
@@ -171,6 +193,14 @@ export default function HomeScreen() {
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
+  const searchAreaRef = useRef<any>(null);
+  const recommendRef = useRef<any>(null);
+  const fabRef = useRef<any>(null);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [tutorialRects, setTutorialRects] = useState<SpotlightRect[]>([]);
+
   useEffect(() => {
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (isSearchingRef.current) {
@@ -181,6 +211,42 @@ export default function HomeScreen() {
     });
     return () => handler.remove();
   }, []);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    SecureStore.getItemAsync('airo_tutorial_home').then(val => {
+      if (val) return;
+      timer = setTimeout(() => {
+        const rects: SpotlightRect[] = [];
+        let pending = 3;
+        const mark = (idx: number, r: SpotlightRect) => {
+          rects[idx] = r;
+          pending--;
+          if (pending === 0) { setTutorialRects([...rects]); setTutorialVisible(true); }
+        };
+        searchAreaRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(0, { x, y, width: w, height: h }));
+        recommendRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(1, { x, y, width: w, height: h }));
+        fabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(2, { x, y, width: w, height: h }));
+      }, 500);
+    });
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleTutorialNext = async () => {
+    if (tutorialStep < 2) {
+      setTutorialStep(s => s + 1);
+    } else {
+      await SecureStore.setItemAsync('airo_tutorial_home', 'done');
+      setTutorialVisible(false);
+      setTutorialStep(0);
+    }
+  };
+
+  const handleTutorialSkip = async () => {
+    if (dontShowAgain) await SecureStore.setItemAsync('airo_tutorial_home', 'done');
+    setTutorialVisible(false);
+    setTutorialStep(0);
+  };
 
   const swipeBackPan = useRef(
     PanResponder.create({
@@ -197,9 +263,10 @@ export default function HomeScreen() {
     const encoded = encodeURIComponent(q.trim());
     const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
     try {
-      const [manualData, qnaData] = await Promise.all([
+      const [manualData, qnaData, communityData] = await Promise.all([
         fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
         fetch(`${API_BASE}/qa/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
+        fetch(`${API_BASE}/community/posts/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()).catch(() => []),
       ]);
       const mergedTerms = Array.from(new Set([
         ...(manualData.expandedTerms ?? []),
@@ -217,11 +284,20 @@ export default function HomeScreen() {
         category: { name: item.category, slug: item.category },
         scrapped: item.scrapped,
       }));
-      const combined = [...manualResults, ...qnaResults];
+      const rawCommunity = Array.isArray(communityData) ? communityData : (Array.isArray(communityData?.results) ? communityData.results : []);
+      const communityResults: SearchResult[] = rawCommunity.map((item: any) => ({
+        id: item.id,
+        type: 'community' as const,
+        question: item.title,
+        summary: item.content ? String(item.content).replace(/\*\*(.*?)\*\*/g, '$1').substring(0, 120) : null,
+        category: null,
+      }));
+      const combined = [...manualResults, ...qnaResults, ...communityResults];
 
       if (accessToken && combined.length > 0) {
         const scrapStates = await Promise.all(
           combined.map(item => {
+            if (item.type === 'community') return Promise.resolve({ scrapped: false, count: 0 });
             const url = item.type === 'manual'
               ? `${API_BASE}/manual/articles/${item.id}/scrap`
               : `${API_BASE}/qa/${item.id}/scrap`;
@@ -324,12 +400,13 @@ export default function HomeScreen() {
                 <ResultCard
                   key={`${item.type}-${item.id}`}
                   item={item}
-                  keywords={expandedTerms.length > 0 ? expandedTerms : [searchQuery]}
+                  keywords={Array.from(new Set([searchQuery, ...expandedTerms]))}
                   accessToken={accessToken}
-                  onPress={() => item.type === 'qna'
-                    ? router.push(`/qna/${item.id}`)
-                    : router.push(`/manual-detail?articleId=${item.id}`)
-                  }
+                  onPress={() => {
+                    if (item.type === 'qna') router.push(`/qna/${item.id}` as any);
+                    else if (item.type === 'community') router.push(`/community/${item.id}` as any);
+                    else router.push(`/manual-detail?articleId=${item.id}` as any);
+                  }}
                 />
               ))}
             </View>
@@ -340,6 +417,30 @@ export default function HomeScreen() {
   }
 
   // ── 홈 메인 화면 ──
+  const tutorialSteps: TutorialStep[] = [
+    {
+      spotlight: tutorialRects[0] ?? null,
+      spotlightRadius: 9999,
+      title: '검색',
+      description: '궁금한 법률 상황을 검색해 보세요.\n알바비, 학교폭력, 온라인 괴롭힘 등 다양한 키워드로 찾을 수 있어요.',
+      tooltipBelow: true,
+    },
+    {
+      spotlight: tutorialRects[1] ?? null,
+      spotlightRadius: 16,
+      title: '추천 콘텐츠',
+      description: '청소년에게 자주 생기는 법률 고민들을 모아두었어요.\n바로 확인해보세요.',
+      tooltipBelow: false,
+    },
+    {
+      spotlight: tutorialRects[2] ?? null,
+      spotlightRadius: 9999,
+      title: 'AI 법률 챗봇',
+      description: '궁금한 법률 내용을 AI 챗봇에게\n자유롭게 물어볼 수 있어요.',
+      tooltipBelow: false,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -353,12 +454,12 @@ export default function HomeScreen() {
             <Text style={styles.mainSub}>필요한 도움을 찾아보세요</Text>
           </View>
           <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')}>
-            <Ionicons name="notifications-outline" size={20} color="#586144" />
+            <Ionicons name="notifications-outline" size={24} color="#858D7A" />
             {hasNotification && <View style={styles.notiBadge} />}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.searchArea}>
+        <View ref={searchAreaRef} style={styles.searchArea}>
           <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
@@ -377,7 +478,7 @@ export default function HomeScreen() {
 
         <Text style={styles.recommendTitle}>추천 콘텐츠</Text>
 
-        <View style={styles.recommendContainer}>
+        <View ref={recommendRef} style={styles.recommendContainer}>
           {RECOMMEND_ITEMS.map((item, index) => (
             <TouchableOpacity
               key={item.id}
@@ -403,9 +504,19 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
-        <Image source={require('../../assets/ai-robot.png')} style={styles.aiFabImage} resizeMode="contain" />
+      <TouchableOpacity ref={fabRef} style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
+        <Image source={require('../../assets/chatbot_logo.png')} style={styles.aiFabImage} resizeMode="contain" />
       </TouchableOpacity>
+
+      <TutorialOverlay
+        steps={tutorialSteps}
+        visible={tutorialVisible}
+        currentStep={tutorialStep}
+        dontShowAgain={dontShowAgain}
+        onNext={handleTutorialNext}
+        onSkip={handleTutorialSkip}
+        onToggleDontShow={() => setDontShowAgain(v => !v)}
+      />
     </SafeAreaView>
   );
 }
@@ -415,11 +526,12 @@ const styles = StyleSheet.create({
 
   topBar: { alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 8 },
   bellBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 48, height: 48, borderRadius: 9999,
     backgroundColor: '#fff',
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
+    borderWidth: 1.544, borderColor: '#CCD9BA',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
   notiBadge: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' },
 
@@ -457,7 +569,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 2,
   },
   categoryBadgeText: { fontSize: 11, fontWeight: '600', color: '#678720' },
-  recommendLabel: { fontSize: 16, fontWeight: '500', color: '#678720', lineHeight: 24, letterSpacing: -0.312 },
+  recommendLabel: { fontSize: 16, fontWeight: '500', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
 
   searchArea: { paddingHorizontal: 20, marginBottom: 4 },
   searchBox: {
@@ -547,8 +659,8 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: '#9CAF88', marginTop: 12 },
 
   aiFab: {
-    position: 'absolute', right: 20, bottom: 20,
-    width: 103, height: 111,
+    position: 'absolute', right: 6, bottom: 12,
+    width: 90, height: 90,
   },
-  aiFabImage: { width: 103, height: 111 },
+  aiFabImage: { width: 90, height: 90 },
 });

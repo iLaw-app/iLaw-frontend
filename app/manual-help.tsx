@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect } from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
 import { BottomNav } from '../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
@@ -38,6 +38,24 @@ const TIPS_FIELDS: { key: TipsKey; label: string; placeholder: string }[] = [
 ];
 
 const initTips = (): Record<TipsKey, string> => ({ where: '', who: '', what: '', help: '', question: '', evidence: '' });
+
+function EmergencyPhoneIcon() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+      <G clipPath="url(#clip0_emergency)">
+        <Path
+          d="M14.6638 11.2778V13.2774C14.6645 13.4631 14.6265 13.6468 14.5521 13.8169C14.4778 13.987 14.3687 14.1397 14.2319 14.2651C14.0951 14.3906 13.9336 14.4862 13.7578 14.5457C13.5819 14.6051 13.3956 14.6272 13.2107 14.6105C11.1597 14.3876 9.1895 13.6868 7.4585 12.5642C5.84803 11.5409 4.48263 10.1755 3.45927 8.56501C2.33281 6.82614 1.63179 4.84639 1.413 2.78612C1.39635 2.6018 1.41825 2.41604 1.47732 2.24065C1.5364 2.06526 1.63134 1.90409 1.75611 1.7674C1.88089 1.63072 2.03275 1.52151 2.20204 1.44673C2.37134 1.37195 2.55434 1.33325 2.73941 1.33307H4.73903C5.0625 1.32989 5.3761 1.44444 5.62136 1.65537C5.86663 1.86629 6.02683 2.15921 6.0721 2.47952C6.1565 3.11944 6.31302 3.74776 6.53868 4.35249C6.62835 4.59106 6.64776 4.85033 6.5946 5.0996C6.54144 5.34886 6.41794 5.57766 6.23873 5.75888L5.39223 6.60538C6.34109 8.27409 7.72275 9.65576 9.39146 10.6046L10.238 9.75811C10.4192 9.5789 10.648 9.4554 10.8972 9.40224C11.1465 9.34908 11.4058 9.36849 11.6444 9.45816C12.2491 9.68382 12.8774 9.84034 13.5173 9.92474C13.8411 9.97042 14.1368 10.1335 14.3482 10.383C14.5596 10.6325 14.6719 10.9509 14.6638 11.2778Z"
+          stroke="#C10007" strokeWidth={1.33308} strokeLinecap="round" strokeLinejoin="round"
+        />
+      </G>
+      <Defs>
+        <ClipPath id="clip0_emergency">
+          <Rect width={15.9969} height={15.9969} fill="white" />
+        </ClipPath>
+      </Defs>
+    </Svg>
+  );
+}
 
 function ChatIcon() {
   return (
@@ -105,7 +123,7 @@ export default function ManualHelpScreen() {
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={24} color="#586144" />
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>여기에서 도움을 받을 수 있어요!</Text>
       </View>
@@ -119,7 +137,7 @@ export default function ManualHelpScreen() {
 
         <View style={s.emergencyBox}>
           <View style={s.emergencyHeader}>
-            <Ionicons name="call" size={15} color="#E53935" />
+            <EmergencyPhoneIcon />
             <Text style={s.emergencyTitle}>긴급 신고 (전국 공통)</Text>
           </View>
           {emergency.map((e, i) => (
@@ -140,7 +158,7 @@ export default function ManualHelpScreen() {
               <Text style={s.centerName}>{agency.name}</Text>
               {agency.role ? <Text style={s.roleText}>{agency.role}</Text> : null}
               <View style={s.phoneRow}>
-                <Ionicons name="call-outline" size={14} color="#4CAF50" />
+                <Ionicons name="call-outline" size={14} color="#3C6802" />
                 <Text style={s.phoneText}>{agency.contact}</Text>
               </View>
             </TouchableOpacity>
@@ -181,11 +199,10 @@ export default function ManualHelpScreen() {
             </View>
             {callTarget && (
               <>
-                <Text style={s.modalCenterName}>{callTarget.name}</Text>
+                <Text style={s.modalCenterName} numberOfLines={1}>{callTarget.name}</Text>
                 <Text style={s.modalPhone}>{callTarget.contact}</Text>
                 <View style={s.modalBtns}>
                   <TouchableOpacity style={s.tipsBtn} activeOpacity={0.85} onPress={handleOpenTips}>
-                    <ChatIcon />
                     <Text style={s.tipsBtnText}>이렇게 말하면 좋아요!</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={handleCall}>
@@ -213,7 +230,7 @@ export default function ManualHelpScreen() {
                 </View>
                 {callTarget && (
                   <>
-                    <Text style={s.modalCenterName}>{callTarget.name}</Text>
+                    <Text style={s.modalCenterName} numberOfLines={1}>{callTarget.name}</Text>
                     <Text style={s.modalPhone}>{callTarget.contact}</Text>
                   </>
                 )}
@@ -246,12 +263,12 @@ export default function ManualHelpScreen() {
                       />
                     </View>
                   ))}
-                </View>
 
-                <TouchableOpacity style={s.copyBtn} activeOpacity={0.85} onPress={handleShare}>
-                  <Ionicons name="copy-outline" size={16} color="#586144" />
-                  <Text style={s.copyBtnText}>내용 복사하기</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity style={s.copyBtn} activeOpacity={0.85} onPress={handleShare}>
+                    <Ionicons name="copy-outline" size={16} color="#586144" />
+                    <Text style={s.copyBtnText}>내용 복사하기</Text>
+                  </TouchableOpacity>
+                </View>
               </ScrollView>
 
               {/* 고정 하단 */}
@@ -275,12 +292,11 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#f0f0f0',
   },
   backBtn: { padding: 4, marginRight: 8 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
+  headerTitle: { flex: 1, fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#888', marginBottom: 10 },
+  sectionLabel: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15, marginBottom: 10 },
 
   regionBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -295,18 +311,18 @@ const s = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
   emergencyHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  emergencyTitle: { fontSize: 14, fontWeight: '700', color: '#E53935' },
-  emergencyLine: { fontSize: 13, color: '#444', lineHeight: 24 },
+  emergencyTitle: { fontSize: 18, fontWeight: '700', color: '#C10007', lineHeight: 27, letterSpacing: -0.439 },
+  emergencyLine: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
   emergencyLabel: { fontWeight: '700' },
 
   centerCard: {
     backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 6, elevation: 3,
   },
-  centerName: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
-  roleText: { fontSize: 12, color: '#999', marginBottom: 8 },
+  centerName: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 27, letterSpacing: -0.439, marginBottom: 4 },
+  roleText: { fontSize: 14, fontWeight: '500', color: '#8C937D', lineHeight: 22.75, letterSpacing: -0.15, marginBottom: 8 },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  phoneText: { fontSize: 13, color: '#4CAF50', fontWeight: '600' },
+  phoneText: { fontSize: 14, fontWeight: '700', color: '#3C6802', lineHeight: 20, letterSpacing: -0.15 },
   emptyText: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 14 },
 
   regionModalOverlay: {
@@ -341,9 +357,9 @@ const s = StyleSheet.create({
     shadowRadius: 25,
     elevation: 12,
   },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: '#586144', lineHeight: 28, letterSpacing: -0.449 },
-  modalCenterName: { fontSize: 16, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312, marginBottom: 10, paddingRight: 103 },
+  modalCenterName: { fontSize: 16, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312, marginBottom: 10 },
   modalPhone: { fontSize: 26, fontWeight: '700', color: '#586144', marginBottom: 16 },
   modalBtns: { gap: 10 },
 
@@ -359,6 +375,11 @@ const s = StyleSheet.create({
   callBtn: {
     backgroundColor: '#B2D36E', paddingVertical: 14,
     borderRadius: 9999, alignItems: 'center', alignSelf: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10,
+    shadowRadius: 15,
+    elevation: 4,
   },
   callBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
@@ -387,7 +408,6 @@ const s = StyleSheet.create({
   tipsScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 12 },
   tipsCardBottom: {
     paddingHorizontal: 16, paddingVertical: 16,
-    borderTopWidth: 1, borderTopColor: '#F3F4F6',
   },
 
   bigContainer: {
@@ -428,7 +448,8 @@ const s = StyleSheet.create({
 
   copyBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, paddingHorizontal: 20,
+    gap: 5.995,
+    paddingTop: 8.826, paddingRight: 72.236, paddingBottom: 10.228, paddingLeft: 74.412,
     borderRadius: 14,
     borderWidth: 1.532, borderColor: '#F3F4F6',
     backgroundColor: '#FFF',

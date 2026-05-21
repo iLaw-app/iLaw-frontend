@@ -6,6 +6,22 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 
+function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
+  const active = keywords.map(k => k.trim()).filter(k => k);
+  if (active.length === 0) return <Text style={style}>{text}</Text>;
+  const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return (
+    <Text style={style}>
+      {parts.map((part, i) =>
+        active.some(k => part.toLowerCase() === k.toLowerCase())
+          ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
+          : part
+      )}
+    </Text>
+  );
+}
+
 function AnsweredChatIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
@@ -31,7 +47,7 @@ type QnAPost = {
 };
 
 
-function QnaCard({ item, onPress }: { item: QnAPost; onPress: () => void }) {
+function QnaCard({ item, onPress, keywords = [] }: { item: QnAPost; onPress: () => void; keywords?: string[] }) {
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={[styles.statusBadge, item.status === 'answered' ? styles.statusAnswered : styles.statusPending]}>
@@ -44,23 +60,20 @@ function QnaCard({ item, onPress }: { item: QnAPost; onPress: () => void }) {
           <Text style={styles.badgeText}>{item.category}</Text>
         </View>
       </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-      {item.content ? <Text style={styles.cardContent} numberOfLines={2}>{item.content}</Text> : null}
-      <View style={styles.cardDivider} />
+      <HighlightText text={item.title} keywords={keywords} style={[styles.cardTitle, { flexShrink: 1 }]} />
+      {item.content ? <HighlightText text={item.content} keywords={keywords} style={styles.cardContent} /> : null}
       <View style={styles.cardMeta}>
         <View style={styles.metaLeft}>
-          <Ionicons name="chatbubble-outline" size={12} color="#9CAF88" />
+          <Ionicons name="chatbubble-outline" size={12} color="#586144" />
           <Text style={styles.metaText}>{item.author.nickname ?? '익명'}</Text>
           <Text style={styles.metaDot}>•</Text>
-          <Ionicons name="time-outline" size={12} color="#9CAF88" />
+          <Ionicons name="time-outline" size={12} color="#586144" />
           <Text style={styles.metaText}>{new Date(item.createdAt).toISOString().slice(0, 10)}</Text>
         </View>
-        {item.scrapCount !== undefined && (
-          <View style={styles.metaRight}>
-            <Ionicons name="bookmark-outline" size={12} color="#9CAF88" />
-            <Text style={styles.metaText}>{item.scrapCount}</Text>
-          </View>
-        )}
+        <View style={styles.metaRight}>
+          <Ionicons name="bookmark-outline" size={12} color="#586144" />
+          <Text style={styles.metaText}>{item.scrapCount ?? 0}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -78,13 +91,29 @@ export default function QnaPage() {
     useCallback(() => {
       let cancelled = false;
       if (!loadedOnce) setLoading(true);
-      const options = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
+      const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : null;
+      const options = authHeaders ? { headers: authHeaders } : undefined;
       fetch(`${API_BASE}/qa`, options)
         .then(r => r.json())
-        .then(data => {
-          if (!cancelled) {
-            setPosts(Array.isArray(data) ? data : []);
-            setLoadedOnce(true);
+        .then(async (data) => {
+          if (cancelled) return;
+          const list: QnAPost[] = Array.isArray(data) ? data : [];
+          if (authHeaders && list.length > 0) {
+            const withScrap = await Promise.all(
+              list.map(async (post) => {
+                try {
+                  const res = await fetch(`${API_BASE}/qa/${post.id}/scrap`, { headers: authHeaders });
+                  if (res.ok) {
+                    const scrapData = await res.json();
+                    return { ...post, scrapCount: scrapData.count };
+                  }
+                } catch {}
+                return post;
+              })
+            );
+            if (!cancelled) { setPosts(withScrap); setLoadedOnce(true); }
+          } else {
+            if (!cancelled) { setPosts(list); setLoadedOnce(true); }
           }
         })
         .catch(() => {
@@ -172,7 +201,7 @@ export default function QnaPage() {
           data={filteredPosts}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <QnaCard item={item} onPress={() => router.push(`/qna/${item.id}`)} />
+            <QnaCard item={item} onPress={() => router.push(`/qna/${item.id}`)} keywords={searchQuery.trim() ? [searchQuery] : []} />
           )}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
@@ -194,7 +223,7 @@ export default function QnaPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a' },
+  headerTitle: { fontSize: 30, fontWeight: '700', color: '#586144', lineHeight: 36, letterSpacing: 0.396 },
   headerSub: { fontSize: 16, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312, marginTop: 2 },
   searchArea: { paddingHorizontal: 16, paddingBottom: 12 },
   searchBox: {
@@ -264,8 +293,8 @@ const styles = StyleSheet.create({
   cardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { fontSize: 12, color: '#9CAF88' },
-  metaDot: { fontSize: 12, color: '#9CAF88' },
+  metaText: { fontSize: 12, color: '#586144' },
+  metaDot: { fontSize: 12, color: '#586144' },
 
   fab: {
     position: 'absolute',
@@ -280,7 +309,7 @@ const styles = StyleSheet.create({
     elevation: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.12,
     shadowRadius: 15,
   },
   fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },

@@ -62,7 +62,7 @@ export default function LoginScreen() {
       <View style={styles.inner}>
 
         <Image
-          source={require('../assets/robot-head.png')}
+          source={require('../assets/logo2.png')}
           style={styles.robotHead}
           resizeMode="contain"
         />
@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   robotHead: {
-    width: 220,
-    height: 220,
-    marginBottom: 8,
+    width: 160,
+    height: 160,
+    marginBottom: 12,
   },
   tagline: {
     width: 264,
@@ -123,9 +123,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#586144',
     textAlign: 'center',
-    lineHeight: 72,
+    lineHeight: 32,
     letterSpacing: 0.123,
-    marginBottom: 32,
+    marginBottom: 20,
+    fontFamily: 'AiroFont',
   },
   buttons: {
     width: '100%',

@@ -14,7 +14,7 @@ function HighlightText({ text, keywords, style }: { text: string; keywords: stri
     <Text style={style}>
       {parts.map((part, i) =>
         active.some(k => part.toLowerCase() === k.toLowerCase())
-          ? <Text key={i} style={{ backgroundColor: '#FFE566' }}>{part}</Text>
+          ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
           : part
       )}
     </Text>
@@ -89,7 +89,7 @@ export default function ManualListScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={24} color="#586144" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{categoryLabel}</Text>
       </View>
@@ -210,11 +210,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   backBtn: { padding: 4, marginRight: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
 
   searchArea: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBox: {
@@ -228,10 +226,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     backgroundColor: '#FFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 5,
   },
   searchBoxActive: { borderColor: '#3C6802' },
   searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },

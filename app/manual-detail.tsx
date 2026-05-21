@@ -137,10 +137,12 @@ export default function ManualDetailScreen() {
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={24} color="#586144" />
         </TouchableOpacity>
         {article?.category && <Text style={s.headerTitle}>{article.category.name}</Text>}
       </View>
+
+      {!loading && article && <View style={s.headerDivider} />}
 
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color="#4CAF50" /></View>
@@ -185,40 +187,47 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   backBtn: { padding: 4, marginRight: 8 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
-  content: { paddingHorizontal: 20, paddingTop: 20 },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  content: { paddingHorizontal: 20, paddingTop: 12 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
   emptyText: { fontSize: 15, color: '#999' },
   questionHeader: { flexDirection: 'row', gap: 6, marginBottom: 20 },
-  questionLabel: { fontSize: 18, fontWeight: '700', color: '#4CAF50' },
+  questionLabel: { fontSize: 18, fontWeight: '700', color: '#000000' },
   questionText: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 28 },
   summaryBox: {
-    backgroundColor: '#F5FAF5',
-    borderRadius: 12,
+    backgroundColor: '#F7FEE7',
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
     padding: 16,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    borderLeftWidth: 3.861,
+    borderLeftColor: '#CCD9BA',
   },
-  summaryText: { fontSize: 15, color: '#2d6a2d', lineHeight: 22, fontWeight: '500' },
+  summaryText: { fontSize: 15, color: '#364153', lineHeight: 22, fontWeight: '500' },
   heading: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
   subheading: {
     fontSize: 15, fontWeight: '700', color: '#333',
     marginTop: 18, marginBottom: 8, paddingLeft: 10,
-    borderLeftWidth: 3, borderLeftColor: '#4CAF50',
+    borderLeftWidth: 3, borderLeftColor: '#CCD9BA',
   },
-  bodyText: { fontSize: 14, color: '#444', lineHeight: 23, marginBottom: 10 },
+  bodyText: { fontSize: 14, color: '#364153', lineHeight: 23, marginBottom: 10 },
   bulletContainer: { marginBottom: 10 },
   bulletItem: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  bulletDot: { fontSize: 14, color: '#4CAF50', lineHeight: 22, marginTop: 1 },
-  bulletText: { flex: 1, fontSize: 14, color: '#444', lineHeight: 22 },
+  bulletDot: { fontSize: 14, color: '#586144', lineHeight: 22, marginTop: 1 },
+  bulletText: { flex: 1, fontSize: 14, color: '#364153', lineHeight: 22 },
+  headerDivider: { height: 2.5, backgroundColor: '#CCD9BA', width: 348, alignSelf: 'center', marginTop: 8, marginBottom: 8 },
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
   contentImage: { width: '100%', height: 200, borderRadius: 8, marginBottom: 12 },
-  blockquote: { fontSize: 14, color: '#555', lineHeight: 22, paddingLeft: 12, borderLeftWidth: 3, borderLeftColor: '#ccc', marginBottom: 8, fontStyle: 'italic' },
+  blockquote: {
+    fontSize: 14, color: '#364153', lineHeight: 22,
+    paddingHorizontal: 12, paddingVertical: 12,
+    backgroundColor: '#F7FEE7',
+    borderTopRightRadius: 10, borderBottomRightRadius: 10,
+    borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA',
+    marginBottom: 8,
+  },
   scrapArea: { alignItems: 'center', marginTop: 36, marginBottom: 40 },
   scrapBtn: {
     width: 290,

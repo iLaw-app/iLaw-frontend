@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, Keyboard,
+  TextInput, KeyboardAvoidingView, Platform, Keyboard, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -126,18 +126,13 @@ export default function AiChatScreen() {
       });
       const data = await res.json();
       const now = nowStr();
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + 1, from: 'ai', time: now,
-          summary: data.situationSummary ?? data.summary ?? '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.',
-        },
-        {
-          id: Date.now() + 2, from: 'ai', time: now,
-          text: data.legalAdvice,
-          suggestions: data.suggestions,
-        },
-      ]);
+      const summary = (data.situationSummary ?? data.summary ?? '').trim();
+      const advice = (data.legalAdvice ?? '').trim();
+      const newMsgs: Message[] = [];
+      if (summary) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, summary });
+      if (advice) newMsgs.push({ id: Date.now() + 2, from: 'ai', time: now, text: advice, suggestions: data.suggestions });
+      if (newMsgs.length === 0) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, text: '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.' });
+      setMessages(prev => [...prev, ...newMsgs]);
     } catch {
       setMessages(prev => [...prev, {
         id: Date.now() + 1, from: 'ai', time: nowStr(),
@@ -165,7 +160,7 @@ export default function AiChatScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scrollRef}
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: '#F9FAFB' }}
           contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -174,7 +169,9 @@ export default function AiChatScreen() {
             msg.from === 'ai' ? (
               <View key={msg.id} style={s.aiRow}>
                 <View style={s.aiMeta}>
-                  <View style={s.aiAvatar}><Text style={s.aiAvatarText}>AI</Text></View>
+                  <View style={s.aiAvatarWrapper}>
+                  <Image source={require('../assets/chatbot_profile.png')} style={s.aiAvatarImg} resizeMode="contain" />
+                </View>
                   <Text style={s.msgTime}>{msg.time}</Text>
                 </View>
 
@@ -241,7 +238,9 @@ export default function AiChatScreen() {
           {loading && (
             <View style={s.aiRow}>
               <View style={s.aiMeta}>
-                <View style={s.aiAvatar}><Text style={s.aiAvatarText}>AI</Text></View>
+                <View style={s.aiAvatarWrapper}>
+                  <Image source={require('../assets/chatbot_profile.png')} style={s.aiAvatarImg} resizeMode="contain" />
+                </View>
               </View>
               <View style={s.aiBubble}>
                 <Text style={s.loadingDots}>•  •  •</Text>
@@ -261,7 +260,7 @@ export default function AiChatScreen() {
               multiline
             />
             <TouchableOpacity
-              style={s.sendBtn}
+              style={[s.sendBtn, input.trim() && !loading ? s.sendBtnActive : null]}
               onPress={handleSend}
               disabled={!input.trim() || loading}
               activeOpacity={0.8}
@@ -285,6 +284,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 4,
   },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 26 },
@@ -294,12 +298,15 @@ const s = StyleSheet.create({
 
   aiRow: { gap: 8 },
   aiMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  aiAvatar: {
+  aiAvatarWrapper: {
     width: 32, height: 32, borderRadius: 9999,
-    backgroundColor: '#CCD9BA',
+    borderWidth: 1, borderColor: '#CCD9BA',
+    backgroundColor: '#EFF4E1',
     justifyContent: 'center', alignItems: 'center',
   },
-  aiAvatarText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  aiAvatarImg: {
+    width: 26, height: 26, borderRadius: 9999,
+  },
   msgTime: { fontSize: 12, fontWeight: '400', color: '#6A7282', lineHeight: 16 },
 
   aiBoxes: { gap: 8 },
@@ -333,6 +340,7 @@ const s = StyleSheet.create({
   sgBoxHeader: {
     fontSize: 14, fontWeight: '700', color: '#1E2939',
     lineHeight: 20, letterSpacing: -0.15,
+    textAlign: 'center',
   },
   sgCard: {
     borderRadius: 10,
@@ -350,8 +358,8 @@ const s = StyleSheet.create({
     elevation: 3,
   },
   sgTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sgTypeText: { fontSize: 11, fontWeight: '600', color: '#9CAF88' },
-  sgTitle: { fontSize: 14, fontWeight: '500', color: '#364153', lineHeight: 20 },
+  sgTypeText: { fontSize: 12, fontWeight: '500', color: '#678720', lineHeight: 16 },
+  sgTitle: { fontSize: 14, fontWeight: '500', color: '#1E2939', lineHeight: 20, letterSpacing: -0.15 },
 
   /* User message */
   userCol: { alignItems: 'flex-end', gap: 4 },
@@ -389,4 +397,5 @@ const s = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
+  sendBtnActive: { backgroundColor: '#678720' },
 });

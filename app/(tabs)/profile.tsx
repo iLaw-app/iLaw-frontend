@@ -84,6 +84,7 @@ export default function ProfilePage() {
   };
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showWithdrawSuccess, setShowWithdrawSuccess] = useState(false);
 
   const handleWithdraw = () => setShowWithdrawModal(true);
 
@@ -94,7 +95,7 @@ export default function ProfilePage() {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     await clearAuth();
-    router.replace('/login');
+    setShowWithdrawSuccess(true);
   };
 
   return (
@@ -137,7 +138,7 @@ export default function ProfilePage() {
                   <Ionicons name={item.icon} size={20} color="#586144" />
                   <Text style={styles.menuLabel}>{item.label}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#CCD9BA" />
+                <Ionicons name="chevron-forward" size={18} color="#99A1AF" />
               </TouchableOpacity>
               {idx < menuList.length - 1 && <View style={styles.menuDivider} />}
             </View>
@@ -183,10 +184,24 @@ export default function ProfilePage() {
           <Pressable style={styles.modalCard} onPress={() => {}}>
             <Text style={styles.modalTitle}>정말로 아이로를 떠나시나요?</Text>
             <Text style={styles.modalBody}>
-              {'탈퇴하시면\n지금까지 스크랩한 자료와 질문 내역이 모두 사라져요.\n언제든 다시 돌아와주세요.\n아이로는 항상 여러분을 응원합니다!'}
+              {'탈퇴하시면\n지금까지 스크랩한 자료와\n질문 내역이 모두 사라져요.'}
             </Text>
             <TouchableOpacity style={styles.withdrawBtn} onPress={doWithdraw} activeOpacity={0.8}>
               <Text style={styles.withdrawBtnText}>탈퇴할게요</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showWithdrawSuccess} transparent animationType="fade" onRequestClose={() => {}}>
+        <Pressable style={styles.modalOverlay} onPress={() => {}}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>회원탈퇴가 완료되었습니다.</Text>
+            <Text style={styles.modalBody}>
+              {'언제든 다시 돌아와주세요.\n아이로는 항상 여러분을 응원합니다!'}
+            </Text>
+            <TouchableOpacity style={styles.confirmBtn} onPress={() => { setShowWithdrawSuccess(false); router.replace('/login'); }} activeOpacity={0.8}>
+              <Text style={styles.confirmBtnText}>확인</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -198,7 +213,7 @@ export default function ProfilePage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   scroll: { paddingHorizontal: 16, paddingBottom: 40 },
-  pageTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginTop: 16, marginBottom: 24, marginLeft: 4 },
+  pageTitle: { fontSize: 22, fontWeight: '700', color: '#586144', marginTop: 16, marginBottom: 24, marginLeft: 4 },
 
   avatarSection: { alignItems: 'center', marginBottom: 28 },
   avatarCircle: {
@@ -233,7 +248,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18, paddingVertical: 16, height: 56,
   },
   menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  menuLabel: { fontSize: 15, fontWeight: '500', color: '#1a1a1a' },
+  menuLabel: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
   menuDivider: { height: 1, backgroundColor: '#F0F5E8', marginHorizontal: 18 },
   versionText: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },
 
@@ -279,4 +294,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   withdrawBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  confirmBtn: {
+    width: 209, height: 36, borderRadius: 14,
+    paddingVertical: 8, paddingHorizontal: 16,
+    backgroundColor: '#B2D36E',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  confirmBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

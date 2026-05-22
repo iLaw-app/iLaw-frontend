@@ -16,6 +16,13 @@ const REGIONS = [
 ];
 
 const BIRTH_YEARS = Array.from({ length: 2026 - 1900 + 1 }, (_, i) => String(2026 - i));
+const BIRTH_MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+function getBirthDays(year: string, month: string): string[] {
+  const y = parseInt(year) || 2000;
+  const m = parseInt(month) || 1;
+  const count = new Date(y, m, 0).getDate();
+  return Array.from({ length: count }, (_, i) => String(i + 1).padStart(2, '0'));
+}
 
 const NICKNAME_REGEX = /^[a-zA-Z0-9_]*$/;
 
@@ -56,6 +63,49 @@ function PickerModal({
   );
 }
 
+function BirthDatePickerModal({
+  visible, year, month, day, onYearChange, onMonthChange, onDayChange, onClose,
+}: {
+  visible: boolean; year: string; month: string; day: string;
+  onYearChange: (v: string) => void; onMonthChange: (v: string) => void;
+  onDayChange: (v: string) => void; onClose: () => void;
+}) {
+  const days = getBirthDays(year, month);
+  const renderCol = (data: string[], selected: string, onSelect: (v: string) => void, suffix: string, flex: number) => (
+    <FlatList
+      style={{ flex, maxHeight: 280 }}
+      data={data}
+      keyExtractor={(item) => item}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[pickerStyles.option, selected === item && pickerStyles.optionActive]}
+          onPress={() => onSelect(item)}
+        >
+          <Text style={[pickerStyles.optionText, selected === item && pickerStyles.optionTextActive]}>
+            {item}{suffix}
+          </Text>
+        </TouchableOpacity>
+      )}
+    />
+  );
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
+      <View style={pickerStyles.sheet}>
+        <View style={pickerStyles.sheetHeader}>
+          <Text style={pickerStyles.sheetTitle}>생년월일 선택</Text>
+          <TouchableOpacity onPress={onClose}><Text style={pickerStyles.closeBtn}>확인</Text></TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          {renderCol(BIRTH_YEARS, year, onYearChange, '년', 2)}
+          {renderCol(BIRTH_MONTHS, month, onMonthChange, '월', 1)}
+          {renderCol(days, day, onDayChange, '일', 1)}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user, accessToken, setUser, role } = useAuth();
@@ -63,13 +113,16 @@ export default function EditProfileScreen() {
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [nicknameError, setNicknameError] = useState('');
   const [region, setRegion] = useState(user?.region ?? '');
-  const [birthYear, setBirthYear] = useState(user?.birthYear ? String(user.birthYear) : '');
+  const existingBirth = user?.birthDate ? new Date(user.birthDate) : null;
+  const [birthYear, setBirthYear] = useState(existingBirth ? String(existingBirth.getFullYear()) : '');
+  const [birthMonth, setBirthMonth] = useState(existingBirth ? String(existingBirth.getMonth() + 1).padStart(2, '0') : '');
+  const [birthDay, setBirthDay] = useState(existingBirth ? String(existingBirth.getDate()).padStart(2, '0') : '');
   const [gender, setGender] = useState(user?.gender ?? '');
   const [affiliation, setAffiliation] = useState(user?.affiliation ?? '');
   const [saving, setSaving] = useState(false);
 
   const [showRegionPicker, setShowRegionPicker] = useState(false);
-  const [showBirthYearPicker, setShowBirthYearPicker] = useState(false);
+  const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
 
   const handleNicknameChange = (text: string) => {
     setNickname(text);
@@ -81,7 +134,7 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!nickname || !region || !birthYear || !gender) {
+    if (!nickname || !region || !birthYear || !birthMonth || !birthDay || !gender) {
       Alert.alert('입력 오류', '모든 항목을 입력해주세요.');
       return;
     }
@@ -98,7 +151,7 @@ export default function EditProfileScreen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ nickname, region, birthYear: parseInt(birthYear, 10), gender, affiliation: role === 'lawyer' ? affiliation : undefined }),
+        body: JSON.stringify({ nickname, region, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, gender, affiliation: role === 'lawyer' ? affiliation : undefined }),
       });
 
       if (res.status === 409) {
@@ -116,7 +169,7 @@ export default function EditProfileScreen() {
       }
 
       if (user) {
-        setUser({ ...user, nickname, region, birthYear: parseInt(birthYear, 10), gender, affiliation: role === 'lawyer' ? affiliation : user.affiliation });
+        setUser({ ...user, nickname, region, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, gender, affiliation: role === 'lawyer' ? affiliation : user.affiliation });
       }
       router.back();
     } finally {
@@ -170,15 +223,15 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 출생연도 */}
+        {/* 생년월일 */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>출생연도</Text>
+          <Text style={styles.label}>생년월일</Text>
           <TouchableOpacity
             style={[styles.input, styles.selectBtn]}
-            onPress={() => setShowBirthYearPicker(true)}
+            onPress={() => setShowBirthDatePicker(true)}
           >
             <Text style={birthYear ? styles.selectText : styles.selectPlaceholder}>
-              {birthYear || '출생연도를 선택해주세요'}
+              {birthYear ? `${birthYear}년 ${birthMonth}월 ${birthDay}일` : '생년월일을 선택해주세요'}
             </Text>
             <Text style={styles.selectArrow}>›</Text>
           </TouchableOpacity>
@@ -237,13 +290,11 @@ export default function EditProfileScreen() {
         onSelect={setRegion}
         onClose={() => setShowRegionPicker(false)}
       />
-      <PickerModal
-        visible={showBirthYearPicker}
-        title="출생연도 선택"
-        items={BIRTH_YEARS}
-        selected={birthYear}
-        onSelect={setBirthYear}
-        onClose={() => setShowBirthYearPicker(false)}
+      <BirthDatePickerModal
+        visible={showBirthDatePicker}
+        year={birthYear} month={birthMonth} day={birthDay}
+        onYearChange={setBirthYear} onMonthChange={setBirthMonth} onDayChange={setBirthDay}
+        onClose={() => setShowBirthDatePicker(false)}
       />
     </SafeAreaView>
   );

@@ -22,7 +22,7 @@ export interface UserInfo {
   email: string | null;
   nickname: string | null;
   region: string | null;
-  birthYear: number | null;
+  birthDate: string | null;
   gender: string | null;
   provider: string;
   profileCompleted: boolean;

@@ -207,30 +207,43 @@ export default function HomeScreen() {
         handleClearSearch();
         return true;
       }
-      return false;
+      return true;
     });
     return () => handler.remove();
   }, []);
 
+  const DEBUG_TUTORIAL = false; // ← false로 바꾸면 정상 동작
+
+  const measureAndShow = useCallback(() => {
+    const rects: SpotlightRect[] = [];
+    let pending = 3;
+    const mark = (idx: number, r: SpotlightRect) => {
+      rects[idx] = r;
+      pending--;
+      if (pending === 0) { setTutorialRects([...rects]); setTutorialStep(0); setTutorialVisible(true); }
+    };
+    searchAreaRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(0, { x, y, width: w, height: h }));
+    recommendRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(1, { x, y, width: w, height: h }));
+    fabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(2, { x, y, width: w, height: h }));
+  }, []);
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
-    SecureStore.getItemAsync('airo_tutorial_home').then(val => {
-      if (val) return;
-      timer = setTimeout(() => {
-        const rects: SpotlightRect[] = [];
-        let pending = 3;
-        const mark = (idx: number, r: SpotlightRect) => {
-          rects[idx] = r;
-          pending--;
-          if (pending === 0) { setTutorialRects([...rects]); setTutorialVisible(true); }
-        };
-        searchAreaRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(0, { x, y, width: w, height: h }));
-        recommendRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(1, { x, y, width: w, height: h }));
-        fabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(2, { x, y, width: w, height: h }));
-      }, 500);
+    SecureStore.getItemAsync('airo_tutorial_home').then(async val => {
+      if (val && !DEBUG_TUTORIAL) {
+        const manualDone = await SecureStore.getItemAsync('airo_tutorial_manual_list');
+        if (!manualDone) {
+          await Promise.all(
+            ['airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
+              .map(k => SecureStore.setItemAsync(k, '1'))
+          );
+        }
+        return;
+      }
+      timer = setTimeout(measureAndShow, 500);
     });
     return () => clearTimeout(timer);
-  }, []);
+  }, [measureAndShow]);
 
   const handleTutorialNext = async () => {
     if (tutorialStep < 2) {
@@ -239,13 +252,21 @@ export default function HomeScreen() {
       await SecureStore.setItemAsync('airo_tutorial_home', 'done');
       setTutorialVisible(false);
       setTutorialStep(0);
+      router.navigate('/(tabs)/consult');
     }
   };
 
   const handleTutorialSkip = async () => {
-    if (dontShowAgain) await SecureStore.setItemAsync('airo_tutorial_home', 'done');
+    await Promise.all(
+      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
+        .map(k => SecureStore.setItemAsync(k, '1'))
+    );
     setTutorialVisible(false);
     setTutorialStep(0);
+  };
+
+  const handleTutorialPrev = () => {
+    if (tutorialStep > 0) setTutorialStep(s => s - 1);
   };
 
   const swipeBackPan = useRef(
@@ -417,26 +438,35 @@ export default function HomeScreen() {
   }
 
   // ── 홈 메인 화면 ──
+  // Page 3 spotlight: 추천 콘텐츠 1,2번 항목만 (높이 ≈ 2 × 85px)
+  const twoItemRect: SpotlightRect | null = tutorialRects[1]
+    ? { x: tutorialRects[1].x, y: tutorialRects[1].y, width: tutorialRects[1].width, height: 85 * 2 }
+    : null;
+
   const tutorialSteps: TutorialStep[] = [
     {
       spotlight: tutorialRects[0] ?? null,
       spotlightRadius: 9999,
-      title: '검색',
-      description: '궁금한 법률 상황을 검색해 보세요.\n알바비, 학교폭력, 온라인 괴롭힘 등 다양한 키워드로 찾을 수 있어요.',
+      title: '검색으로 빠르게 찾기',
+      description: '궁금한 법률 정보를 키워드로 검색하세요',
       tooltipBelow: true,
-    },
-    {
-      spotlight: tutorialRects[1] ?? null,
-      spotlightRadius: 16,
-      title: '추천 콘텐츠',
-      description: '청소년에게 자주 생기는 법률 고민들을 모아두었어요.\n바로 확인해보세요.',
-      tooltipBelow: false,
     },
     {
       spotlight: tutorialRects[2] ?? null,
       spotlightRadius: 9999,
-      title: 'AI 법률 챗봇',
-      description: '궁금한 법률 내용을 AI 챗봇에게\n자유롭게 물어볼 수 있어요.',
+      title: 'AI 챗봇으로 상황진단',
+      description: '내가 겪은 상황을 말하면\nAI가 상황을 요약하고\n추천 컨텐츠를 찾아드려요',
+      tooltipBelow: false,
+      tooltipLeft: 20,
+      tooltipRight: 110,
+      titleStyle: { fontSize: 18, letterSpacing: -0.439 },
+      descStyle: { lineHeight: 22.75, letterSpacing: -0.15 },
+    },
+    {
+      spotlight: twoItemRect,
+      spotlightRadius: 16,
+      title: '추천 콘텐츠',
+      description: '많이 찾는 법률 콘텐츠를 확인해요',
       tooltipBelow: false,
     },
   ];
@@ -459,8 +489,8 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View ref={searchAreaRef} style={styles.searchArea}>
-          <View style={styles.searchBox}>
+        <View style={styles.searchArea}>
+          <View ref={searchAreaRef} style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
               placeholder="궁금한 내용을 검색해주세요"
@@ -514,8 +544,12 @@ export default function HomeScreen() {
         currentStep={tutorialStep}
         dontShowAgain={dontShowAgain}
         onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
         onSkip={handleTutorialSkip}
         onToggleDontShow={() => setDontShowAgain(v => !v)}
+        totalDots={7}
+        dotOffset={0}
+        showComplete={false}
       />
     </SafeAreaView>
   );

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Pressable } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Pressable, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, ClipPath, Defs, Rect } from 'react-native-svg';
 
@@ -63,6 +63,11 @@ const LAWYER_MENU_ITEMS = [
 export default function ProfilePage() {
   const router = useRouter();
   const { user, accessToken, clearAuth, role, setRoleOverride } = useAuth();
+
+  useFocusEffect(useCallback(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []));
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [

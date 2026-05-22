@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
 
 const TAB_SCREENS = [
   { name: 'home',      title: '홈',       icon: 'home-outline'        } as const,
@@ -82,6 +83,11 @@ const s = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}

@@ -1,8 +1,14 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useRef, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, ClipPath, Defs } from 'react-native-svg';
+import * as SecureStore from 'expo-secure-store';
+import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
+
+const DEBUG_TUTORIAL = false;
+const TUTORIAL_KEY = 'airo_tutorial_consult';
 
 function IconShield() {
   return (
@@ -92,6 +98,72 @@ const categories = [
 export default function ManualScreen() {
   const router = useRouter();
 
+  const listRef = useRef<any>(null);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [listRect, setListRect] = useState<SpotlightRect | null>(null);
+
+  const measureAndShow = useCallback(() => {
+    listRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      setListRect({ x, y, width, height });
+      setTutorialStep(0);
+      setTutorialVisible(true);
+    });
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []));
+
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(async () => {
+        if (DEBUG_TUTORIAL) { measureAndShow(); return; }
+        const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
+        if (!done) measureAndShow();
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [measureAndShow])
+  );
+
+  const handleTutorialNext = async () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(s => s + 1);
+      return;
+    }
+    await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
+    setTutorialVisible(false);
+    router.push('/manual-list?categoryId=finance');
+  };
+
+  const handleTutorialSkip = async () => {
+    await Promise.all(
+      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
+        .map(k => SecureStore.setItemAsync(k, '1'))
+    );
+    setTutorialVisible(false);
+  };
+
+  const handleTutorialPrev = () => {
+    if (tutorialStep > 0) setTutorialStep(s => s - 1);
+  };
+
+  const spotlightRect: SpotlightRect | null = listRect
+    ? { x: listRect.x, y: listRect.y + 162, width: listRect.width, height: 161 }
+    : null;
+
+  const tutorialSteps: TutorialStep[] = [
+    {
+      spotlight: spotlightRect,
+      spotlightRadius: 8,
+      title: '매뉴얼',
+      description: '궁금한 주제를 선택해\n필요한 정보를 확인해요',
+      tooltipBelow: false,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -103,7 +175,7 @@ export default function ManualScreen() {
           <Text style={styles.subtitle}>상황에 맞는 법률 정보를 확인해보세요</Text>
         </View>
 
-        <View style={styles.list}>
+        <View ref={listRef} style={styles.list}>
           {categories.map((cat, index) => {
             const Icon = cat.Icon;
             const isFirst = index === 0;
@@ -134,6 +206,20 @@ export default function ManualScreen() {
           })}
         </View>
       </ScrollView>
+
+      <TutorialOverlay
+        steps={tutorialSteps}
+        visible={tutorialVisible}
+        currentStep={tutorialStep}
+        dontShowAgain={dontShowAgain}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onSkip={handleTutorialSkip}
+        onToggleDontShow={() => setDontShowAgain(v => !v)}
+        totalDots={7}
+        dotOffset={3}
+        showComplete={false}
+      />
     </SafeAreaView>
   );
 }

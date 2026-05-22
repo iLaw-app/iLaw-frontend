@@ -2,8 +2,13 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { BottomNav } from '../components/BottomNav';
+import * as SecureStore from 'expo-secure-store';
+import { TutorialOverlay, SpotlightRect, TutorialStep } from '../components/TutorialOverlay';
+
+const DEBUG_TUTORIAL = false;
+const TUTORIAL_KEY = 'airo_tutorial_manual_list';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.filter(k => k.trim());
@@ -46,6 +51,61 @@ export default function ManualListScreen() {
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  const floatingBtnRef = useRef<any>(null);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [btnRect, setBtnRect] = useState<SpotlightRect | null>(null);
+
+  const measureAndShow = useCallback(() => {
+    floatingBtnRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      setBtnRect({ x, y, width, height });
+      setTutorialStep(0);
+      setTutorialVisible(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (DEBUG_TUTORIAL) { measureAndShow(); return; }
+      const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
+      if (!done) measureAndShow();
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [measureAndShow]);
+
+  const tutorialSteps: TutorialStep[] = [
+    {
+      spotlight: btnRect,
+      spotlightRadius: 30,
+      title: '매뉴얼 도움 요청',
+      description: '상황에 맞는 도움 기관과\n요청 방법을 확인해요',
+      tooltipBelow: false,
+    },
+  ];
+
+  const handleTutorialNext = async () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(s => s + 1);
+      return;
+    }
+    await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
+    setTutorialVisible(false);
+    router.navigate('/(tabs)/qna' as any);
+  };
+
+  const handleTutorialSkip = async () => {
+    await Promise.all(
+      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
+        .map(k => SecureStore.setItemAsync(k, '1'))
+    );
+    setTutorialVisible(false);
+  };
+
+  const handleTutorialPrev = () => {
+    if (tutorialStep > 0) setTutorialStep(s => s - 1);
+  };
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/categories/${categoryId}/articles`)
@@ -190,6 +250,7 @@ export default function ManualListScreen() {
       {/* 도움이 필요하신가요 버튼 - 오른쪽 하단 */}
       <View style={styles.floatingContainer} pointerEvents="box-none">
         <TouchableOpacity
+          ref={floatingBtnRef}
           style={styles.floatingBtn}
           activeOpacity={0.85}
           onPress={() => router.push(`/manual-help?categoryId=${categoryId}`)}
@@ -199,6 +260,20 @@ export default function ManualListScreen() {
         </TouchableOpacity>
       </View>
       <BottomNav activeTab="consult" />
+
+      <TutorialOverlay
+        steps={tutorialSteps}
+        visible={tutorialVisible}
+        currentStep={tutorialStep}
+        dontShowAgain={dontShowAgain}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
+        onSkip={handleTutorialSkip}
+        onToggleDontShow={() => setDontShowAgain(v => !v)}
+        totalDots={7}
+        dotOffset={4}
+        showComplete={false}
+      />
     </SafeAreaView>
   );
 }

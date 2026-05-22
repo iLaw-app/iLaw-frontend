@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions,
+  Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions, PanResponder,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SW, height: SH } = Dimensions.get('screen');
@@ -15,10 +16,16 @@ export type SpotlightRect = {
 
 export type TutorialStep = {
   spotlight: SpotlightRect | null;
-  spotlightRadius?: number;
+  spotlightRadius?: number; // 9999 = pill/circle, 0 = sharp rect, default 16
+  spotlight2?: SpotlightRect | null;
+  spotlight2Radius?: number;
   title: string;
   description: string;
   tooltipBelow?: boolean;
+  tooltipLeft?: number;
+  tooltipRight?: number;
+  titleStyle?: object;
+  descStyle?: object;
 };
 
 type Props = {
@@ -27,69 +34,140 @@ type Props = {
   currentStep: number;
   dontShowAgain: boolean;
   onNext: () => void;
+  onPrev?: () => void;
   onSkip: () => void;
   onToggleDontShow: () => void;
+  totalDots?: number;  // global total (e.g. 7); defaults to steps.length
+  dotOffset?: number;  // index of first step in global flow; defaults to 0
+  showComplete?: boolean; // false = always show "다음" even on last local step
 };
 
-const SPOT_PAD = 10;
-const DARK = 'rgba(0,0,0,0.80)';
 const BAR_W = 346;
 
+function buildHole(sx: number, sy: number, sw: number, sh: number, radius: number): string {
+  const r = Math.min(radius, sw / 2, sh / 2);
+  return [
+    `M ${sx + r},${sy}`,
+    `H ${sx + sw - r}`,
+    `Q ${sx + sw},${sy} ${sx + sw},${sy + r}`,
+    `V ${sy + sh - r}`,
+    `Q ${sx + sw},${sy + sh} ${sx + sw - r},${sy + sh}`,
+    `H ${sx + r}`,
+    `Q ${sx},${sy + sh} ${sx},${sy + sh - r}`,
+    `V ${sy + r}`,
+    `Q ${sx},${sy} ${sx + r},${sy}`,
+    `Z`,
+  ].join(' ');
+}
+
+function buildCutoutPath(
+  sx: number, sy: number, sw: number, sh: number, radius: number,
+  sx2?: number, sy2?: number, sw2?: number, sh2?: number, r2?: number,
+): string {
+  const bg = `M 0,0 H ${SW} V ${SH} H 0 Z`;
+  const hole1 = buildHole(sx, sy, sw, sh, radius);
+  const hole2 = (sw2 && sh2) ? buildHole(sx2!, sy2!, sw2, sh2, r2 ?? 16) : '';
+  return `${bg} ${hole1} ${hole2}`.trimEnd();
+}
+
 export function TutorialOverlay({
-  steps, visible, currentStep, dontShowAgain, onNext, onSkip, onToggleDontShow,
+  steps, visible, currentStep, dontShowAgain,
+  onNext, onPrev, onSkip, onToggleDontShow,
+  totalDots, dotOffset = 0, showComplete = true,
 }: Props) {
+  // Keep handlers fresh without recreating PanResponder
+  const handlersRef = useRef({ onNext, onPrev });
+  handlersRef.current = { onNext, onPrev };
+
+  const pan = useRef(
+    PanResponder.create({
+      // Claim touch immediately in the dark overlay area (above bottom bar ≈ 120px from bottom)
+      onStartShouldSetPanResponder: (evt) => evt.nativeEvent.pageY < SH - 120,
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy),
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dx < -40) handlersRef.current.onNext();
+        else if (gs.dx > 40) handlersRef.current.onPrev?.();
+      },
+    })
+  ).current;
+
   if (!visible || steps.length === 0) return null;
 
   const step = steps[Math.min(currentStep, steps.length - 1)];
-  const isLast = currentStep === steps.length - 1;
+  const isLast = showComplete && currentStep === steps.length - 1;
   const spot = step.spotlight;
   const radius = step.spotlightRadius ?? 16;
 
   const hasSpot = spot != null && spot.width > 0 && spot.height > 0;
-  const sx = hasSpot ? Math.max(0, spot!.x - SPOT_PAD) : 0;
-  const sy = hasSpot ? Math.max(0, spot!.y - SPOT_PAD) : 0;
-  const sw = hasSpot ? spot!.width + SPOT_PAD * 2 : SW;
-  const sh = hasSpot ? spot!.height + SPOT_PAD * 2 : SH;
+  const sx = hasSpot ? spot!.x : 0;
+  const sy = hasSpot ? spot!.y : 0;
+  const sw = hasSpot ? spot!.width : SW;
+  const sh = hasSpot ? spot!.height : SH;
+
+  const spot2 = step.spotlight2;
+  const radius2 = step.spotlight2Radius ?? 16;
+  const hasSpot2 = spot2 != null && spot2.width > 0 && spot2.height > 0;
+
+  const tipLeft = step.tooltipLeft ?? 20;
+  const tipRight = step.tooltipRight ?? 20;
+
+  const totalDotsCount = totalDots ?? steps.length;
+  const activeDot = dotOffset + currentStep;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
-      <View style={StyleSheet.absoluteFill}>
-        {/* 4-rect dark overlay with spotlight cutout */}
-        {hasSpot ? (
-          <>
-            <View style={[sty.dark, { top: 0, left: 0, right: 0, height: sy }]} />
-            <View style={[sty.dark, { top: sy + sh, left: 0, right: 0, bottom: 0 }]} />
-            <View style={[sty.dark, { top: sy, left: 0, width: Math.max(0, sx), height: sh }]} />
-            <View style={[sty.dark, { top: sy, left: sx + sw, right: 0, height: sh }]} />
-            <View
-              pointerEvents="none"
-              style={[sty.ring, { top: sy, left: sx, width: sw, height: sh, borderRadius: radius }]}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={() => {
+        if (currentStep > 0 && onPrev) onPrev();
+        else onSkip();
+      }}
+    >
+      <View style={StyleSheet.absoluteFill} {...pan.panHandlers}>
+        {/* SVG overlay with exact-shape cutout */}
+        <Svg width={SW} height={SH} style={StyleSheet.absoluteFill} pointerEvents="none">
+          {hasSpot ? (
+            <Path
+              d={buildCutoutPath(
+                sx, sy, sw, sh, radius,
+                hasSpot2 ? spot2!.x : undefined,
+                hasSpot2 ? spot2!.y : undefined,
+                hasSpot2 ? spot2!.width : undefined,
+                hasSpot2 ? spot2!.height : undefined,
+                hasSpot2 ? radius2 : undefined,
+              )}
+              fill="rgba(0,0,0,0.80)"
+              fillRule="evenodd"
             />
-          </>
-        ) : (
-          <View style={[sty.dark, StyleSheet.absoluteFill]} />
-        )}
+          ) : (
+            <Path d={`M 0,0 H ${SW} V ${SH} H 0 Z`} fill="rgba(0,0,0,0.80)" />
+          )}
+        </Svg>
 
-        {/* Tooltip */}
+        {/* Tooltip — no background box, centered */}
         {hasSpot && (
           <View
             pointerEvents="none"
             style={[
               sty.tooltip,
+              { left: tipLeft, right: tipRight },
               step.tooltipBelow
                 ? { top: sy + sh + 14 }
                 : { bottom: SH - sy + 14 },
             ]}
           >
-            <Text style={sty.tipTitle}>{step.title}</Text>
-            <Text style={sty.tipDesc}>{step.description}</Text>
+            <Text style={[sty.tipTitle, step.titleStyle]}>{step.title}</Text>
+            <Text style={[sty.tipDesc, step.descStyle]}>{step.description}</Text>
           </View>
         )}
 
-        {/* Progress dots */}
+        {/* Progress dots — global 7-dot flow */}
         <View style={sty.dotsRow} pointerEvents="none">
-          {steps.map((_, i) => (
-            <View key={i} style={i === currentStep ? sty.dotOn : sty.dotOff} />
+          {Array.from({ length: totalDotsCount }).map((_, i) => (
+            <View key={i} style={i === activeDot ? sty.dotOn : sty.dotOff} />
           ))}
         </View>
 
@@ -116,19 +194,14 @@ export function TutorialOverlay({
 }
 
 const sty = StyleSheet.create({
-  dark: { position: 'absolute', backgroundColor: DARK },
-  ring: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.30)',
-  },
   tooltip: {
-    position: 'absolute', left: 20, right: 20,
-    backgroundColor: 'rgba(1,24,10,0.95)',
-    borderRadius: 16, padding: 16, gap: 6,
+    position: 'absolute',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 4,
   },
-  tipTitle: { fontSize: 16, fontWeight: '700', color: '#B2D36E' },
-  tipDesc: { fontSize: 14, color: '#FFFFFF', lineHeight: 21 },
+  tipTitle: { fontSize: 16, fontWeight: '700', color: '#B2D36E', textAlign: 'center' },
+  tipDesc: { fontSize: 14, color: '#FFFFFF', lineHeight: 21, textAlign: 'center' },
   dotsRow: {
     position: 'absolute', bottom: 100, left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,

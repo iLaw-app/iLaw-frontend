@@ -40,7 +40,7 @@ export function BottomNav({ activeTab }: { activeTab?: string }) {
               key={tab.name}
               style={s.tab}
               activeOpacity={0.8}
-              onPress={() => router.navigate(`/(tabs)/${tab.name}` as any)}
+              onPress={() => router.replace(`/(tabs)/${tab.name}` as any)}
             >
               <View style={[s.item, focused && s.itemActive]}>
                 <Ionicons name={tab.icon} size={24} color={focused ? '#3C6802' : '#6A7282'} />

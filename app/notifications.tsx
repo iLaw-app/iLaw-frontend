@@ -22,15 +22,6 @@ const TYPE_TO_SETTING: Record<string, NotificationSettingKey> = {
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-// 디자인 확인용 샘플 데이터 — 실제 알림 없을 때만 표시됨. 확인 후 제거 가능
-const SAMPLE_NOTIFICATIONS: Notification[] = [
-  { id: 1, type: 'answer',            title: '내 질문에 답변이 달렸습니다',           body: '알바비를 안 주는데 어떻게 해야 하나요?',                              read: false, refId: 1, createdAt: '2026-05-05T10:30:00Z' },
-  { id: 2, type: 'scrap_answer',      title: '스크랩한 질문에 답변이 달렸습니다',      body: '학교 단톡방에서 욕을 먹고 있어요',                                  read: false, refId: 2, createdAt: '2026-05-04T15:20:00Z' },
-  { id: 3, type: 'manual_update',     title: '매뉴얼이 업데이트되었습니다',            body: '아동학대/가정폭력 카테고리에 새로운 내용이 추가되었습니다',              read: true,  refId: 3, createdAt: '2026-05-03T09:00:00Z' },
-  { id: 4, type: 'community_comment', title: '커뮤니티 내 글에 댓글이 달렸습니다',    body: '미성년자 근로계약서 작성 방법이 궁금해요',                            read: true,  refId: 4, createdAt: '2026-05-02T14:15:00Z' },
-  { id: 5, type: 'community_like',    title: '커뮤니티 내 글에 좋아요가 달렸습니다',  body: '미성년자 근로계약서 작성 방법이 궁금해요',                            read: true,  refId: 5, createdAt: '2026-05-02T14:15:00Z' },
-];
-
 type Notification = {
   id: number;
   type: string;
@@ -182,7 +173,13 @@ export default function NotificationsScreen() {
           <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
-            {(visibleNotifications.length > 0 ? visibleNotifications : SAMPLE_NOTIFICATIONS).map((noti) => (
+            {visibleNotifications.length === 0 ? (
+              <View style={styles.emptyWrapper}>
+                <EmptyBellIcon />
+                <Text style={styles.emptyText}>아직 알림이 없어요</Text>
+              </View>
+            ) : null}
+            {visibleNotifications.map((noti) => (
               <TouchableOpacity
                 key={noti.id}
                 style={[styles.notiCard, noti.read && styles.notiCardRead]}

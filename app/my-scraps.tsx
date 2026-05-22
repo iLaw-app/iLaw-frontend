@@ -114,7 +114,7 @@ export default function MyScrapsScreen() {
   const fetchCommunity = useCallback(() => {
     if (!accessToken) { setLoadingCommunity(false); return; }
     setLoadingCommunity(true);
-    fetch(`${API_BASE}/community/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    fetch(`${API_BASE}/community/my-bookmarks`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
       .then(data => setCommunityItems(Array.isArray(data) ? data : []))
       .catch(() => setCommunityItems([]))

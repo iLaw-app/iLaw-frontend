@@ -5,7 +5,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from './context/auth';
+
+const TUTORIAL_KEYS = [
+  'airo_tutorial_home',
+  'airo_tutorial_consult',
+  'airo_tutorial_manual_list',
+  'airo_tutorial_qna',
+  'airo_tutorial_community',
+];
 
 const REGIONS = [
   '서울', '부산', '대구', '인천', '대전', '광주', '울산', '제주', '세종',
@@ -201,6 +210,7 @@ export default function OnboardingScreen() {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (meRes.ok) setUser(await meRes.json());
+    await Promise.all(TUTORIAL_KEYS.map((key) => SecureStore.deleteItemAsync(key).catch(() => {})));
     router.replace('/(tabs)/home');
   };
 

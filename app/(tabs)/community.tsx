@@ -192,6 +192,7 @@ export default function CommunityScreen() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [secondCardRect, setSecondCardRect] = useState<SpotlightRect | null>(null);
+  const [showTutorialComplete, setShowTutorialComplete] = useState(false);
 
   const measureAndShow = useCallback(() => {
     if (!secondCardRef.current) return;
@@ -209,13 +210,13 @@ export default function CommunityScreen() {
       const tryShow = async () => {
         if (!DEBUG_TUTORIAL) {
           const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-          if (done) return;
+          if (done) { setTutorialVisible(false); return; }
         }
         if (secondCardRef.current) { measureAndShow(); return; }
         if (attempts++ < 15) timer = setTimeout(tryShow, 300);
       };
-      timer = setTimeout(tryShow, 400);
-      return () => clearTimeout(timer);
+      tryShow();
+      return () => { clearTimeout(timer); setTutorialVisible(false); };
     }, [measureAndShow])
   );
 
@@ -231,6 +232,7 @@ export default function CommunityScreen() {
         .map(k => SecureStore.setItemAsync(k, '1'))
     );
     setTutorialVisible(false);
+    setShowTutorialComplete(true);
   };
 
   const handleTutorialSkip = async () => {
@@ -381,6 +383,21 @@ export default function CommunityScreen() {
         showComplete={true}
       />
 
+      <Modal visible={showTutorialComplete} transparent animationType="fade" onRequestClose={() => setShowTutorialComplete(false)}>
+        <Pressable style={cmpS.overlay} onPress={() => setShowTutorialComplete(false)}>
+          <Pressable style={cmpS.card} onPress={() => {}}>
+            <View style={cmpS.iconCircle}>
+              <Ionicons name="checkmark" size={40} color="#fff" />
+            </View>
+            <Text style={cmpS.title}>튜토리얼 완료!</Text>
+            <Text style={cmpS.body}>{'아이로의 모든 기능을 살펴봤어요.\n필요할 때 언제든 활용해보세요!'}</Text>
+            <TouchableOpacity style={cmpS.btn} onPress={() => setShowTutorialComplete(false)} activeOpacity={0.85}>
+              <Text style={cmpS.btnText}>앱 둘러보기</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={menuPostId !== null} transparent animationType="fade" onRequestClose={() => setMenuPostId(null)}>
         <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>
           <Pressable style={[menuS.dropdown, { top: menuY + 20, right: 16 }]} onPress={() => {}}>
@@ -520,4 +537,14 @@ const menuS = StyleSheet.create({
   sep: { height: 1, backgroundColor: '#F3F4F6' },
   deleteText: { fontSize: 14, fontWeight: '500', color: '#586144' },
   editText: { fontSize: 14, fontWeight: '500', color: '#586144' },
+});
+
+const cmpS = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  card: { width: '100%', maxWidth: 320, backgroundColor: '#fff', borderRadius: 24, alignItems: 'center', padding: 28, gap: 14 },
+  iconCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#B2D36E', justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '700', color: '#586144' },
+  body: { fontSize: 14, color: '#6A7282', lineHeight: 22, textAlign: 'center' },
+  btn: { marginTop: 4, backgroundColor: '#B2D36E', borderRadius: 9999, paddingHorizontal: 28, paddingVertical: 12 },
+  btnText: { fontSize: 15, fontWeight: '700', color: '#01180A' },
 });

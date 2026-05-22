@@ -227,23 +227,26 @@ export default function HomeScreen() {
     fabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(2, { x, y, width: w, height: h }));
   }, []);
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    SecureStore.getItemAsync('airo_tutorial_home').then(async val => {
-      if (val && !DEBUG_TUTORIAL) {
-        const manualDone = await SecureStore.getItemAsync('airo_tutorial_manual_list');
-        if (!manualDone) {
-          await Promise.all(
-            ['airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-              .map(k => SecureStore.setItemAsync(k, '1'))
-          );
+  useFocusEffect(
+    useCallback(() => {
+      let timer: ReturnType<typeof setTimeout>;
+      SecureStore.getItemAsync('airo_tutorial_home').then(async val => {
+        if (val && !DEBUG_TUTORIAL) {
+          const manualDone = await SecureStore.getItemAsync('airo_tutorial_manual_list');
+          if (!manualDone) {
+            await Promise.all(
+              ['airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
+                .map(k => SecureStore.setItemAsync(k, '1'))
+            );
+          }
+          setTutorialVisible(false);
+          return;
         }
-        return;
-      }
-      timer = setTimeout(measureAndShow, 500);
-    });
-    return () => clearTimeout(timer);
-  }, [measureAndShow]);
+        timer = setTimeout(measureAndShow, 0);
+      });
+      return () => { clearTimeout(timer); setTutorialVisible(false); };
+    }, [measureAndShow])
+  );
 
   const handleTutorialNext = async () => {
     if (tutorialStep < 2) {

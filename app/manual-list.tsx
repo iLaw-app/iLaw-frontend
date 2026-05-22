@@ -71,7 +71,7 @@ export default function ManualListScreen() {
       if (DEBUG_TUTORIAL) { measureAndShow(); return; }
       const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
       if (!done) measureAndShow();
-    }, 600);
+    }, 0);
     return () => clearTimeout(timer);
   }, [measureAndShow]);
 
@@ -91,8 +91,7 @@ export default function ManualListScreen() {
       return;
     }
     await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
-    setTutorialVisible(false);
-    router.navigate('/(tabs)/qna' as any);
+    router.replace('/(tabs)/qna' as any);
   };
 
   const handleTutorialSkip = async () => {

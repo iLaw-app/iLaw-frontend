@@ -86,7 +86,8 @@ export function TutorialOverlay({
       onMoveShouldSetPanResponder: (_, gs) =>
         Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy),
       onPanResponderRelease: (_, gs) => {
-        if (gs.dx < -40) handlersRef.current.onNext();
+        if (Math.abs(gs.dx) < 10 && Math.abs(gs.dy) < 10) handlersRef.current.onNext();
+        else if (gs.dx < -40) handlersRef.current.onNext();
         else if (gs.dx > 40) handlersRef.current.onPrev?.();
       },
     })

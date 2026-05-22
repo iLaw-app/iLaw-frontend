@@ -119,13 +119,13 @@ export default function QnaPage() {
       const tryShow = async () => {
         if (!DEBUG_TUTORIAL) {
           const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-          if (done) return;
+          if (done) { setTutorialVisible(false); return; }
         }
         if (firstCardRef.current) { measureAndShow(); return; }
         if (attempts++ < 15) timer = setTimeout(tryShow, 300);
       };
-      timer = setTimeout(tryShow, 400);
-      return () => clearTimeout(timer);
+      tryShow();
+      return () => { clearTimeout(timer); setTutorialVisible(false); };
     }, [measureAndShow])
   );
 
@@ -137,7 +137,6 @@ export default function QnaPage() {
   const handleTutorialNext = async () => {
     if (tutorialStep < tutorialSteps.length - 1) { setTutorialStep(s => s + 1); return; }
     await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
-    setTutorialVisible(false);
     router.navigate('/(tabs)/community' as any);
   };
 

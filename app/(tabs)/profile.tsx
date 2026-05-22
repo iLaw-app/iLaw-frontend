@@ -21,6 +21,7 @@ function PencilIcon() {
   );
 }
 import { useAuth } from '../context/auth';
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -45,10 +46,13 @@ function WithdrawIcon() {
   );
 }
 
+const TUTORIAL_KEYS = ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community'];
+
 const USER_MENU_ITEMS = [
   { icon: 'bookmark-outline' as const,          label: '내 스크랩',          route: '/my-scraps' },
   { icon: 'chatbubble-outline' as const,        label: '내 질문 보기',       route: '/my-questions' },
   { icon: 'notifications-outline' as const,    label: '알림설정',           route: '/notification-settings' },
+  { icon: 'refresh-outline' as const,          label: '튜토리얼 다시보기',   route: '/tutorial-replay' },
   { icon: 'document-text-outline' as const,    label: '이용약관',           route: null },
   { icon: 'shield-outline' as const,           label: '개인정보처리방침',    route: null },
 ] as const;
@@ -86,6 +90,11 @@ export default function ProfilePage() {
         },
       },
     ]);
+  };
+
+  const handleTutorialReplay = async () => {
+    await Promise.all(TUTORIAL_KEYS.map(k => SecureStore.deleteItemAsync(k)));
+    router.replace('/(tabs)/home' as any);
   };
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -137,7 +146,7 @@ export default function ProfilePage() {
               <TouchableOpacity
                 style={styles.menuRow}
                 activeOpacity={0.7}
-                onPress={() => item.route ? router.push(item.route as any) : Alert.alert('준비 중입니다.')}
+                onPress={() => item.route === '/tutorial-replay' ? handleTutorialReplay() : item.route ? router.push(item.route as any) : Alert.alert('준비 중입니다.')}
               >
                 <View style={styles.menuLeft}>
                   <Ionicons name={item.icon} size={20} color="#586144" />

@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import Svg, { Ellipse, G, Defs, Filter, FeGaussianBlur } from 'react-native-svg';
 
-const { width: screenWidth, height } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// const LOGO_W = screenWidth * 0.72;
-// const LOGO_W = screenWidth * 0.9;
-const LOGO_W=screenWidth-112-19.25
+const LOGO_W = screenWidth - 60 - 10;
 const LOGO_H = LOGO_W * (2622 / 1206);
+
+const SHADOW_LEFT = 60 + (LOGO_W - 209) / 2;
 
 function LogoShadow() {
   return (
@@ -26,38 +26,43 @@ function LogoShadow() {
 export default function SplashScreen() {
   return (
     <View style={styles.container}>
+      {/* 로고 이미지 — 텍스트 뒤(아래)에 렌더링 */}
+      <Image
+        source={require('../assets/logo1.png')}
+        style={styles.robotImage}
+        resizeMode="contain"
+      />
+      <View style={styles.shadowWrapper}>
+        <LogoShadow />
+      </View>
+
+      {/* 텍스트 — 로고 위(앞)에 렌더링 */}
       <View style={styles.textArea}>
         <Text style={styles.tagline}>아이들을 위한 길,{'\n'}아이들을 위한 LAW</Text>
         <Text style={styles.appName}>아이로</Text>
       </View>
-
-      <View style={styles.robotArea}>
-        <Image
-          source={require('../assets/logo1.png')}
-          style={styles.robotImage}
-          resizeMode="contain"
-        />
-        <LogoShadow />
-      </View>
-      {/* <View style={styles.logoWrapper}>
-        <Image
-          source={require('../assets/logo1.png')}
-          style={styles.robotImage}
-          resizeMode="contain"
-        />
-
-        <View style={styles.shadow}>
-          <LogoShadow />
-        </View> */}
-      {/* </View> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
+
+  robotImage: {
+    position: 'absolute',
+    left: 60,
+    bottom: 20,
+    width: LOGO_W,
+    height: LOGO_H,
+  },
+  shadowWrapper: {
+    position: 'absolute',
+    left: SHADOW_LEFT,
+    bottom: 82,
+  },
+
   textArea: {
-    paddingTop: height * 0.22,
+    paddingTop: screenHeight * 0.22,
     paddingHorizontal: 36,
   },
   tagline: {
@@ -77,58 +82,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.123,
     fontFamily: 'AiroFont',
   },
-  logoWrapper: {
-    // position: 'absolute',
-    // left: 112,
-    // bottom: 146.94,
-    // width: LOGO_W,
-    // // height: LOGO_H,
-    // alignItems: 'center',
-    position: 'absolute',
-
-    left: 60,       // 👉 너가 맞춘 값 유지
-    bottom: 0,
-
-    transform: [{ translateY: 120 }], // 🔥 여기서 같이 이동
-
-    alignItems: 'center',
-  },
-  robotArea: {
-    flex: 1,
-    // alignItems: 'center',
-    justifyContent: 'flex-end',
-    // paddingRight: 19,
-    // paddingLeft: 112,
-    paddingBottom: 100,
-  },
-  robotImage: {
-    position: 'absolute',
-    left: 45,
-
-    bottom: 0, // 기준은 바닥
-
-    width: LOGO_W,
-    height: LOGO_H,
-
-    transform: [
-      { translateY: 120 } // 🔥 이 값이 핵심 (내려주는 값)
-    ],
-  },
-  // robotImage: {
-  //   width: LOGO_W,
-  //   height: LOGO_H,
-  // },
-  // robotImage: {
-  //   position: 'absolute',
-  //   left: 112,
-  //   bottom: 146.94,
-  //   width: LOGO_W,
-  //   height: LOGO_H,
-  // },
-  // shadow: {
-  //   position: 'absolute',
-  //   left: 112,
-  //   bottom: 136, // 👉 그림자 위치 (미세조정 가능)
-  // },
-
 });

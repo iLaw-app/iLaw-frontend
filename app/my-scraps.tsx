@@ -247,12 +247,6 @@ export default function MyScrapsScreen() {
                 onPress={() => router.push(`/community/${item.id}` as any)}
                 activeOpacity={0.8}
               >
-                <View style={styles.cardTop}>
-                  <View style={styles.badge}>
-                    <Ionicons name="people-outline" size={11} color="#3C6802" />
-                    <Text style={styles.badgeText}>커뮤니티</Text>
-                  </View>
-                </View>
                 <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
                 {item.content ? (
                   <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>

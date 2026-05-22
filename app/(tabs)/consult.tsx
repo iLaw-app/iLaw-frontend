@@ -123,7 +123,7 @@ export default function ManualScreen() {
         if (DEBUG_TUTORIAL) { measureAndShow(); return; }
         const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
         if (!done) measureAndShow();
-      }, 500);
+      }, 0);
       return () => clearTimeout(timer);
     }, [measureAndShow])
   );
@@ -134,7 +134,6 @@ export default function ManualScreen() {
       return;
     }
     await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
-    setTutorialVisible(false);
     router.push('/manual-list?categoryId=finance');
   };
 

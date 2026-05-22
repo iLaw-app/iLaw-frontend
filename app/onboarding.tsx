@@ -353,8 +353,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   robotHead: {
-    width: 120,
-    height: 120,
+    width: 160,
+    height: 160,
     marginBottom: 16,
   },
   subtitle: {

@@ -5,8 +5,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { G, Path, Defs, ClipPath, Rect } from 'react-native-svg';
 import { useAuth } from './context/auth';
 import { BottomNav } from '../components/BottomNav';
+
+function ClockIcon() {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+      <G clipPath="url(#clip_scraps_clock)">
+        <Path d="M5.99622 10.9937C8.7559 10.9937 10.9931 8.75651 10.9931 5.99683C10.9931 3.23716 8.7559 1 5.99622 1C3.23655 1 0.99939 3.23716 0.99939 5.99683C0.99939 8.75651 3.23655 10.9937 5.99622 10.9937Z" stroke="#586144" strokeWidth="0.999367" strokeLinecap="round" strokeLinejoin="round"/>
+        <Path d="M5.99622 2.99805V5.99615L7.99495 6.99551" stroke="#586144" strokeWidth="0.999367" strokeLinecap="round" strokeLinejoin="round"/>
+      </G>
+      <Defs>
+        <ClipPath id="clip_scraps_clock">
+          <Rect width="11.9924" height="11.9924" fill="white"/>
+        </ClipPath>
+      </Defs>
+    </Svg>
+  );
+}
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -34,6 +51,8 @@ type CommunityScrap = {
   title: string;
   content?: string;
   nickname: string;
+  createdAt?: string;
+  bookmarks?: number;
 };
 
 type Tab = 'manual' | 'qna' | 'community';
@@ -247,10 +266,22 @@ export default function MyScrapsScreen() {
                 onPress={() => router.push(`/community/${item.id}` as any)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={styles.communityCardTitle} numberOfLines={2}>{item.title}</Text>
                 {item.content ? (
-                  <Text style={styles.cardSummary} numberOfLines={2}>{item.content}</Text>
+                  <Text style={styles.communityCardContent} numberOfLines={2}>{item.content}</Text>
                 ) : null}
+                <View style={styles.communityCardMeta}>
+                  <View style={styles.communityCardDateRow}>
+                    <ClockIcon />
+                    <Text style={styles.communityCardDate}>
+                      {item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.communityCardScrap}>
+                    <Ionicons name="bookmark-outline" size={12} color="#586144" />
+                    <Text style={styles.communityCardScrapText}>{item.bookmarks ?? 0}</Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             )}
           />
@@ -325,6 +356,14 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 15, fontWeight: '600', color: '#586144', lineHeight: 22 },
   cardSummary: { fontSize: 13, color: '#9CAF88', lineHeight: 20 },
+
+  communityCardTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 27, letterSpacing: -0.439 },
+  communityCardContent: { fontSize: 14, fontWeight: '500', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  communityCardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  communityCardDateRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  communityCardDate: { fontSize: 12, fontWeight: '500', color: '#586144', lineHeight: 16 },
+  communityCardScrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  communityCardScrapText: { fontSize: 12, fontWeight: '500', color: '#586144', lineHeight: 16 },
   empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 14, color: '#9CAF88' },
 

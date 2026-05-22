@@ -1,14 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { BottomNav } from '../components/BottomNav';
 import * as SecureStore from 'expo-secure-store';
 import { TutorialOverlay, SpotlightRect, TutorialStep } from '../components/TutorialOverlay';
-
-const DEBUG_TUTORIAL = false;
-const TUTORIAL_KEY = 'airo_tutorial_manual_list';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.filter(k => k.trim());
@@ -54,57 +51,60 @@ export default function ManualListScreen() {
 
   const floatingBtnRef = useRef<any>(null);
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [btnRect, setBtnRect] = useState<SpotlightRect | null>(null);
+  const [floatingBtnRect, setFloatingBtnRect] = useState<SpotlightRect | null>(null);
 
   const measureAndShow = useCallback(() => {
-    floatingBtnRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-      setBtnRect({ x, y, width, height });
-      setTutorialStep(0);
+    floatingBtnRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+      if (w <= 0) return;
+      setFloatingBtnRect({ x, y, width: w, height: h });
       setTutorialVisible(true);
     });
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (DEBUG_TUTORIAL) { measureAndShow(); return; }
-      const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-      if (!done) measureAndShow();
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [measureAndShow]);
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const tryShow = async () => {
+      if (cancelled) return;
+      const done = await SecureStore.getItemAsync('airo_tutorial_done');
+      if (done || cancelled) return;
+      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
+      if (phase !== 'manual_list') return;
+      if (floatingBtnRef.current) { measureAndShow(); return; }
+      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
+    };
+    tryShow();
+    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
+  }, [measureAndShow]));
+
+  const handleTutorialNext = async () => {
+    if (dontShowAgain) {
+      await SecureStore.setItemAsync('airo_tutorial_done', '1');
+      setTutorialVisible(false);
+      return;
+    }
+    setTutorialVisible(false);
+    await SecureStore.setItemAsync('airo_tutorial_phase', 'qna');
+    router.navigate('/(tabs)/qna' as any);
+  };
+
+  const handleTutorialSkip = async () => {
+    await SecureStore.setItemAsync('airo_tutorial_done', '1');
+    setTutorialVisible(false);
+  };
 
   const tutorialSteps: TutorialStep[] = [
     {
-      spotlight: btnRect,
-      spotlightRadius: 30,
+      spotlight: floatingBtnRect,
+      spotlightRadius: 9999,
       title: '매뉴얼 도움 요청',
       description: '상황에 맞는 도움 기관과\n요청 방법을 확인해요',
       tooltipBelow: false,
     },
   ];
 
-  const handleTutorialNext = async () => {
-    if (tutorialStep < tutorialSteps.length - 1) {
-      setTutorialStep(s => s + 1);
-      return;
-    }
-    await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
-    router.replace('/(tabs)/qna' as any);
-  };
-
-  const handleTutorialSkip = async () => {
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
-    setTutorialVisible(false);
-  };
-
-  const handleTutorialPrev = () => {
-    if (tutorialStep > 0) setTutorialStep(s => s - 1);
-  };
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/categories/${categoryId}/articles`)
@@ -263,10 +263,10 @@ export default function ManualListScreen() {
       <TutorialOverlay
         steps={tutorialSteps}
         visible={tutorialVisible}
-        currentStep={tutorialStep}
+        currentStep={0}
         dontShowAgain={dontShowAgain}
         onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
+        onPrev={() => {}}
         onSkip={handleTutorialSkip}
         onToggleDontShow={() => setDontShowAgain(v => !v)}
         totalDots={7}

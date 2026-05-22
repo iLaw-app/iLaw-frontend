@@ -120,7 +120,7 @@ export function TutorialOverlay({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       statusBarTranslucent
       onRequestClose={() => {
         if (currentStep > 0 && onPrev) onPrev();

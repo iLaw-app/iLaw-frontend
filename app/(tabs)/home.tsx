@@ -199,7 +199,27 @@ export default function HomeScreen() {
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [tutorialRects, setTutorialRects] = useState<SpotlightRect[]>([]);
+  const [searchRect, setSearchRect] = useState<SpotlightRect | null>(null);
+  const [recommendRect, setRecommendRect] = useState<SpotlightRect | null>(null);
+  const [fabRect, setFabRect] = useState<SpotlightRect | null>(null);
+
+  const measureAndShow = useCallback(() => {
+    if (!searchAreaRef.current || !recommendRef.current || !fabRef.current) return;
+    searchAreaRef.current.measureInWindow((sx: number, sy: number, sw: number, sh: number) => {
+      if (sw <= 0) return;
+      recommendRef.current!.measureInWindow((rx: number, ry: number, rw: number, rh: number) => {
+        if (rw <= 0) return;
+        fabRef.current!.measureInWindow((fx: number, fy: number, fw: number, fh: number) => {
+          if (fw <= 0) return;
+          setSearchRect({ x: sx, y: sy, width: sw, height: sh });
+          setRecommendRect({ x: rx, y: ry, width: rw, height: rh });
+          setFabRect({ x: fx, y: fy, width: fw, height: fh });
+          setTutorialStep(0);
+          setTutorialVisible(true);
+        });
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -212,65 +232,72 @@ export default function HomeScreen() {
     return () => handler.remove();
   }, []);
 
-  const DEBUG_TUTORIAL = false; // ← false로 바꾸면 정상 동작
-
-  const measureAndShow = useCallback(() => {
-    const rects: SpotlightRect[] = [];
-    let pending = 3;
-    const mark = (idx: number, r: SpotlightRect) => {
-      rects[idx] = r;
-      pending--;
-      if (pending === 0) { setTutorialRects([...rects]); setTutorialStep(0); setTutorialVisible(true); }
-    };
-    searchAreaRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(0, { x, y, width: w, height: h }));
-    recommendRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(1, { x, y, width: w, height: h }));
-    fabRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => mark(2, { x, y, width: w, height: h }));
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       let timer: ReturnType<typeof setTimeout>;
-      SecureStore.getItemAsync('airo_tutorial_home').then(async val => {
-        if (val && !DEBUG_TUTORIAL) {
-          const manualDone = await SecureStore.getItemAsync('airo_tutorial_manual_list');
-          if (!manualDone) {
-            await Promise.all(
-              ['airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-                .map(k => SecureStore.setItemAsync(k, '1'))
-            );
-          }
-          setTutorialVisible(false);
+      let attempts = 0;
+      const tryShow = async () => {
+        if (cancelled) return;
+        const done = await SecureStore.getItemAsync('airo_tutorial_done');
+        if (done || cancelled) return;
+        const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
+        if (phase && phase !== 'home') return;
+        if (searchAreaRef.current && recommendRef.current && fabRef.current) {
+          measureAndShow();
           return;
         }
-        timer = setTimeout(measureAndShow, 0);
-      });
-      return () => { clearTimeout(timer); setTutorialVisible(false); };
+        if (attempts++ < 15) timer = setTimeout(tryShow, 300);
+      };
+      tryShow();
+      return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
     }, [measureAndShow])
   );
 
   const handleTutorialNext = async () => {
-    if (tutorialStep < 2) {
-      setTutorialStep(s => s + 1);
-    } else {
-      await SecureStore.setItemAsync('airo_tutorial_home', 'done');
+    if (dontShowAgain) {
+      await SecureStore.setItemAsync('airo_tutorial_done', '1');
       setTutorialVisible(false);
-      setTutorialStep(0);
-      router.navigate('/(tabs)/consult');
+      return;
     }
+    if (tutorialStep < 2) { setTutorialStep(s => s + 1); return; }
+    setTutorialVisible(false);
+    await SecureStore.setItemAsync('airo_tutorial_phase', 'consult');
+    router.navigate('/(tabs)/consult' as any);
   };
 
   const handleTutorialSkip = async () => {
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
+    await SecureStore.setItemAsync('airo_tutorial_done', '1');
     setTutorialVisible(false);
-    setTutorialStep(0);
   };
 
   const handleTutorialPrev = () => {
     if (tutorialStep > 0) setTutorialStep(s => s - 1);
   };
+
+  const tutorialSteps: TutorialStep[] = [
+    {
+      spotlight: searchRect,
+      spotlightRadius: 9999,
+      title: '검색으로 빠르게 찾기',
+      description: '궁금한 법률 정보를 키워드로 검색해\n매뉴얼, Q&A, 커뮤니티에서\n한번에 찾아보세요',
+      tooltipBelow: true,
+    },
+    {
+      spotlight: fabRect,
+      spotlightRadius: 9999,
+      title: 'AI 챗봇으로 상황진단',
+      description: '내가 겪은 상황을 말하면 AI가\n상황을 요약하고\n추천 콘텐츠를 찾아드려요',
+      tooltipBelow: false,
+    },
+    {
+      spotlight: recommendRect,
+      spotlightRadius: 16,
+      title: '추천 콘텐츠',
+      description: '많이 찾는 법률 콘텐츠를\n홈 화면에서 바로 확인해요',
+      tooltipBelow: false,
+    },
+  ];
 
   const swipeBackPan = useRef(
     PanResponder.create({
@@ -441,38 +468,6 @@ export default function HomeScreen() {
   }
 
   // ── 홈 메인 화면 ──
-  // Page 3 spotlight: 추천 콘텐츠 1,2번 항목만 (높이 ≈ 2 × 85px)
-  const twoItemRect: SpotlightRect | null = tutorialRects[1]
-    ? { x: tutorialRects[1].x, y: tutorialRects[1].y, width: tutorialRects[1].width, height: 85 * 2 }
-    : null;
-
-  const tutorialSteps: TutorialStep[] = [
-    {
-      spotlight: tutorialRects[0] ?? null,
-      spotlightRadius: 9999,
-      title: '검색으로 빠르게 찾기',
-      description: '궁금한 법률 정보를 키워드로 검색하세요',
-      tooltipBelow: true,
-    },
-    {
-      spotlight: tutorialRects[2] ?? null,
-      spotlightRadius: 9999,
-      title: 'AI 챗봇으로 상황진단',
-      description: '내가 겪은 상황을 말하면\nAI가 상황을 요약하고\n추천 컨텐츠를 찾아드려요',
-      tooltipBelow: false,
-      tooltipLeft: 20,
-      tooltipRight: 110,
-      titleStyle: { fontSize: 18, letterSpacing: -0.439 },
-      descStyle: { lineHeight: 22.75, letterSpacing: -0.15 },
-    },
-    {
-      spotlight: twoItemRect,
-      spotlightRadius: 16,
-      title: '추천 콘텐츠',
-      description: '많이 찾는 법률 콘텐츠를 확인해요',
-      tooltipBelow: false,
-    },
-  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -552,7 +547,7 @@ export default function HomeScreen() {
         onToggleDontShow={() => setDontShowAgain(v => !v)}
         totalDots={7}
         dotOffset={0}
-        showComplete={false}
+        showComplete={true}
       />
     </SafeAreaView>
   );

@@ -3,10 +3,10 @@ import Svg, { Ellipse, G, Defs, Filter, FeGaussianBlur } from 'react-native-svg'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const LOGO_W = screenWidth - 60 - 10;
+const LOGO_W = screenWidth - 130 - 20;
 const LOGO_H = LOGO_W * (2622 / 1206);
 
-const SHADOW_LEFT = 60 + (LOGO_W - 209) / 2;
+const SHADOW_LEFT = 100 + (LOGO_W - 209) / 2;
 
 function LogoShadow() {
   return (
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
 
   robotImage: {
     position: 'absolute',
-    left: 60,
+    left: 100,
     bottom: 20,
     width: LOGO_W,
     height: LOGO_H,

@@ -46,7 +46,6 @@ function WithdrawIcon() {
   );
 }
 
-const TUTORIAL_KEYS = ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community'];
 
 const USER_MENU_ITEMS = [
   { icon: 'bookmark-outline' as const,          label: '내 스크랩',          route: '/my-scraps' },
@@ -93,7 +92,8 @@ export default function ProfilePage() {
   };
 
   const handleTutorialReplay = async () => {
-    await Promise.all(TUTORIAL_KEYS.map(k => SecureStore.deleteItemAsync(k)));
+    await SecureStore.deleteItemAsync('airo_tutorial_done');
+    await SecureStore.deleteItemAsync('airo_tutorial_phase');
     router.replace('/(tabs)/home' as any);
   };
 

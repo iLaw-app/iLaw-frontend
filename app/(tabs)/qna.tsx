@@ -8,9 +8,6 @@ import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
 import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
-const DEBUG_TUTORIAL = false;
-const TUTORIAL_KEY = 'airo_tutorial_qna';
-
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.map(k => k.trim()).filter(k => k);
   if (active.length === 0) return <Text style={style}>{text}</Text>;
@@ -95,61 +92,59 @@ export default function QnaPage() {
   const firstCardRef = useRef<any>(null);
   const fabRef = useRef<any>(null);
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [firstCardRect, setFirstCardRect] = useState<SpotlightRect | null>(null);
   const [fabRect, setFabRect] = useState<SpotlightRect | null>(null);
 
   const measureAndShow = useCallback(() => {
-    if (!firstCardRef.current) return;
-    firstCardRef.current.measureInWindow((x: number, y: number, width: number, height: number) => {
-      setFirstCardRect({ x, y, width, height });
-      fabRef.current?.measureInWindow((fx: number, fy: number, fw: number, fh: number) => {
-        setFabRect({ x: fx, y: fy, width: fw, height: fh });
+    if (!firstCardRef.current || !fabRef.current) return;
+    firstCardRef.current.measureInWindow((x: number, y: number, w: number, h: number) => {
+      if (w <= 0) return;
+      fabRef.current!.measureInWindow((x2: number, y2: number, w2: number, h2: number) => {
+        if (w2 <= 0) return;
+        setFirstCardRect({ x, y, width: w, height: h });
+        setFabRect({ x: x2, y: y2, width: w2, height: h2 });
+        setTutorialVisible(true);
       });
-      setTutorialStep(0);
-      setTutorialVisible(true);
     });
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      let timer: ReturnType<typeof setTimeout>;
-      let attempts = 0;
-      const tryShow = async () => {
-        if (!DEBUG_TUTORIAL) {
-          const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-          if (done) { setTutorialVisible(false); return; }
-        }
-        if (firstCardRef.current) { measureAndShow(); return; }
-        if (attempts++ < 15) timer = setTimeout(tryShow, 300);
-      };
-      tryShow();
-      return () => { clearTimeout(timer); setTutorialVisible(false); };
-    }, [measureAndShow])
-  );
 
   useFocusEffect(useCallback(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, []));
 
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const tryShow = async () => {
+      if (cancelled) return;
+      const done = await SecureStore.getItemAsync('airo_tutorial_done');
+      if (done || cancelled) return;
+      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
+      if (phase !== 'qna') return;
+      if (firstCardRef.current && fabRef.current) { measureAndShow(); return; }
+      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
+    };
+    tryShow();
+    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
+  }, [measureAndShow]));
+
   const handleTutorialNext = async () => {
-    if (tutorialStep < tutorialSteps.length - 1) { setTutorialStep(s => s + 1); return; }
-    await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
+    if (dontShowAgain) {
+      await SecureStore.setItemAsync('airo_tutorial_done', '1');
+      setTutorialVisible(false);
+      return;
+    }
+    setTutorialVisible(false);
+    await SecureStore.setItemAsync('airo_tutorial_phase', 'community');
     router.navigate('/(tabs)/community' as any);
   };
 
   const handleTutorialSkip = async () => {
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
+    await SecureStore.setItemAsync('airo_tutorial_done', '1');
     setTutorialVisible(false);
-  };
-
-  const handleTutorialPrev = () => {
-    if (tutorialStep > 0) setTutorialStep(s => s - 1);
   };
 
   const tutorialSteps: TutorialStep[] = [
@@ -159,7 +154,7 @@ export default function QnaPage() {
       spotlight2: fabRect,
       spotlight2Radius: 9999,
       title: 'Q&A',
-      description: '더 정확한 도움이 필요할 때\n변호사님께 질문할 수 있어요',
+      description: '더 정확한 도움이 필요할 때\n변호사님께 직접 질문할 수 있어요',
       tooltipBelow: true,
     },
   ];
@@ -278,7 +273,7 @@ export default function QnaPage() {
           data={filteredPosts}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item, index }) => (
-            <View ref={index === 0 ? firstCardRef : null}>
+            <View ref={index === 0 ? firstCardRef : undefined}>
               <QnaCard item={item} onPress={() => router.push(`/qna/${item.id}`)} keywords={searchQuery.trim() ? [searchQuery] : []} />
             </View>
           )}
@@ -299,10 +294,10 @@ export default function QnaPage() {
       <TutorialOverlay
         steps={tutorialSteps}
         visible={tutorialVisible}
-        currentStep={tutorialStep}
+        currentStep={0}
         dontShowAgain={dontShowAgain}
         onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
+        onPrev={() => {}}
         onSkip={handleTutorialSkip}
         onToggleDontShow={() => setDontShowAgain(v => !v)}
         totalDots={7}
@@ -316,7 +311,7 @@ export default function QnaPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  headerTitle: { fontSize: 30, fontWeight: '700', color: '#586144', lineHeight: 36, letterSpacing: 0.396 },
+  headerTitle: { fontSize: 25, fontWeight: '700', color: '#586144', lineHeight: 36, letterSpacing: 0.396 },
   headerSub: { fontSize: 16, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312, marginTop: 2 },
   searchArea: { paddingHorizontal: 16, paddingBottom: 12 },
   searchBox: {

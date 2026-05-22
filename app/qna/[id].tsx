@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,16 +18,18 @@ type QnADetail = {
   status: string;
   createdAt: string;
   imageUrls: string[];
+  isAuthor?: boolean;
   author: {
     nickname: string | null;
-    age?: number;
-    region?: string;
-    gender?: string;
+    birthDate?: string | null;
+    region?: string | null;
+    gender?: string | null;
   };
   answer: {
     id: number;
     content: string;
     createdAt: string;
+    isMyAnswer?: boolean;
     lawyer: { nickname: string | null; role: string; affiliation: string | null };
   } | null;
 };
@@ -59,6 +61,12 @@ export default function QnaDetailPage() {
   const [scrapLoading, setScrapLoading] = useState(false);
   const [answerText, setAnswerText] = useState('');
   const [answerSubmitting, setAnswerSubmitting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAnswerSuccessModal, setShowAnswerSuccessModal] = useState(false);
+  const [isEditingAnswer, setIsEditingAnswer] = useState(false);
+  const [editAnswerText, setEditAnswerText] = useState('');
+  const [editAnswerSubmitting, setEditAnswerSubmitting] = useState(false);
 
   const handleAnswerSubmit = async () => {
     if (!answerText.trim()) {
@@ -91,9 +99,7 @@ export default function QnaDetailPage() {
           },
         },
       } : prev);
-      Alert.alert('답변이 등록되었습니다.', '', [
-        { text: '확인', onPress: () => router.back() },
-      ]);
+      setShowAnswerSuccessModal(true);
     } catch {
       Alert.alert('오류', '답변 등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
@@ -116,9 +122,43 @@ export default function QnaDetailPage() {
     }
   };
 
+  const handleAnswerEdit = async () => {
+    if (!editAnswerText.trim()) return;
+    setEditAnswerSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/qa/${id}/answer`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ content: editAnswerText }),
+      });
+      if (!res.ok) throw new Error();
+      setPost(prev => prev && prev.answer ? { ...prev, answer: { ...prev.answer, content: editAnswerText } } : prev);
+      setIsEditingAnswer(false);
+    } catch {
+      Alert.alert('오류', '답변 수정에 실패했습니다.');
+    } finally {
+      setEditAnswerSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!accessToken) return;
+    const res = await fetch(`${API_BASE}/qa/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok || res.status === 204) {
+      router.back();
+    } else {
+      Alert.alert('오류', '삭제에 실패했습니다.');
+    }
+  };
+
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    fetch(`${API_BASE}/qa/${id}`)
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    fetch(`${API_BASE}/qa/${id}`, { headers })
       .then(r => r.json())
       .then(data => setPost(data?.id ? data : null))
       .catch(() => setPost(null))
@@ -162,9 +202,26 @@ export default function QnaDetailPage() {
           <Ionicons name="chevron-back" size={22} color="#586144" />
           <Text style={role === 'lawyer' ? styles.lawyerBackText : styles.backText}>{role === 'lawyer' ? '질문 상세' : 'Q&A'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
-          <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={28} color={scrapped ? '#3C6802' : '#9CAF88'} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {post.isAuthor && (
+            <View style={{ position: 'relative' }}>
+              <TouchableOpacity onPress={() => setShowMenu(v => !v)} style={styles.menuBtn}>
+                <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
+              </TouchableOpacity>
+              {showMenu && (
+                <View style={styles.dropdown}>
+                  <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); setShowDeleteModal(true); }}>
+                    <Ionicons name="trash-outline" size={14} color="#586144" />
+                    <Text style={styles.dropdownTextRed}>삭제하기</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+          <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
+            <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={28} color={scrapped ? '#3C6802' : '#9CAF88'} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -213,6 +270,50 @@ export default function QnaDetailPage() {
           </TouchableOpacity>
         </Modal>
 
+        <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+          <Pressable style={styles.deleteOverlay} onPress={() => setShowDeleteModal(false)}>
+            <Pressable style={styles.deleteCard} onPress={() => {}}>
+              <View style={styles.deleteIconCircle}>
+                <Ionicons name="trash-outline" size={32} color="#C10007" />
+              </View>
+              <Text style={styles.deleteTitle}>질문 삭제</Text>
+              <View style={styles.deleteTextContainer}>
+                <Text style={styles.deleteBody}>이 질문을 삭제하시겠습니까?</Text>
+                <Text style={styles.deleteWarning}>삭제 후에는 복구할 수 없습니다.</Text>
+              </View>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => { setShowDeleteModal(false); handleDelete(); }}>
+                <Text style={styles.deleteBtnText}>삭제하기</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showAnswerSuccessModal} transparent animationType="fade" onRequestClose={() => setShowAnswerSuccessModal(false)}>
+          <View style={styles.deleteOverlay}>
+            <View style={styles.successCard}>
+              <View style={styles.successIconCircle}>
+                <Ionicons name="checkmark" size={36} color="#FFFFFF" />
+              </View>
+              <Text style={styles.successTitle}>답변 완료!</Text>
+              <Text style={styles.successBody}>답변이 성공적으로 등록됐습니다.</Text>
+              <View style={styles.successBtns}>
+                <TouchableOpacity
+                  style={styles.successBtnOutline}
+                  onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/qna' as any); }}
+                >
+                  <Text style={styles.successBtnOutlineText}>목록으로</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.successBtnPrimary}
+                  onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/home' as any); }}
+                >
+                  <Text style={styles.successBtnPrimaryText}>홈으로</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         {/* 답변 영역 */}
         {role === 'lawyer' ? (
           <>
@@ -222,9 +323,9 @@ export default function QnaDetailPage() {
                 <Text style={styles.studentInfoTitle}>학생 정보</Text>
               </View>
               <View style={styles.studentInfoRow}>
-                <Text style={styles.studentInfoItem}>나이: {post.author.age ? `${post.author.age}세` : '-'}</Text>
+                <Text style={styles.studentInfoItem}>생년월일: {post.author.birthDate ? post.author.birthDate.replace(/-/g, '.') : '-'}</Text>
                 <Text style={styles.studentInfoItem}>지역: {post.author.region ?? '-'}</Text>
-                <Text style={styles.studentInfoItem}>성별: {post.author.gender ?? '-'}</Text>
+                <Text style={styles.studentInfoItem}>성별: {post.author.gender === 'female' ? '여성' : post.author.gender === 'male' ? '남성' : post.author.gender === 'other' ? '기타' : '-'}</Text>
               </View>
             </View>
 
@@ -256,16 +357,48 @@ export default function QnaDetailPage() {
                   <View style={styles.lawyerAvatar}>
                     <Ionicons name="person-outline" size={22} color="#fff" />
                   </View>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.lawyerName}>{post.answer?.lawyer.nickname ?? '변호사'}</Text>
                     <View style={styles.orgRow}>
                       <Ionicons name="business-outline" size={12} color="#4A5565" />
                       <Text style={styles.lawyerOrg}>{post.answer?.lawyer.affiliation ?? '소속 미등록'}</Text>
                     </View>
                   </View>
+                  {post.answer?.isMyAnswer && !isEditingAnswer && (
+                    <TouchableOpacity onPress={() => { setEditAnswerText(post.answer?.content ?? ''); setIsEditingAnswer(true); }} style={styles.editAnswerBtn}>
+                      <Ionicons name="create-outline" size={18} color="#2B56B5" />
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <View style={styles.answerDivider} />
-                <Text style={styles.answerContent}>{post.answer?.content}</Text>
+                {isEditingAnswer ? (
+                  <>
+                    <View style={styles.lawyerAnswerInputContainer}>
+                      <TextInput
+                        style={styles.lawyerAnswerInput}
+                        value={editAnswerText}
+                        onChangeText={setEditAnswerText}
+                        multiline
+                        textAlignVertical="top"
+                        autoFocus
+                      />
+                    </View>
+                    <View style={styles.editAnswerBtns}>
+                      <TouchableOpacity style={styles.editAnswerCancelBtn} onPress={() => setIsEditingAnswer(false)}>
+                        <Text style={styles.editAnswerCancelText}>취소</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.editAnswerSaveBtn, editAnswerSubmitting && { opacity: 0.6 }]}
+                        onPress={handleAnswerEdit}
+                        disabled={editAnswerSubmitting}
+                      >
+                        <Text style={styles.editAnswerSaveText}>{editAnswerSubmitting ? '저장 중...' : '저장'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <Text style={styles.answerContent}>{post.answer?.content}</Text>
+                )}
               </View>
             )}
           </>
@@ -315,7 +448,53 @@ const styles = StyleSheet.create({
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { fontSize: 20, color: '#586144', fontWeight: '700' },
+  menuBtn: { padding: 4 },
+  dropdown: {
+    position: 'absolute', top: 32, right: 0, backgroundColor: '#fff',
+    borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
+    minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden',
+  },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
+  dropdownTextRed: { fontSize: 14, color: '#586144', fontWeight: '500' },
   scrapBtn: { padding: 4 },
+
+  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  deleteCard: {
+    backgroundColor: '#fff', borderRadius: 24, padding: 28,
+    alignItems: 'center', gap: 12, marginHorizontal: 32, width: '80%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
+  },
+  deleteIconCircle: {
+    width: 64, height: 64, borderRadius: 9999,
+    backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center',
+    marginBottom: 4,
+  },
+  deleteTitle: { fontSize: 22, fontWeight: '700', color: '#1E2939', textAlign: 'center' },
+  deleteBody: { fontSize: 16, color: '#4A5565', textAlign: 'center', lineHeight: 24 },
+  deleteWarning: { fontSize: 14, color: '#C10007', textAlign: 'center' },
+  deleteTextContainer: { width: 280, alignItems: 'center', gap: 4 },
+  deleteBtn: {
+    marginTop: 8, backgroundColor: '#C10007', borderRadius: 9999,
+    paddingTop: 11, paddingBottom: 13, alignSelf: 'stretch',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+  },
+  deleteBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  editAnswerBtn: { padding: 4 },
+  editAnswerBtns: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  editAnswerCancelBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 9999,
+    borderWidth: 1, borderColor: '#CCD9BA', alignItems: 'center',
+  },
+  editAnswerCancelText: { fontSize: 15, color: '#586144', fontWeight: '600' },
+  editAnswerSaveBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 9999,
+    backgroundColor: '#2B56B5', alignItems: 'center',
+  },
+  editAnswerSaveText: { fontSize: 15, color: '#fff', fontWeight: '700' },
 
   content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 16 },
 
@@ -438,4 +617,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
   },
   lawyerSubmitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  successCard: {
+    backgroundColor: '#fff', borderRadius: 24, padding: 28,
+    alignItems: 'center', gap: 12, width: '80%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
+  },
+  successIconCircle: {
+    width: 72, height: 72, borderRadius: 9999,
+    backgroundColor: '#2B56B5', justifyContent: 'center', alignItems: 'center',
+    marginBottom: 4,
+  },
+  successTitle: { fontSize: 22, fontWeight: '700', color: '#1E2939', textAlign: 'center' },
+  successBody: { fontSize: 15, color: '#4A5565', textAlign: 'center', lineHeight: 22 },
+  successBtns: { flexDirection: 'row', gap: 10, marginTop: 8, alignSelf: 'stretch' },
+  successBtnOutline: {
+    flex: 1, paddingTop: 11, paddingBottom: 13, borderRadius: 9999,
+    borderWidth: 1.5, borderColor: '#2B56B5', alignItems: 'center',
+  },
+  successBtnOutlineText: { fontSize: 15, fontWeight: '600', color: '#1E2939' },
+  successBtnPrimary: {
+    flex: 1, paddingTop: 11, paddingBottom: 13, borderRadius: 9999,
+    backgroundColor: '#2B56B5', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+  },
+  successBtnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

@@ -8,9 +8,6 @@ import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
 import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
-const DEBUG_TUTORIAL = false;
-const TUTORIAL_KEY = 'airo_tutorial_community';
-
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
@@ -189,62 +186,43 @@ export default function CommunityScreen() {
 
   const secondCardRef = useRef<any>(null);
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [secondCardRect, setSecondCardRect] = useState<SpotlightRect | null>(null);
-  const [showTutorialComplete, setShowTutorialComplete] = useState(false);
 
   const measureAndShow = useCallback(() => {
-    if (!secondCardRef.current) return;
-    secondCardRef.current.measureInWindow((x: number, y: number, width: number, height: number) => {
-      setSecondCardRect({ x, y, width, height });
-      setTutorialStep(0);
+    secondCardRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
+      if (w <= 0) return;
+      setSecondCardRect({ x, y, width: w, height: h });
       setTutorialVisible(true);
     });
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      let timer: ReturnType<typeof setTimeout>;
-      let attempts = 0;
-      const tryShow = async () => {
-        if (!DEBUG_TUTORIAL) {
-          const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-          if (done) { setTutorialVisible(false); return; }
-        }
-        if (secondCardRef.current) { measureAndShow(); return; }
-        if (attempts++ < 15) timer = setTimeout(tryShow, 300);
-      };
-      tryShow();
-      return () => { clearTimeout(timer); setTutorialVisible(false); };
-    }, [measureAndShow])
-  );
 
   useFocusEffect(useCallback(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, []));
 
-  const handleTutorialNext = async () => {
-    if (tutorialStep < tutorialSteps.length - 1) { setTutorialStep(s => s + 1); return; }
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
-    setTutorialVisible(false);
-    setShowTutorialComplete(true);
-  };
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const tryShow = async () => {
+      if (cancelled) return;
+      const done = await SecureStore.getItemAsync('airo_tutorial_done');
+      if (done || cancelled) return;
+      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
+      if (phase !== 'community') return;
+      if (secondCardRef.current) { measureAndShow(); return; }
+      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
+    };
+    tryShow();
+    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
+  }, [measureAndShow]));
 
-  const handleTutorialSkip = async () => {
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
+  const handleTutorialDone = async () => {
+    await SecureStore.setItemAsync('airo_tutorial_done', '1');
+    await SecureStore.deleteItemAsync('airo_tutorial_phase');
     setTutorialVisible(false);
-  };
-
-  const handleTutorialPrev = () => {
-    if (tutorialStep > 0) setTutorialStep(s => s - 1);
   };
 
   const tutorialSteps: TutorialStep[] = [
@@ -349,7 +327,7 @@ export default function CommunityScreen() {
             data={displayPosts}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item, index }) => (
-              <View ref={index === 1 ? secondCardRef : null}>
+              <View ref={index === 1 ? secondCardRef : undefined}>
                 <PostCard
                   item={item}
                   onPress={() => router.push(`/community/${item.id}` as any)}
@@ -372,31 +350,16 @@ export default function CommunityScreen() {
       <TutorialOverlay
         steps={tutorialSteps}
         visible={tutorialVisible}
-        currentStep={tutorialStep}
+        currentStep={0}
         dontShowAgain={dontShowAgain}
-        onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
-        onSkip={handleTutorialSkip}
+        onNext={handleTutorialDone}
+        onPrev={() => {}}
+        onSkip={handleTutorialDone}
         onToggleDontShow={() => setDontShowAgain(v => !v)}
         totalDots={7}
         dotOffset={6}
         showComplete={true}
       />
-
-      <Modal visible={showTutorialComplete} transparent animationType="fade" onRequestClose={() => setShowTutorialComplete(false)}>
-        <Pressable style={cmpS.overlay} onPress={() => setShowTutorialComplete(false)}>
-          <Pressable style={cmpS.card} onPress={() => {}}>
-            <View style={cmpS.iconCircle}>
-              <Ionicons name="checkmark" size={40} color="#fff" />
-            </View>
-            <Text style={cmpS.title}>튜토리얼 완료!</Text>
-            <Text style={cmpS.body}>{'아이로의 모든 기능을 살펴봤어요.\n필요할 때 언제든 활용해보세요!'}</Text>
-            <TouchableOpacity style={cmpS.btn} onPress={() => setShowTutorialComplete(false)} activeOpacity={0.85}>
-              <Text style={cmpS.btnText}>앱 둘러보기</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
 
       <Modal visible={menuPostId !== null} transparent animationType="fade" onRequestClose={() => setMenuPostId(null)}>
         <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>
@@ -539,12 +502,3 @@ const menuS = StyleSheet.create({
   editText: { fontSize: 14, fontWeight: '500', color: '#586144' },
 });
 
-const cmpS = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  card: { width: '100%', maxWidth: 320, backgroundColor: '#fff', borderRadius: 24, alignItems: 'center', padding: 28, gap: 14 },
-  iconCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#B2D36E', justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#586144' },
-  body: { fontSize: 14, color: '#6A7282', lineHeight: 22, textAlign: 'center' },
-  btn: { marginTop: 4, backgroundColor: '#B2D36E', borderRadius: 9999, paddingHorizontal: 28, paddingVertical: 12 },
-  btnText: { fontSize: 15, fontWeight: '700', color: '#01180A' },
-});

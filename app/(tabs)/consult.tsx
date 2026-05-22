@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -7,8 +7,6 @@ import Svg, { Path, G, Rect, ClipPath, Defs } from 'react-native-svg';
 import * as SecureStore from 'expo-secure-store';
 import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
-const DEBUG_TUTORIAL = false;
-const TUTORIAL_KEY = 'airo_tutorial_consult';
 
 function IconShield() {
   return (
@@ -98,17 +96,25 @@ const categories = [
 export default function ManualScreen() {
   const router = useRouter();
 
-  const listRef = useRef<any>(null);
+  const listItem2Ref = useRef<any>(null);
+  const listItem3Ref = useRef<any>(null);
   const [tutorialVisible, setTutorialVisible] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [listRect, setListRect] = useState<SpotlightRect | null>(null);
+  const [item2Rect, setItem2Rect] = useState<SpotlightRect | null>(null);
+  const [item3Rect, setItem3Rect] = useState<SpotlightRect | null>(null);
 
   const measureAndShow = useCallback(() => {
-    listRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-      setListRect({ x, y, width, height });
-      setTutorialStep(0);
-      setTutorialVisible(true);
+    if (!listItem2Ref.current || !listItem3Ref.current) return;
+    listItem2Ref.current.measureInWindow((x: number, y: number, w: number, h: number) => {
+      if (w <= 0) return;
+      listItem3Ref.current!.measureInWindow((x2: number, y2: number, w2: number, h2: number) => {
+        if (w2 <= 0) return;
+        setItem2Rect({ x, y, width: w, height: h });
+        setItem3Rect({ x: x2, y: y2, width: w2, height: h2 });
+        setTutorialStep(0);
+        setTutorialVisible(true);
+      });
     });
   }, []);
 
@@ -117,51 +123,51 @@ export default function ManualScreen() {
     return () => sub.remove();
   }, []));
 
-  useFocusEffect(
-    useCallback(() => {
-      const timer = setTimeout(async () => {
-        if (DEBUG_TUTORIAL) { measureAndShow(); return; }
-        const done = await SecureStore.getItemAsync(TUTORIAL_KEY);
-        if (!done) measureAndShow();
-      }, 0);
-      return () => clearTimeout(timer);
-    }, [measureAndShow])
-  );
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempts = 0;
+    const tryShow = async () => {
+      if (cancelled) return;
+      const done = await SecureStore.getItemAsync('airo_tutorial_done');
+      if (done || cancelled) return;
+      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
+      if (phase !== 'consult') return;
+      if (listItem2Ref.current && listItem3Ref.current) { measureAndShow(); return; }
+      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
+    };
+    tryShow();
+    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
+  }, [measureAndShow]));
 
   const handleTutorialNext = async () => {
-    if (tutorialStep < tutorialSteps.length - 1) {
-      setTutorialStep(s => s + 1);
+    if (dontShowAgain) {
+      await SecureStore.setItemAsync('airo_tutorial_done', '1');
+      setTutorialVisible(false);
       return;
     }
-    await SecureStore.setItemAsync(TUTORIAL_KEY, '1');
-    router.push('/manual-list?categoryId=finance');
+    setTutorialVisible(false);
+    await SecureStore.setItemAsync('airo_tutorial_phase', 'manual_list');
+    router.push('/manual-list?categoryId=child-abuse' as any);
   };
 
   const handleTutorialSkip = async () => {
-    await Promise.all(
-      ['airo_tutorial_home','airo_tutorial_consult','airo_tutorial_manual_list','airo_tutorial_qna','airo_tutorial_community']
-        .map(k => SecureStore.setItemAsync(k, '1'))
-    );
+    await SecureStore.setItemAsync('airo_tutorial_done', '1');
     setTutorialVisible(false);
   };
 
-  const handleTutorialPrev = () => {
-    if (tutorialStep > 0) setTutorialStep(s => s - 1);
-  };
-
-  const spotlightRect: SpotlightRect | null = listRect
-    ? { x: listRect.x, y: listRect.y + 162, width: listRect.width, height: 161 }
-    : null;
-
   const tutorialSteps: TutorialStep[] = [
     {
-      spotlight: spotlightRect,
-      spotlightRadius: 8,
+      spotlight: item2Rect,
+      spotlightRadius: 0,
+      spotlight2: item3Rect,
+      spotlight2Radius: 0,
       title: '매뉴얼',
-      description: '궁금한 주제를 선택해\n필요한 정보를 확인해요',
+      description: '궁금한 주제를 선택해\n필요한 법률 정보를 확인해요',
       tooltipBelow: false,
     },
   ];
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -174,13 +180,13 @@ export default function ManualScreen() {
           <Text style={styles.subtitle}>상황에 맞는 법률 정보를 확인해보세요</Text>
         </View>
 
-        <View ref={listRef} style={styles.list}>
+        <View style={styles.list}>
           {categories.map((cat, index) => {
             const Icon = cat.Icon;
             const isFirst = index === 0;
             const isLast = index === categories.length - 1;
             return (
-              <View key={cat.id}>
+              <View key={cat.id} ref={index === 2 ? listItem2Ref : index === 3 ? listItem3Ref : undefined}>
                 <TouchableOpacity
                   style={[
                     styles.card,
@@ -212,7 +218,7 @@ export default function ManualScreen() {
         currentStep={tutorialStep}
         dontShowAgain={dontShowAgain}
         onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
+        onPrev={() => {}}
         onSkip={handleTutorialSkip}
         onToggleDontShow={() => setDontShowAgain(v => !v)}
         totalDots={7}

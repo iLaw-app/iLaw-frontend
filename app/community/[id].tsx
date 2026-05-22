@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable,
   TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -247,6 +247,9 @@ export default function CommunityDetailScreen() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showCommentDeleteModal, setShowCommentDeleteModal] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -421,31 +424,31 @@ export default function CommunityDetailScreen() {
 
   const handleDeleteComment = (commentId: number) => {
     if (!accessToken) return;
-    Alert.alert('댓글 삭제', '댓글을 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          const res = await fetch(`${API_BASE}/community/${postId}/comments/${commentId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          if (!res.ok && res.status !== 204) {
-            Alert.alert('오류', '댓글 삭제에 실패했습니다.');
-            return;
-          }
-          setComments(prev => prev
-            .filter(comment => comment.id !== commentId)
-            .map(comment => ({
-              ...comment,
-              replies: (comment.replies ?? []).filter(reply => reply.id !== commentId),
-            }))
-          );
-          if (replyingTo === commentId) setReplyingTo(null);
-        },
-      },
-    ]);
+    setDeletingCommentId(commentId);
+    setShowCommentDeleteModal(true);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!deletingCommentId || !accessToken) return;
+    const commentId = deletingCommentId;
+    setShowCommentDeleteModal(false);
+    setDeletingCommentId(null);
+    const res = await fetch(`${API_BASE}/community/${postId}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok && res.status !== 204) {
+      Alert.alert('오류', '댓글 삭제에 실패했습니다.');
+      return;
+    }
+    setComments(prev => prev
+      .filter(comment => comment.id !== commentId)
+      .map(comment => ({
+        ...comment,
+        replies: (comment.replies ?? []).filter(reply => reply.id !== commentId),
+      }))
+    );
+    if (replyingTo === commentId) setReplyingTo(null);
   };
 
   if (loading) {
@@ -492,22 +495,23 @@ export default function CommunityDetailScreen() {
             <View style={s.dropdown}>
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
                 setShowMenu(false);
-                Alert.alert('게시글 삭제', '정말 삭제하시겠습니까?', [
-                  { text: '취소', style: 'cancel' },
-                  { text: '삭제', style: 'destructive', onPress: handleDelete },
-                ]);
+                setShowDeleteModal(true);
               }}>
                 <Ionicons name="trash-outline" size={14} color="#586144" />
                 <Text style={s.dropdownTextRed}>삭제하기</Text>
               </TouchableOpacity>
-              <View style={s.dropdownDivider} />
-              <TouchableOpacity style={s.dropdownItem} onPress={() => {
-                setShowMenu(false);
-                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
-              }}>
-                <Ionicons name="create-outline" size={14} color="#586144" />
-                <Text style={s.dropdownText}>수정하기</Text>
-              </TouchableOpacity>
+              {!post.poll && (
+                <>
+                  <View style={s.dropdownDivider} />
+                  <TouchableOpacity style={s.dropdownItem} onPress={() => {
+                    setShowMenu(false);
+                    router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
+                  }}>
+                    <Ionicons name="create-outline" size={14} color="#586144" />
+                    <Text style={s.dropdownText}>수정하기</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           )}
         </View>
@@ -589,6 +593,42 @@ export default function CommunityDetailScreen() {
           <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
             <Image source={{ uri: selectedImage! }} style={s.modalImage} resizeMode="contain" />
           </TouchableOpacity>
+        </Modal>
+
+        <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+          <Pressable style={s.deleteOverlay} onPress={() => setShowDeleteModal(false)}>
+            <Pressable style={s.deleteCard} onPress={() => {}}>
+              <View style={s.deleteIconCircle}>
+                <Ionicons name="trash-outline" size={32} color="#C10007" />
+              </View>
+              <Text style={s.deleteTitle}>게시글 삭제</Text>
+              <View style={s.deleteTextContainer}>
+                <Text style={s.deleteBody}>이 게시글을 삭제하시겠습니까?</Text>
+                <Text style={s.deleteWarning}>삭제 후에는 복구할 수 없습니다.</Text>
+              </View>
+              <TouchableOpacity style={s.deleteBtn} onPress={() => { setShowDeleteModal(false); handleDelete(); }}>
+                <Text style={s.deleteBtnText}>삭제하기</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={showCommentDeleteModal} transparent animationType="fade" onRequestClose={() => setShowCommentDeleteModal(false)}>
+          <Pressable style={s.deleteOverlay} onPress={() => setShowCommentDeleteModal(false)}>
+            <Pressable style={s.deleteCard} onPress={() => {}}>
+              <View style={s.deleteIconCircle}>
+                <Ionicons name="trash-outline" size={32} color="#C10007" />
+              </View>
+              <Text style={s.deleteTitle}>댓글 삭제</Text>
+              <View style={s.deleteTextContainer}>
+                <Text style={s.deleteBody}>이 댓글을 삭제하시겠습니까?</Text>
+                <Text style={s.deleteWarning}>삭제 후에는 복구할 수 없습니다.</Text>
+              </View>
+              <TouchableOpacity style={s.deleteBtn} onPress={confirmDeleteComment}>
+                <Text style={s.deleteBtnText}>삭제하기</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
         </Modal>
 
         {/* Comment Input */}
@@ -723,4 +763,29 @@ const s = StyleSheet.create({
   input: { flex: 1, height: 44, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 9999, backgroundColor: '#F3F4F6', fontSize: 16, color: '#0a0a0a', letterSpacing: -0.312 },
   sendBtn: { width: 40, height: 40, borderRadius: 9999, backgroundColor: '#D1D5DC', justifyContent: 'center', alignItems: 'center' },
   sendBtnActive: { backgroundColor: '#678720' },
+
+  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  deleteCard: {
+    backgroundColor: '#fff', borderRadius: 24, padding: 28,
+    alignItems: 'center', gap: 12, marginHorizontal: 32, width: '80%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
+  },
+  deleteIconCircle: {
+    width: 64, height: 64, borderRadius: 9999,
+    backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center',
+    marginBottom: 4,
+  },
+  deleteTitle: { fontSize: 22, fontWeight: '700', color: '#1E2939', textAlign: 'center' },
+  deleteTextContainer: { width: 280, alignItems: 'center', gap: 4 },
+  deleteBody: { fontSize: 16, color: '#4A5565', textAlign: 'center', lineHeight: 24 },
+  deleteWarning: { fontSize: 14, color: '#C10007', textAlign: 'center' },
+  deleteBtn: {
+    marginTop: 8, backgroundColor: '#C10007', borderRadius: 9999,
+    paddingTop: 11, paddingBottom: 13, alignSelf: 'stretch',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+  },
+  deleteBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

@@ -98,7 +98,7 @@ export default function MyQuestionsScreen() {
                     styles.statusText,
                     item.status === 'answered' ? styles.statusTextAnswered : styles.statusTextPending,
                   ]}>
-                    {item.status === 'answered' ? '답변 완료' : '답변 대기'}
+                    {item.status === 'answered' ? '답변완료' : '답변대기'}
                   </Text>
                 </View>
 
@@ -115,7 +115,7 @@ export default function MyQuestionsScreen() {
                 ) : null}
 
                 <View style={styles.cardBottom}>
-                  <Ionicons name="time-outline" size={12} color="#9CAF88" />
+                  <Ionicons name="time-outline" size={12} color="#586144" />
                   <Text style={styles.date}>{new Date(item.createdAt).toISOString().slice(0, 10)}</Text>
                 </View>
               </TouchableOpacity>
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 27, letterSpacing: -0.439, marginBottom: 6 },
   contentPreview: { fontSize: 14, color: '#586144', lineHeight: 20, letterSpacing: -0.15, marginBottom: 8 },
   cardBottom: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
-  date: { fontSize: 12, color: '#9CAF88' },
+  date: { fontSize: 12, color: '#586144' },
   divider: { height: 1, backgroundColor: '#E4EED4', marginVertical: 8 },
   contentBox: {
     backgroundColor: '#F9FAFB',

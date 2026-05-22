@@ -59,7 +59,7 @@ const USER_TOGGLES = [
   },
   {
     key: 'community',
-    icon: 'document-text-outline' as const,
+    icon: 'people-outline' as const,
     title: '커뮤니티 좋아요, 댓글 알림',
     desc: '내 글에 댓글이나 좋아요가 달리면 알려드려요',
   },

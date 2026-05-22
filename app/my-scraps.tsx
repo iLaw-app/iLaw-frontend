@@ -26,6 +26,7 @@ type QnaScrap = {
   category?: string;
   scrapCount?: number;
   createdAt?: string;
+  author?: { nickname: string | null };
 };
 
 type CommunityScrap = {
@@ -93,6 +94,7 @@ export default function MyScrapsScreen() {
               if (detailRes.ok) {
                 const detail = await detailRes.json();
                 result.content = detail.content ?? undefined;
+                result.author = detail.author ?? undefined;
               }
               if (scrapRes.ok) {
                 const scrapData = await scrapRes.json();
@@ -218,6 +220,9 @@ export default function MyScrapsScreen() {
                 {item.content ? <Text style={styles.qnaCardContent} numberOfLines={2}>{item.content}</Text> : null}
                 <View style={styles.qnaCardMeta}>
                   <View style={styles.qnaMetaLeft}>
+                    <Ionicons name="chatbubble-outline" size={12} color="#586144" />
+                    <Text style={styles.qnaMetaText}>{item.author?.nickname ?? '익명'}</Text>
+                    <Text style={styles.qnaMetaDot}>•</Text>
                     <Ionicons name="time-outline" size={12} color="#586144" />
                     <Text style={styles.qnaMetaText}>{item.createdAt ? new Date(item.createdAt).toISOString().slice(0, 10) : ''}</Text>
                   </View>
@@ -349,4 +354,5 @@ const styles = StyleSheet.create({
   qnaMetaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   qnaMetaRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   qnaMetaText: { fontSize: 12, color: '#586144' },
+  qnaMetaDot: { fontSize: 12, color: '#586144' },
 });

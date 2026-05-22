@@ -3,8 +3,10 @@ import Svg, { Ellipse, G, Defs, Filter, FeGaussianBlur } from 'react-native-svg'
 
 const { width: screenWidth, height } = Dimensions.get('window');
 
-const LOGO_W = screenWidth - 112 - 19;
-const LOGO_H = LOGO_W * (356 / 328);
+// const LOGO_W = screenWidth * 0.72;
+// const LOGO_W = screenWidth * 0.9;
+const LOGO_W=screenWidth-112-19.25
+const LOGO_H = LOGO_W * (2622 / 1206);
 
 function LogoShadow() {
   return (
@@ -37,6 +39,17 @@ export default function SplashScreen() {
         />
         <LogoShadow />
       </View>
+      {/* <View style={styles.logoWrapper}>
+        <Image
+          source={require('../assets/logo1.png')}
+          style={styles.robotImage}
+          resizeMode="contain"
+        />
+
+        <View style={styles.shadow}>
+          <LogoShadow />
+        </View> */}
+      {/* </View> */}
     </View>
   );
 }
@@ -64,16 +77,58 @@ const styles = StyleSheet.create({
     letterSpacing: 0.123,
     fontFamily: 'AiroFont',
   },
+  logoWrapper: {
+    // position: 'absolute',
+    // left: 112,
+    // bottom: 146.94,
+    // width: LOGO_W,
+    // // height: LOGO_H,
+    // alignItems: 'center',
+    position: 'absolute',
+
+    left: 60,       // 👉 너가 맞춘 값 유지
+    bottom: 0,
+
+    transform: [{ translateY: 120 }], // 🔥 여기서 같이 이동
+
+    alignItems: 'center',
+  },
   robotArea: {
     flex: 1,
-    alignItems: 'center',
+    // alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingRight: 19,
-    paddingLeft: 112,
+    // paddingRight: 19,
+    // paddingLeft: 112,
     paddingBottom: 100,
   },
   robotImage: {
+    position: 'absolute',
+    left: 45,
+
+    bottom: 0, // 기준은 바닥
+
     width: LOGO_W,
     height: LOGO_H,
+
+    transform: [
+      { translateY: 120 } // 🔥 이 값이 핵심 (내려주는 값)
+    ],
   },
+  // robotImage: {
+  //   width: LOGO_W,
+  //   height: LOGO_H,
+  // },
+  // robotImage: {
+  //   position: 'absolute',
+  //   left: 112,
+  //   bottom: 146.94,
+  //   width: LOGO_W,
+  //   height: LOGO_H,
+  // },
+  // shadow: {
+  //   position: 'absolute',
+  //   left: 112,
+  //   bottom: 136, // 👉 그림자 위치 (미세조정 가능)
+  // },
+
 });

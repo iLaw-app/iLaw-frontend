@@ -45,7 +45,16 @@ export default function CommunityWriteScreen() {
   const { accessToken } = useAuth();
   const [title, setTitle] = useState(editTitle ?? '');
   const [content, setContent] = useState(editContent ?? '');
-  const initPollOptions = editPoll ? (() => { try { const p = JSON.parse(editPoll) as string[]; return p.length >= 2 ? p : null; } catch { return null; } })() : null;
+  const initPollData = editPoll ? (() => {
+    try {
+      const p = JSON.parse(editPoll);
+      if (!Array.isArray(p) || p.length < 2) return null;
+      if (typeof p[0] === 'string') return { labels: p as string[], votes: p.map(() => 0) };
+      return { labels: p.map((o: any) => String(o.label ?? '')), votes: p.map((o: any) => Number(o.votes) || 0) };
+    } catch { return null; }
+  })() : null;
+  const initPollOptions = initPollData?.labels ?? null;
+  const initPollVotes = initPollData?.votes ?? [];
   const [pollActive, setPollActive] = useState(!!initPollOptions);
   const [pollOptions, setPollOptions] = useState<string[]>(initPollOptions ?? ['', '']);
   const [photos, setPhotos] = useState<Photo[]>(() => {
@@ -117,7 +126,12 @@ export default function CommunityWriteScreen() {
       if (pollActive) {
         const validOptions = pollOptions.filter(o => o.trim());
         if (validOptions.length >= 2) {
-          body.poll = { options: validOptions.map(label => ({ label, votes: 0 })) };
+          body.poll = {
+            options: validOptions.map((label, i) => ({
+              label,
+              votes: isEditing ? (initPollVotes[i] ?? 0) : 0,
+            })),
+          };
         }
       }
       if (photos.length > 0) {

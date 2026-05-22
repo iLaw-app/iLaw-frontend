@@ -106,6 +106,11 @@ function AppNavigator() {
     }
 
     async function restoreSession() {
+      const startTime = Date.now();
+      const minSplash = (ms: number) => new Promise<void>(resolve =>
+        setTimeout(resolve, Math.max(0, ms - (Date.now() - startTime)))
+      );
+
       const initialUrl = await Linking.getInitialURL();
       if (cancelled) return;
       if (initialUrl && await handleAuthCallback(initialUrl)) return;
@@ -114,6 +119,7 @@ function AppNavigator() {
       if (cancelled) return;
       if (!stored.refreshToken) {
         await clearAuth();
+        await minSplash(2000);
         if (!cancelled) router.replace('/login');
         return;
       }
@@ -124,6 +130,7 @@ function AppNavigator() {
         if (user) {
           await setAuthTokens({ accessToken: stored.accessToken, refreshToken: stored.refreshToken });
           setUser(user);
+          await minSplash(2000);
           routeByProfile(user);
           return;
         }
@@ -133,6 +140,7 @@ function AppNavigator() {
       if (cancelled) return;
       if (!refreshed) {
         await clearAuth();
+        await minSplash(2000);
         if (!cancelled) router.replace('/login');
         return;
       }
@@ -142,9 +150,11 @@ function AppNavigator() {
       if (cancelled) return;
       if (user) {
         setUser(user);
+        await minSplash(2000);
         routeByProfile(user);
       } else {
         await clearAuth();
+        await minSplash(2000);
         if (!cancelled) router.replace('/login');
       }
     }

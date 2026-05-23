@@ -1,12 +1,10 @@
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
-import * as SecureStore from 'expo-secure-store';
-import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.map(k => k.trim()).filter(k => k);
@@ -89,75 +87,10 @@ export default function QnaPage() {
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const firstCardRef = useRef<any>(null);
-  const fabRef = useRef<any>(null);
-  const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [firstCardRect, setFirstCardRect] = useState<SpotlightRect | null>(null);
-  const [fabRect, setFabRect] = useState<SpotlightRect | null>(null);
-
-  const measureAndShow = useCallback(() => {
-    if (!firstCardRef.current || !fabRef.current) return;
-    firstCardRef.current.measureInWindow((x: number, y: number, w: number, h: number) => {
-      if (w <= 0) return;
-      fabRef.current!.measureInWindow((x2: number, y2: number, w2: number, h2: number) => {
-        if (w2 <= 0) return;
-        setFirstCardRect({ x, y, width: w, height: h });
-        setFabRect({ x: x2, y: y2, width: w2, height: h2 });
-        setTutorialVisible(true);
-      });
-    });
-  }, []);
-
   useFocusEffect(useCallback(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, []));
-
-  useFocusEffect(useCallback(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    let attempts = 0;
-    const tryShow = async () => {
-      if (cancelled) return;
-      const done = await SecureStore.getItemAsync('airo_tutorial_done');
-      if (done || cancelled) return;
-      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
-      if (phase !== 'qna') return;
-      if (firstCardRef.current && fabRef.current) { measureAndShow(); return; }
-      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
-    };
-    tryShow();
-    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
-  }, [measureAndShow]));
-
-  const handleTutorialNext = async () => {
-    if (dontShowAgain) {
-      await SecureStore.setItemAsync('airo_tutorial_done', '1');
-      setTutorialVisible(false);
-      return;
-    }
-    setTutorialVisible(false);
-    await SecureStore.setItemAsync('airo_tutorial_phase', 'community');
-    router.navigate('/(tabs)/community' as any);
-  };
-
-  const handleTutorialSkip = async () => {
-    await SecureStore.setItemAsync('airo_tutorial_done', '1');
-    setTutorialVisible(false);
-  };
-
-  const tutorialSteps: TutorialStep[] = [
-    {
-      spotlight: firstCardRect,
-      spotlightRadius: 16,
-      spotlight2: fabRect,
-      spotlight2Radius: 9999,
-      title: 'Q&A',
-      description: '더 정확한 도움이 필요할 때\n변호사님께 직접 질문할 수 있어요',
-      tooltipBelow: true,
-    },
-  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -272,8 +205,8 @@ export default function QnaPage() {
         <FlatList
           data={filteredPosts}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item, index }) => (
-            <View ref={index === 0 ? firstCardRef : undefined}>
+          renderItem={({ item }) => (
+            <View>
               <QnaCard item={item} onPress={() => router.push(`/qna/${item.id}`)} keywords={searchQuery.trim() ? [searchQuery] : []} />
             </View>
           )}
@@ -287,23 +220,10 @@ export default function QnaPage() {
         />
       )}
 
-      <TouchableOpacity ref={fabRef} style={styles.fab} onPress={() => router.push('/qna/ask')}>
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/qna/ask')}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
-      <TutorialOverlay
-        steps={tutorialSteps}
-        visible={tutorialVisible}
-        currentStep={0}
-        dontShowAgain={dontShowAgain}
-        onNext={handleTutorialNext}
-        onPrev={() => {}}
-        onSkip={handleTutorialSkip}
-        onToggleDontShow={() => setDontShowAgain(v => !v)}
-        totalDots={7}
-        dotOffset={5}
-        showComplete={false}
-      />
     </SafeAreaView>
   );
 }

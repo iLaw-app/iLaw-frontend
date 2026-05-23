@@ -1,190 +1,238 @@
-import React, { useRef, useState } from 'react';
-import {
-  Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Image, TouchableOpacity, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width: SW } = Dimensions.get('window');
+const { width: SW, height: SH } = Dimensions.get('screen');
 
-const SLIDES = [
-  {
-    iconName: 'search-outline' as const,
-    iconColor: '#678720',
-    iconBg: '#EEF8D9',
-    title: '검색으로 빠르게 찾기',
-    desc: '궁금한 법률 정보를 키워드로 검색해\n매뉴얼, Q&A, 커뮤니티에서\n한번에 찾아보세요',
-  },
-  {
-    iconName: 'chatbubble-ellipses-outline' as const,
-    iconColor: '#2B56B5',
-    iconBg: '#E9F3FF',
-    title: 'AI 챗봇으로 상황진단',
-    desc: '내가 겪은 상황을 말하면 AI가\n상황을 요약하고\n추천 콘텐츠를 찾아드려요',
-  },
-  {
-    iconName: 'star-outline' as const,
-    iconColor: '#678720',
-    iconBg: '#EEF8D9',
-    title: '추천 콘텐츠',
-    desc: '많이 찾는 법률 콘텐츠를\n홈 화면에서 바로 확인해요',
-  },
-  {
-    iconName: 'book-outline' as const,
-    iconColor: '#678720',
-    iconBg: '#EEF8D9',
-    title: '매뉴얼',
-    desc: '궁금한 주제를 선택해\n필요한 법률 정보를 확인해요',
-  },
-  {
-    iconName: 'call-outline' as const,
-    iconColor: '#C10007',
-    iconBg: '#FEF2F2',
-    title: '매뉴얼 도움 요청',
-    desc: '상황에 맞는 도움 기관과\n요청 방법을 확인해요',
-  },
-  {
-    iconName: 'chatbubble-outline' as const,
-    iconColor: '#2B56B5',
-    iconBg: '#E9F3FF',
-    title: 'Q&A',
-    desc: '더 정확한 도움이 필요할 때\n변호사님께 직접 질문할 수 있어요',
-  },
-  {
-    iconName: 'people-outline' as const,
-    iconColor: '#678720',
-    iconBg: '#EEF8D9',
-    title: '커뮤니티',
-    desc: '비슷한 경험을 가진\n사람들과 이야기나눠요',
-  },
+const IMAGES = [
+  require('../assets/tutorial/tutorial_1.png'),
+  require('../assets/tutorial/tutorial_2.png'),
+  require('../assets/tutorial/tutorial_3.png'),
+  require('../assets/tutorial/tutorial_4.png'),
+  require('../assets/tutorial/tutorial_5.png'),
+  require('../assets/tutorial/tutorial_6.png'),
+  require('../assets/tutorial/tutorial_7.png'),
+  require('../assets/tutorial/tutorial_8.png'),
 ];
+
+const TOTAL = IMAGES.length;
+const BAR_ZONE = 130;
 
 type Props = {
   visible: boolean;
-  onDone: () => void;
+  onDone: (dontShowAgain: boolean) => void;
 };
 
 export function TutorialSlideshow({ visible, onDone }: Props) {
-  const [idx, setIdx] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const isLast = idx === SLIDES.length - 1;
+  const [step, setStep] = useState(0);
+  const [dontShow, setDontShow] = useState(false);
 
-  const goNext = () => {
-    if (isLast) { onDone(); return; }
-    const next = idx + 1;
-    scrollRef.current?.scrollTo({ x: next * SW, animated: true });
-    setIdx(next);
+  useEffect(() => {
+    if (visible) { setStep(0); setDontShow(false); }
+  }, [visible]);
+
+  const advance = () => {
+    if (step === TOTAL - 1) onDone(dontShow);
+    else setStep(s => s + 1);
   };
+  const retreat = () => setStep(s => Math.max(0, s - 1));
+  const skip = () => onDone(true);
 
   if (!visible) return null;
 
+  const isLast = step === TOTAL - 1;
+
   return (
-    <Modal
-      visible
-      transparent={false}
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={() => {
-        if (idx > 0) {
-          const prev = idx - 1;
-          scrollRef.current?.scrollTo({ x: prev * SW, animated: true });
-          setIdx(prev);
-        }
-      }}
-    >
-      <SafeAreaView style={sty.root} edges={['top', 'bottom']}>
-        {/* Header */}
-        <View style={sty.header}>
-          <Text style={sty.brand}>아이로</Text>
-          <TouchableOpacity onPress={onDone} hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}>
-            <Text style={sty.skip}>건너뛰기</Text>
-          </TouchableOpacity>
-        </View>
+    <Modal visible transparent={false} animationType="fade" statusBarTranslucent onRequestClose={skip}>
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        {/* Background image */}
+        <Image
+          source={IMAGES[step]}
+          style={{ position: 'absolute', top: 0, left: 0, width: SW, height: SH }}
+          resizeMode="cover"
+        />
 
-        {/* Slides */}
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={200}
-          onMomentumScrollEnd={e => {
-            setIdx(Math.round(e.nativeEvent.contentOffset.x / SW));
-          }}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ alignItems: 'center' }}
-        >
-          {SLIDES.map((slide, i) => (
-            <View key={i} style={sty.slide}>
-              <View style={[sty.iconCircle, { backgroundColor: slide.iconBg }]}>
-                <Ionicons name={slide.iconName} size={60} color={slide.iconColor} />
-              </View>
-              <Text style={sty.title}>{slide.title}</Text>
-              <Text style={sty.desc}>{slide.desc}</Text>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Footer */}
-        <View style={sty.footer}>
-          <View style={sty.dots}>
-            {SLIDES.map((_, i) => (
-              <View key={i} style={i === idx ? sty.dotOn : sty.dotOff} />
-            ))}
+        {/* Last page: logo + text, vertically centered between top and bottom bar */}
+        {isLast && (
+          <View style={[styles.lastOverlay, { top: 0, bottom: BAR_ZONE }]}>
+            <Image source={require('../assets/logo2.png')} style={styles.logo} resizeMode="contain" />
+            <Text style={styles.startText}>아이로와 함께 시작해요</Text>
           </View>
-          <TouchableOpacity style={sty.nextBtn} onPress={goNext} activeOpacity={0.85}>
-            <Text style={sty.nextTxt}>{isLast ? '시작하기' : '다음'}</Text>
-            {!isLast && <Ionicons name="arrow-forward" size={15} color="#01180A" style={{ marginLeft: 4 }} />}
-          </TouchableOpacity>
+        )}
+
+        {/* First page: tap hint */}
+        {step === 0 && (
+          <View style={[styles.hintContainer, { bottom: BAR_ZONE + 20 }]} pointerEvents="none">
+            <Ionicons name="chevron-back" size={16} color="rgba(255,255,255,0.75)" />
+            <Text style={styles.hintText}>화면을 탭하여 넘겨보세요</Text>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.75)" />
+          </View>
+        )}
+
+        {/* Left / right tap zones — only above the bottom bar */}
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: BAR_ZONE }} pointerEvents="box-none">
+          <View style={{ flex: 1, flexDirection: 'row' }}>
+            <TouchableOpacity style={{ flex: 1 }} onPress={retreat} activeOpacity={1} />
+            <TouchableOpacity style={{ flex: 1 }} onPress={advance} activeOpacity={1} />
+          </View>
         </View>
-      </SafeAreaView>
+
+        {/* Dots */}
+        <View style={styles.dotsRow}>
+          {Array.from({ length: TOTAL }, (_, i) => (
+            <View key={i} style={i === step ? styles.dotActive : styles.dotInactive} />
+          ))}
+        </View>
+
+        {/* Bottom bar */}
+        <View style={styles.barWrapper}>
+          <View style={styles.bar}>
+            {isLast ? (
+              /* Page 8: 완료 button only, centered */
+              <TouchableOpacity onPress={advance} activeOpacity={0.85} style={styles.doneBtn}>
+                <Text style={styles.doneText}>완료</Text>
+              </TouchableOpacity>
+            ) : (
+              /* Pages 1–7: checkbox + label + 건너뛰기, centered */
+              <>
+                <TouchableOpacity style={styles.checkRow} onPress={() => setDontShow(v => !v)} activeOpacity={0.8}>
+                  <View style={[styles.checkbox, dontShow && styles.checkboxChecked]}>
+                    {dontShow && <Ionicons name="checkmark" size={11} color="#01180A" />}
+                  </View>
+                  <Text style={styles.checkLabel}>다시 보지 않기</Text>
+                </TouchableOpacity>
+                <View style={styles.barSpacer} />
+                <TouchableOpacity onPress={skip} activeOpacity={0.8}>
+                  <Text style={styles.skipText}>건너뛰기</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
     </Modal>
   );
 }
 
-const sty = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FDFFF8' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingVertical: 16,
+const styles = StyleSheet.create({
+  lastOverlay: {
+    position: 'absolute',
+    left: 0, right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
   },
-  brand: { fontSize: 20, fontWeight: '800', color: '#3C6802', letterSpacing: -0.5 },
-  skip: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },
-  slide: {
-    width: SW,
+  logo: { width: 180, height: 180 },
+  startText: {
+    width: 264,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontFamily: 'AiroFont',
+    fontSize: 24,
+    fontWeight: '400',
+    lineHeight: 72,
+    letterSpacing: 0.123,
+  },
+
+  hintContainer: {
+    position: 'absolute',
+    left: 0, right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  hintText: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  dotsRow: {
+    position: 'absolute',
+    bottom: 107,
+    left: 0, right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dotActive: {
+    width: 24,
+    height: 8,
+    borderRadius: 9999,
+    backgroundColor: '#B2D36E',
+  },
+  dotInactive: {
+    width: 8,
+    height: 8,
+    borderRadius: 9999,
+    backgroundColor: '#6A7282',
+  },
+
+  barWrapper: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0, right: 0,
+    alignItems: 'center',
+  },
+  bar: {
+    width: 346,
+    height: 69,
+    paddingHorizontal: 17,
+    borderRadius: 16,
+    borderWidth: 0.719,
+    borderColor: '#01180A',
+    backgroundColor: '#01180A',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 40,
-    gap: 20,
   },
-  iconCircle: {
-    width: 120, height: 120, borderRadius: 60,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
+
+  checkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  title: {
-    fontSize: 24, fontWeight: '700', color: '#586144',
-    textAlign: 'center', lineHeight: 34, letterSpacing: -0.5,
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.438,
+    borderColor: '#6A7282',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  desc: {
-    fontSize: 16, color: '#6A7282',
-    textAlign: 'center', lineHeight: 26, letterSpacing: -0.2,
+  checkboxChecked: {
+    backgroundColor: '#B2D36E',
+    borderColor: '#B2D36E',
   },
-  footer: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingVertical: 24,
-    borderTopWidth: 1, borderTopColor: '#F0F5E8',
+  checkLabel: {
+    color: '#D1D5DC',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    letterSpacing: -0.15,
   },
-  dots: { flexDirection: 'row', gap: 6 },
-  dotOn: { width: 24, height: 8, borderRadius: 4, backgroundColor: '#B2D36E' },
-  dotOff: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D1D5DB' },
-  nextBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#B2D36E', borderRadius: 9999,
-    paddingHorizontal: 24, paddingVertical: 12,
+  barSpacer: { width: 24 },
+  skipText: {
+    color: '#99A1AF',
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+    letterSpacing: -0.15,
   },
-  nextTxt: { fontSize: 15, fontWeight: '700', color: '#01180A' },
+
+  doneBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 40,
+    borderRadius: 9999,
+    backgroundColor: '#B2D36E',
+  },
+  doneText: {
+    color: '#01180A',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
 });

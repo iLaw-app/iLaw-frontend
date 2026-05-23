@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
-import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
+import { TutorialSlideshow } from '../../components/TutorialSlideshow';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -193,33 +193,7 @@ export default function HomeScreen() {
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
-  const searchAreaRef = useRef<any>(null);
-  const recommendRef = useRef<any>(null);
-  const fabRef = useRef<any>(null);
   const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [searchRect, setSearchRect] = useState<SpotlightRect | null>(null);
-  const [recommendRect, setRecommendRect] = useState<SpotlightRect | null>(null);
-  const [fabRect, setFabRect] = useState<SpotlightRect | null>(null);
-
-  const measureAndShow = useCallback(() => {
-    if (!searchAreaRef.current || !recommendRef.current || !fabRef.current) return;
-    searchAreaRef.current.measureInWindow((sx: number, sy: number, sw: number, sh: number) => {
-      if (sw <= 0) return;
-      recommendRef.current!.measureInWindow((rx: number, ry: number, rw: number, rh: number) => {
-        if (rw <= 0) return;
-        fabRef.current!.measureInWindow((fx: number, fy: number, fw: number, fh: number) => {
-          if (fw <= 0) return;
-          setSearchRect({ x: sx, y: sy, width: sw, height: sh });
-          setRecommendRect({ x: rx, y: ry, width: rw, height: rh });
-          setFabRect({ x: fx, y: fy, width: fw, height: fh });
-          setTutorialStep(0);
-          setTutorialVisible(true);
-        });
-      });
-    });
-  }, []);
 
   useEffect(() => {
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -232,72 +206,16 @@ export default function HomeScreen() {
     return () => handler.remove();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      let timer: ReturnType<typeof setTimeout>;
-      let attempts = 0;
-      const tryShow = async () => {
-        if (cancelled) return;
-        const done = await SecureStore.getItemAsync('airo_tutorial_done');
-        if (done || cancelled) return;
-        const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
-        if (phase && phase !== 'home') return;
-        if (searchAreaRef.current && recommendRef.current && fabRef.current) {
-          measureAndShow();
-          return;
-        }
-        if (attempts++ < 15) timer = setTimeout(tryShow, 300);
-      };
-      tryShow();
-      return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
-    }, [measureAndShow])
-  );
+  useFocusEffect(useCallback(() => {
+    SecureStore.getItemAsync('airo_tutorial_done').then(done => {
+      if (!done) setTutorialVisible(true);
+    });
+  }, []));
 
-  const handleTutorialNext = async () => {
-    if (dontShowAgain) {
-      await SecureStore.setItemAsync('airo_tutorial_done', '1');
-      setTutorialVisible(false);
-      return;
-    }
-    if (tutorialStep < 2) { setTutorialStep(s => s + 1); return; }
-    setTutorialVisible(false);
-    await SecureStore.setItemAsync('airo_tutorial_phase', 'consult');
-    router.navigate('/(tabs)/consult' as any);
-  };
-
-  const handleTutorialSkip = async () => {
-    await SecureStore.setItemAsync('airo_tutorial_done', '1');
+  const handleTutorialDone = async (dontShowAgain: boolean) => {
+    if (dontShowAgain) await SecureStore.setItemAsync('airo_tutorial_done', '1');
     setTutorialVisible(false);
   };
-
-  const handleTutorialPrev = () => {
-    if (tutorialStep > 0) setTutorialStep(s => s - 1);
-  };
-
-  const tutorialSteps: TutorialStep[] = [
-    {
-      spotlight: searchRect,
-      spotlightRadius: 9999,
-      title: '검색으로 빠르게 찾기',
-      description: '궁금한 법률 정보를 키워드로 검색해\n매뉴얼, Q&A, 커뮤니티에서\n한번에 찾아보세요',
-      tooltipBelow: true,
-    },
-    {
-      spotlight: fabRect,
-      spotlightRadius: 9999,
-      title: 'AI 챗봇으로 상황진단',
-      description: '내가 겪은 상황을 말하면 AI가\n상황을 요약하고\n추천 콘텐츠를 찾아드려요',
-      tooltipBelow: false,
-    },
-    {
-      spotlight: recommendRect,
-      spotlightRadius: 16,
-      title: '추천 콘텐츠',
-      description: '많이 찾는 법률 콘텐츠를\n홈 화면에서 바로 확인해요',
-      tooltipBelow: false,
-    },
-  ];
 
   const swipeBackPan = useRef(
     PanResponder.create({
@@ -488,7 +406,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.searchArea}>
-          <View ref={searchAreaRef} style={styles.searchBox}>
+          <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
               placeholder="궁금한 내용을 검색해주세요"
@@ -506,7 +424,7 @@ export default function HomeScreen() {
 
         <Text style={styles.recommendTitle}>추천 콘텐츠</Text>
 
-        <View ref={recommendRef} style={styles.recommendContainer}>
+        <View style={styles.recommendContainer}>
           {RECOMMEND_ITEMS.map((item, index) => (
             <TouchableOpacity
               key={item.id}
@@ -532,23 +450,11 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <TouchableOpacity ref={fabRef} style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
+      <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
         <Image source={require('../../assets/chatbot_logo.png')} style={styles.aiFabImage} resizeMode="contain" />
       </TouchableOpacity>
 
-      <TutorialOverlay
-        steps={tutorialSteps}
-        visible={tutorialVisible}
-        currentStep={tutorialStep}
-        dontShowAgain={dontShowAgain}
-        onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
-        onSkip={handleTutorialSkip}
-        onToggleDontShow={() => setDontShowAgain(v => !v)}
-        totalDots={7}
-        dotOffset={0}
-        showComplete={true}
-      />
+      <TutorialSlideshow visible={tutorialVisible} onDone={handleTutorialDone} />
     </SafeAreaView>
   );
 }

@@ -5,8 +5,6 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../context/auth';
-import * as SecureStore from 'expo-secure-store';
-import { TutorialOverlay, SpotlightRect, TutorialStep } from '../../components/TutorialOverlay';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -184,56 +182,10 @@ export default function CommunityScreen() {
   const [menuPostId, setMenuPostId] = useState<number | null>(null);
   const [menuY, setMenuY] = useState(0);
 
-  const secondCardRef = useRef<any>(null);
-  const [tutorialVisible, setTutorialVisible] = useState(false);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
-  const [secondCardRect, setSecondCardRect] = useState<SpotlightRect | null>(null);
-
-  const measureAndShow = useCallback(() => {
-    secondCardRef.current?.measureInWindow((x: number, y: number, w: number, h: number) => {
-      if (w <= 0) return;
-      setSecondCardRect({ x, y, width: w, height: h });
-      setTutorialVisible(true);
-    });
-  }, []);
-
   useFocusEffect(useCallback(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, []));
-
-  useFocusEffect(useCallback(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    let attempts = 0;
-    const tryShow = async () => {
-      if (cancelled) return;
-      const done = await SecureStore.getItemAsync('airo_tutorial_done');
-      if (done || cancelled) return;
-      const phase = await SecureStore.getItemAsync('airo_tutorial_phase');
-      if (phase !== 'community') return;
-      if (secondCardRef.current) { measureAndShow(); return; }
-      if (attempts++ < 15) timer = setTimeout(tryShow, 300);
-    };
-    tryShow();
-    return () => { cancelled = true; clearTimeout(timer); setTutorialVisible(false); };
-  }, [measureAndShow]));
-
-  const handleTutorialDone = async () => {
-    await SecureStore.setItemAsync('airo_tutorial_done', '1');
-    await SecureStore.deleteItemAsync('airo_tutorial_phase');
-    setTutorialVisible(false);
-  };
-
-  const tutorialSteps: TutorialStep[] = [
-    {
-      spotlight: secondCardRect,
-      spotlightRadius: 0,
-      title: '커뮤니티',
-      description: '고민을 나누고,\n서로에게 도움이 되는 이야기를 공유해요',
-      tooltipBelow: false,
-    },
-  ];
 
   const handleMenuPress = (postId: number, y: number) => {
     setMenuPostId(postId);
@@ -326,8 +278,8 @@ export default function CommunityScreen() {
           <FlatList
             data={displayPosts}
             keyExtractor={(item) => String(item.id)}
-            renderItem={({ item, index }) => (
-              <View ref={index === 1 ? secondCardRef : undefined}>
+            renderItem={({ item }) => (
+              <View>
                 <PostCard
                   item={item}
                   onPress={() => router.push(`/community/${item.id}` as any)}
@@ -346,20 +298,6 @@ export default function CommunityScreen() {
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/community/write' as any)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
-
-      <TutorialOverlay
-        steps={tutorialSteps}
-        visible={tutorialVisible}
-        currentStep={0}
-        dontShowAgain={dontShowAgain}
-        onNext={handleTutorialDone}
-        onPrev={() => {}}
-        onSkip={handleTutorialDone}
-        onToggleDontShow={() => setDontShowAgain(v => !v)}
-        totalDots={7}
-        dotOffset={6}
-        showComplete={true}
-      />
 
       <Modal visible={menuPostId !== null} transparent animationType="fade" onRequestClose={() => setMenuPostId(null)}>
         <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>

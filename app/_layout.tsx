@@ -53,7 +53,7 @@ const webStyles = StyleSheet.create({
 });
 
 function AppNavigator() {
-  useFonts({ AiroFont: require('../assets/font.ttf') });
+  const [fontsLoaded] = useFonts({ AiroFont: require('../assets/font.ttf') });
   const router = useRouter();
   const { setAuthTokens, clearAuth, setUser } = useAuth();
 
@@ -173,6 +173,8 @@ function AppNavigator() {
       sub.remove();
     };
   }, []);
+
+  if (!fontsLoaded) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'none' }}>

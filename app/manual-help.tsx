@@ -104,9 +104,12 @@ export default function ManualHelpScreen() {
     setTipsValues(initTips());
   };
 
-  const handleCall = () => {
-    if (callTarget) Linking.openURL(`tel:${callTarget.contact.replace(/[^0-9]/g, '')}`);
+  const handleCall = (number: string) => {
+    Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`);
   };
+
+  const getNumbers = (contact: string) =>
+    contact.split('/').map(n => n.trim()).filter(Boolean);
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -194,9 +197,11 @@ export default function ManualHelpScreen() {
                   <TouchableOpacity style={s.tipsBtn} activeOpacity={0.85} onPress={handleOpenTips}>
                     <Text style={s.tipsBtnText}>이렇게 말하면 좋아요!</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={handleCall}>
-                    <Text style={s.callBtnText}>전화 걸기</Text>
-                  </TouchableOpacity>
+                  {getNumbers(callTarget.contact).map((num) => (
+                    <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
+                      <Text style={s.callBtnText}>{num} 전화 걸기</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </>
             )}
@@ -259,9 +264,11 @@ export default function ManualHelpScreen() {
 
               {/* 고정 하단 */}
               <View style={s.tipsCardBottom}>
-                <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={handleCall}>
-                  <Text style={s.callBtnText}>전화 걸기</Text>
-                </TouchableOpacity>
+                {callTarget && getNumbers(callTarget.contact).map((num) => (
+                  <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
+                    <Text style={s.callBtnText}>{num} 전화 걸기</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           </View>
@@ -393,7 +400,7 @@ const s = StyleSheet.create({
   tipsCardTop: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 4 },
   tipsScroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, gap: 12 },
   tipsCardBottom: {
-    paddingHorizontal: 16, paddingVertical: 16,
+    paddingHorizontal: 16, paddingVertical: 16, gap: 8,
   },
 
   bigContainer: {

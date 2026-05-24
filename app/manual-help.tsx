@@ -197,11 +197,9 @@ export default function ManualHelpScreen() {
                   <TouchableOpacity style={s.tipsBtn} activeOpacity={0.85} onPress={handleOpenTips}>
                     <Text style={s.tipsBtnText}>이렇게 말하면 좋아요!</Text>
                   </TouchableOpacity>
-                  {getNumbers(callTarget.contact).map((num) => (
-                    <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
-                      <Text style={s.callBtnText}>{num} 전화 걸기</Text>
-                    </TouchableOpacity>
-                  ))}
+                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0])}>
+                    <Text style={s.callBtnText}>전화 걸기</Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}
@@ -264,11 +262,11 @@ export default function ManualHelpScreen() {
 
               {/* 고정 하단 */}
               <View style={s.tipsCardBottom}>
-                {callTarget && getNumbers(callTarget.contact).map((num) => (
-                  <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
-                    <Text style={s.callBtnText}>{num} 전화 걸기</Text>
+                {callTarget && (
+                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0])}>
+                    <Text style={s.callBtnText}>전화 걸기</Text>
                   </TouchableOpacity>
-                ))}
+                )}
               </View>
             </View>
           </View>

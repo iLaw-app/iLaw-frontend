@@ -58,6 +58,7 @@ type PopularItem = {
   id: number;
   label: string;
   category: string;
+  scrapCount: number;
 };
 
 function ManualIcon() {
@@ -458,6 +459,10 @@ export default function HomeScreen() {
                     </View>
                   </View>
                   <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+                  <Ionicons name="bookmark" size={12} color="#9CAF88" />
+                  <Text style={{ fontSize: 12, color: '#9CAF88' }}>{item.scrapCount}</Text>
+                </View>
                 </View>
               </TouchableOpacity>
             ))

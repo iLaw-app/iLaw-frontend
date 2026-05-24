@@ -83,9 +83,8 @@ export default function AiChatScreen() {
       .then((history: any[]) => {
         if (!history.length) return;
         const historyMessages: Message[] = history.flatMap((h, i) => [
-          { id: -(i * 3 + 1), from: 'user' as const, time: toTimeStr(h.createdAt), text: h.question },
-          { id: -(i * 3 + 2), from: 'ai' as const, time: toTimeStr(h.createdAt), summary: h.situationSummary },
-          { id: -(i * 3 + 3), from: 'ai' as const, time: toTimeStr(h.createdAt), text: h.legalAdvice, suggestions: h.suggestions },
+          { id: -(i * 2 + 1), from: 'user' as const, time: toTimeStr(h.createdAt), text: h.question },
+          { id: -(i * 2 + 2), from: 'ai' as const, time: toTimeStr(h.createdAt), text: h.legalAdvice, suggestions: h.suggestions },
         ]);
         setMessages([GREETING, ...historyMessages]);
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
@@ -126,10 +125,8 @@ export default function AiChatScreen() {
       });
       const data = await res.json();
       const now = nowStr();
-      const summary = (data.situationSummary ?? data.summary ?? '').trim();
       const advice = (data.legalAdvice ?? '').trim();
       const newMsgs: Message[] = [];
-      if (summary) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, summary });
       if (advice) newMsgs.push({ id: Date.now() + 2, from: 'ai', time: now, text: advice, suggestions: data.suggestions });
       if (newMsgs.length === 0) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, text: '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.' });
       setMessages(prev => [...prev, ...newMsgs]);

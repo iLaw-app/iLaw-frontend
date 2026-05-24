@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Alert, View, Platform, StyleSheet } from 'react-native';
+import { Alert, View, Platform, StyleSheet, Dimensions } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
@@ -8,16 +8,38 @@ import { NotificationSettingsProvider } from './context/notificationSettings';
 
 const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
 
+const PHONE_W = 390;
+const PHONE_H = 844;
+
 export default function RootLayout() {
   if (Platform.OS === 'web') {
+    const { width: vw, height: vh } = Dimensions.get('window');
+    const scale = Math.min(1, Math.min((vh - 80) / PHONE_H, (vw - 80) / PHONE_W));
     return (
       <View style={webStyles.bg}>
-        <View style={webStyles.phone}>
-          <AuthProvider>
-            <NotificationSettingsProvider>
-              <AppNavigator />
-            </NotificationSettingsProvider>
-          </AuthProvider>
+        <View style={{
+          width: PHONE_W * scale,
+          height: PHONE_H * scale,
+          overflow: 'hidden',
+          borderRadius: 40 * scale,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 20 },
+          shadowOpacity: 0.3,
+          shadowRadius: 40,
+        }}>
+          <View style={{
+            width: PHONE_W,
+            height: PHONE_H,
+            backgroundColor: '#FDFFF8',
+            transform: [{ scale }],
+            transformOrigin: '0% 0%' as any,
+          }}>
+            <AuthProvider>
+              <NotificationSettingsProvider>
+                <AppNavigator />
+              </NotificationSettingsProvider>
+            </AuthProvider>
+          </View>
         </View>
       </View>
     );
@@ -38,17 +60,6 @@ const webStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh' as any,
-  },
-  phone: {
-    width: 390,
-    height: 844,
-    backgroundColor: '#FDFFF8',
-    borderRadius: 40,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.3,
-    shadowRadius: 40,
   },
 });
 

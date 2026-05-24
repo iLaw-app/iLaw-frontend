@@ -1,6 +1,6 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Modal, Linking, ActivityIndicator, Share, Alert,
+  ScrollView, Modal, Linking, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -105,18 +105,7 @@ export default function ManualHelpScreen() {
   };
 
   const handleCall = () => {
-    const target = callTarget;
-    handleCloseAll();
-    if (target) Linking.openURL(`tel:${target.contact.replace(/[^0-9]/g, '')}`);
-  };
-
-  const handleShare = async () => {
-    const lines = TIPS_FIELDS
-      .map(f => tipsValues[f.key] ? `${f.label}: ${tipsValues[f.key]}` : null)
-      .filter(Boolean)
-      .join('\n');
-    if (!lines) { Alert.alert('안내', '내용을 먼저 입력해주세요.'); return; }
-    try { await Share.share({ message: lines }); } catch {}
+    if (callTarget) Linking.openURL(`tel:${callTarget.contact.replace(/[^0-9]/g, '')}`);
   };
 
   return (
@@ -264,10 +253,7 @@ export default function ManualHelpScreen() {
                     </View>
                   ))}
 
-                  <TouchableOpacity style={s.copyBtn} activeOpacity={0.85} onPress={handleShare}>
-                    <Ionicons name="copy-outline" size={16} color="#586144" />
-                    <Text style={s.copyBtnText}>내용 복사하기</Text>
-                  </TouchableOpacity>
+
                 </View>
               </ScrollView>
 
@@ -433,7 +419,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: 'rgba(10,10,10,0.35)',
+    color: '#0a0a0a',
     letterSpacing: -0.15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

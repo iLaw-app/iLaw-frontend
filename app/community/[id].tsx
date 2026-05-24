@@ -532,13 +532,13 @@ export default function CommunityDetailScreen() {
           {post.content ? <Text style={s.content}>{post.content}</Text> : null}
 
           {post.imageUrls && post.imageUrls.length > 0 && (
-            <View style={s.imageRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.imageRow} contentContainerStyle={{ gap: 8 }}>
               {post.imageUrls.map((url, i) => (
                 <TouchableOpacity key={i} onPress={() => setSelectedImage(url)} activeOpacity={0.85}>
                   <Image source={{ uri: url }} style={s.imageThumb} resizeMode="cover" />
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
 
           {/* Poll */}
@@ -704,8 +704,8 @@ const s = StyleSheet.create({
   date: { fontSize: 12, color: '#99A1AF', lineHeight: 16 },
   title: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', lineHeight: 28, letterSpacing: -0.449, marginBottom: 8 },
   content: { fontSize: 14, color: '#586144', lineHeight: 22, marginBottom: 12 },
-  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  imageThumb: { width: 90, height: 90, borderRadius: 10 },
+  imageRow: { marginBottom: 12 },
+  imageThumb: { width: 240, height: 200, borderRadius: 10 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
   modalImage: { width: '100%', height: '100%' },
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, Pressable, BackHandler } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, Pressable, BackHandler, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -76,6 +76,7 @@ type CommunityPost = {
   content: string;
   likes: number;
   comments: number;
+  imageUrls?: string[];
   poll?: { options: PollOption[]; total: number };
 };
 
@@ -149,6 +150,10 @@ function PostCard({ item, onPress, isOwner, onMenuPress, keywords = [] }: {
       {item.content ? (
         <HighlightText text={item.content} keywords={keywords} style={styles.content} />
       ) : null}
+
+      {item.imageUrls && item.imageUrls.length > 0 && (
+        <Image source={{ uri: item.imageUrls[0] }} style={styles.cardThumb} resizeMode="cover" />
+      )}
 
       {item.poll && (
         <View style={styles.poll}>
@@ -228,8 +233,11 @@ export default function CommunityScreen() {
           const res = await fetch(`${API_BASE}/community?limit=50`, { headers });
           if (res.ok && !cancelled) {
             const data = await res.json();
-            setPosts(data.posts.map((p: any) => ({ ...p, poll: mapPoll(p.poll) })));
+            const list: any[] = Array.isArray(data) ? data : Array.isArray(data.posts) ? data.posts : [];
+            setPosts(list.map((p: any) => ({ ...p, poll: mapPoll(p.poll) })));
           }
+        } catch {
+          if (!cancelled) setPosts([]);
         } finally {
           if (!cancelled) setLoading(false);
         }
@@ -291,6 +299,13 @@ export default function CommunityScreen() {
             )}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Ionicons name="chatbubble-outline" size={40} color="#CCD9BA" />
+                <Text style={styles.emptyText}>아직 등록된 게시물이 없어요</Text>
+                <Text style={styles.emptySubText}>첫 번째 글을 작성해보세요!</Text>
+              </View>
+            }
           />
         )}
       </View>
@@ -347,9 +362,9 @@ const styles = StyleSheet.create({
     gap: 3.994,
     flexShrink: 0,
   },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
-  headerSub: { flex: 1, fontSize: 15, fontWeight: '500', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  headerSub: { flex: 1, fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   sortBtn: {
     height: 32, paddingHorizontal: 7,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
@@ -407,6 +422,7 @@ const styles = StyleSheet.create({
 
   poll: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 16, gap: 8, marginTop: 8, marginBottom: 4 },
 
+  cardThumb: { width: '100%', height: 180, borderRadius: 10, marginTop: 8 },
   cardBottom: { flexDirection: 'row', gap: 12, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 13, color: '#6A7282' },
@@ -422,6 +438,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12, shadowRadius: 15,
   },
   fabText: { fontSize: 30, color: '#fff', lineHeight: 34 },
+
+  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
+  emptyText: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },
+  emptySubText: { fontSize: 13, color: '#CCD9BA' },
 });
 
 const menuS = StyleSheet.create({

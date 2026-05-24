@@ -231,8 +231,8 @@ export default function QnaPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  headerTitle: { fontSize: 25, fontWeight: '700', color: '#586144', lineHeight: 36, letterSpacing: 0.396 },
-  headerSub: { fontSize: 16, fontWeight: '400', color: '#586144', lineHeight: 24, letterSpacing: -0.312, marginTop: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  headerSub: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07, marginTop: 2 },
   searchArea: { paddingHorizontal: 16, paddingBottom: 12 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',

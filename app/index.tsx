@@ -3,7 +3,8 @@ import Svg, { Ellipse, G, Defs, Filter, FeGaussianBlur } from 'react-native-svg'
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const LOGO_W = screenWidth - 130 - 20;
+const BASE_W = Math.min(screenWidth, 390);
+const LOGO_W = BASE_W - 150;
 const LOGO_H = LOGO_W * (2622 / 1206);
 
 const SHADOW_LEFT = 100 + (LOGO_W - 209) / 2;
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   shadowWrapper: {
     position: 'absolute',
     left: SHADOW_LEFT,
-    bottom: 82,
+    bottom: 40,
   },
 
   textArea: {
@@ -66,7 +67,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 36,
   },
   tagline: {
-    fontSize: 24,
+    fontSize: 30,
     color: '#586144',
     fontWeight: '500',
     lineHeight: 32,

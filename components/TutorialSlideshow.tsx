@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Image, TouchableOpacity, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+
 const { width: SW, height: SH } = Dimensions.get('screen');
 
 const IMAGES = [
@@ -25,18 +26,17 @@ type Props = {
 
 export function TutorialSlideshow({ visible, onDone }: Props) {
   const [step, setStep] = useState(0);
-  const [dontShow, setDontShow] = useState(false);
 
   useEffect(() => {
-    if (visible) { setStep(0); setDontShow(false); }
+    if (visible) setStep(0);
   }, [visible]);
 
   const advance = () => {
-    if (step === TOTAL - 1) onDone(dontShow);
+    if (step === TOTAL - 1) onDone(true);
     else setStep(s => s + 1);
   };
   const retreat = () => setStep(s => Math.max(0, s - 1));
-  const skip = () => onDone(true);
+  const skip = () => onDone(false);
 
   if (!visible) return null;
 
@@ -93,17 +93,14 @@ export function TutorialSlideshow({ visible, onDone }: Props) {
                 <Text style={styles.doneText}>완료</Text>
               </TouchableOpacity>
             ) : (
-              /* Pages 1–7: checkbox + label + 건너뛰기, centered */
+              /* Pages 1–7: 건너뛰기 + 다음 */
               <>
-                <TouchableOpacity style={styles.checkRow} onPress={() => setDontShow(v => !v)} activeOpacity={0.8}>
-                  <View style={[styles.checkbox, dontShow && styles.checkboxChecked]}>
-                    {dontShow && <Ionicons name="checkmark" size={11} color="#01180A" />}
-                  </View>
-                  <Text style={styles.checkLabel}>다시 보지 않기</Text>
+                <TouchableOpacity onPress={skip} activeOpacity={0.8} style={styles.skipBtn}>
+                  <Text style={styles.skipText}>건너뛰기</Text>
                 </TouchableOpacity>
                 <View style={styles.barSpacer} />
-                <TouchableOpacity onPress={skip} activeOpacity={0.8}>
-                  <Text style={styles.skipText}>건너뛰기</Text>
+                <TouchableOpacity onPress={advance} activeOpacity={0.85} style={styles.doneBtn}>
+                  <Text style={styles.doneText}>다음</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -189,32 +186,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.438,
-    borderColor: '#6A7282',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#B2D36E',
-    borderColor: '#B2D36E',
-  },
-  checkLabel: {
-    color: '#D1D5DC',
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 20,
-    letterSpacing: -0.15,
-  },
-  barSpacer: { width: 24 },
+  skipBtn: { paddingHorizontal: 4 },
+  barSpacer: { width: 20 },
   skipText: {
     color: '#99A1AF',
     fontSize: 14,

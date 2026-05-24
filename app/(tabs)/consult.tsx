@@ -153,8 +153,8 @@ export default function ManualScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
-  title: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07, marginBottom: 4 },
-  subtitle: { fontSize: 15, fontWeight: '500', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  title: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07, marginBottom: 4 },
+  subtitle: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   list: {
     marginHorizontal: 16,
     backgroundColor: '#FFF',

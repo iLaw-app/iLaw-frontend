@@ -226,8 +226,8 @@ export default function ProfilePage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  scroll: { paddingHorizontal: 16, paddingBottom: 40 },
-  pageTitle: { fontSize: 22, fontWeight: '700', color: '#586144', marginTop: 16, marginBottom: 24, marginLeft: 4 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 40, paddingTop: 16 },
+  pageTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07, marginBottom: 12 },
 
   avatarSection: { alignItems: 'center', marginBottom: 28 },
   avatarCircle: {

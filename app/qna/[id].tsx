@@ -323,9 +323,9 @@ export default function QnaDetailPage() {
                 <Text style={styles.studentInfoTitle}>학생 정보</Text>
               </View>
               <View style={styles.studentInfoRow}>
-                <Text style={styles.studentInfoItem}>생년월일: {post.author.birthDate ? post.author.birthDate.replace(/-/g, '.') : '-'}</Text>
-                <Text style={styles.studentInfoItem}>지역: {post.author.region ?? '-'}</Text>
-                <Text style={styles.studentInfoItem}>성별: {post.author.gender === 'female' ? '여성' : post.author.gender === 'male' ? '남성' : post.author.gender === 'other' ? '기타' : '-'}</Text>
+                <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>생년월일</Text> {post.author.birthDate ? post.author.birthDate.replace(/-/g, '.') : '-'}</Text>
+                <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>지역</Text> {post.author.region ?? '-'}</Text>
+                <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>성별</Text> {post.author.gender === 'female' ? '여성' : post.author.gender === 'male' ? '남성' : post.author.gender === 'other' ? '기타' : '-'}</Text>
               </View>
             </View>
 
@@ -591,9 +591,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
   },
   studentInfoHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  studentInfoTitle: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
-  studentInfoRow: { flexDirection: 'row', gap: 16 },
-  studentInfoItem: { fontSize: 13, color: '#586144' },
+  studentInfoTitle: { fontSize: 15, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  studentInfoRow: { flexDirection: 'row', gap: 16, justifyContent: 'center', flexWrap: 'wrap' },
+  studentInfoItem: { fontSize: 14, color: '#586144' },
+  studentInfoLabel: { fontSize: 14, fontWeight: '700', color: '#586144' },
 
   lawyerAnswerCard: {
     borderRadius: 24,

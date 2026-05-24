@@ -37,6 +37,12 @@ export default function LoginScreen() {
   const handleLogin = async (provider: 'kakao' | 'google') => {
     const appRedirectUri = Linking.createURL('auth');
     const url = `${API_BASE_URL}/auth/${provider}?redirectUri=${encodeURIComponent(appRedirectUri)}`;
+
+    if (Platform.OS === 'web') {
+      window.location.href = url;
+      return;
+    }
+
     const result = await WebBrowser.openAuthSessionAsync(url, appRedirectUri);
 
     if (result.type === 'success' && result.url) {

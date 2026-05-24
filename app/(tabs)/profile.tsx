@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Pressable, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal, Pressable, BackHandler, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,21 +73,25 @@ export default function ProfilePage() {
   }, []));
 
   const handleLogout = () => {
+    const doLogout = async () => {
+      if (accessToken) {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }).catch(() => {});
+      }
+      await clearAuth();
+      router.replace('/login');
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('로그아웃 하시겠습니까?')) doLogout();
+      return;
+    }
+
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
       { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        onPress: async () => {
-          if (accessToken) {
-            await fetch(`${API_BASE}/auth/logout`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${accessToken}` },
-            }).catch(() => {});
-          }
-          await clearAuth();
-          router.replace('/login');
-        },
-      },
+      { text: '로그아웃', onPress: doLogout },
     ]);
   };
 

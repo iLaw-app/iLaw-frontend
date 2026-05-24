@@ -53,13 +53,12 @@ function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
   );
 }
 
-const RECOMMEND_ITEMS = [
-  { type: 'manual' as const, id: 352, label: '알바비를 제때 받지 못했을 때',          category: '노동' },
-  { type: 'qna'    as const, id: 6,   label: '편의점 알바 3개월치 월급을 못 받았어요', category: '노동' },
-  { type: 'manual' as const, id: 391, label: 'SNS에서 괴롭힘을 당할 때',             category: '온라인폭력' },
-  { type: 'qna'    as const, id: 8,   label: '학교 단톡방에서 욕을 먹고 있어요',      category: '온라인폭력' },
-  { type: 'manual' as const, id: 358, label: '최저임금보다 적게 받았을 때',           category: '노동' },
-];
+type PopularItem = {
+  type: 'manual' | 'qna';
+  id: number;
+  label: string;
+  category: string;
+};
 
 function ManualIcon() {
   return (
@@ -189,6 +188,8 @@ export default function HomeScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [hasNotification, setHasNotification] = useState(false);
+  const [popularItems, setPopularItems] = useState<PopularItem[]>([]);
+  const [popularLoading, setPopularLoading] = useState(true);
 
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
@@ -210,6 +211,12 @@ export default function HomeScreen() {
     SecureStore.getItemAsync('airo_tutorial_done').then(done => {
       if (!done) setTutorialVisible(true);
     });
+    setPopularLoading(true);
+    fetch(`${API_BASE}/home/popular`)
+      .then(r => r.json())
+      .then(data => setPopularItems(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setPopularLoading(false));
   }, []));
 
   const handleTutorialDone = async (dontShowAgain: boolean) => {
@@ -422,31 +429,39 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.recommendTitle}>추천 콘텐츠</Text>
+        <Text style={styles.recommendTitle}>인기 콘텐츠</Text>
 
         <View style={styles.recommendContainer}>
-          {RECOMMEND_ITEMS.map((item, index) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.recommendItem, index === RECOMMEND_ITEMS.length - 1 && styles.recommendItemLast]}
-              activeOpacity={0.7}
-              onPress={() => item.type === 'qna'
-                ? router.push(`/qna/${item.id}` as any)
-                : router.push(`/manual-detail?articleId=${item.id}` as any)
-              }
-            >
-              <Text style={styles.recommendNum}>{index + 1}</Text>
-              <View style={styles.recommendContent}>
-                <View style={styles.recommendMeta}>
-                  {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>{item.category}</Text>
+          {popularLoading ? (
+            <ActivityIndicator color="#3C6802" style={{ marginVertical: 32 }} />
+          ) : popularItems.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: '#9CAF88', paddingVertical: 32, fontSize: 14 }}>
+              아직 인기 콘텐츠가 없어요
+            </Text>
+          ) : (
+            popularItems.map((item, index) => (
+              <TouchableOpacity
+                key={`${item.type}-${item.id}`}
+                style={[styles.recommendItem, index === popularItems.length - 1 && styles.recommendItemLast]}
+                activeOpacity={0.7}
+                onPress={() => item.type === 'qna'
+                  ? router.push(`/qna/${item.id}` as any)
+                  : router.push(`/manual-detail?articleId=${item.id}` as any)
+                }
+              >
+                <Text style={styles.recommendNum}>{index + 1}</Text>
+                <View style={styles.recommendContent}>
+                  <View style={styles.recommendMeta}>
+                    {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                    </View>
                   </View>
+                  <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
                 </View>
-                <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 

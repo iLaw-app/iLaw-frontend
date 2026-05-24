@@ -223,7 +223,7 @@ export default function CommunityWriteScreen() {
             </View>
 
             {/* Poll container — inside the card */}
-            {pollActive && (
+            {pollActive && !editPoll && (
               <View style={s.pollCard}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={s.pollLabel}>선택지 (2~5개)</Text>
@@ -280,7 +280,7 @@ export default function CommunityWriteScreen() {
               <PhotoIcon />
               <Text style={s.mediaBtnText}>사진 추가</Text>
             </TouchableOpacity>
-            {!pollActive && (
+            {!pollActive && !editPoll && (
               <TouchableOpacity style={s.mediaBtn} onPress={() => setPollActive(true)} activeOpacity={0.8}>
                 <PollIcon />
                 <Text style={s.mediaBtnText}>투표 추가</Text>

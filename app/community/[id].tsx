@@ -500,18 +500,16 @@ export default function CommunityDetailScreen() {
                 <Ionicons name="trash-outline" size={14} color="#586144" />
                 <Text style={s.dropdownTextRed}>삭제하기</Text>
               </TouchableOpacity>
-              {!post.poll && (
-                <>
-                  <View style={s.dropdownDivider} />
-                  <TouchableOpacity style={s.dropdownItem} onPress={() => {
-                    setShowMenu(false);
-                    router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
-                  }}>
-                    <Ionicons name="create-outline" size={14} color="#586144" />
-                    <Text style={s.dropdownText}>수정하기</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              <>
+                <View style={s.dropdownDivider} />
+                <TouchableOpacity style={s.dropdownItem} onPress={() => {
+                  setShowMenu(false);
+                  router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
+                }}>
+                  <Ionicons name="create-outline" size={14} color="#586144" />
+                  <Text style={s.dropdownText}>수정하기</Text>
+                </TouchableOpacity>
+              </>
             </View>
           )}
         </View>

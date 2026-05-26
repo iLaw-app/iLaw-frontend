@@ -10,6 +10,7 @@ import Svg, { Path, G, ClipPath, Rect, Defs, Ellipse } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
 import { useTutorial } from '../../contexts/tutorial';
+import { cacheGet, cacheSet } from '../../utils/cache';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -223,10 +224,12 @@ export default function HomeScreen() {
         if (!done) showTutorial();
       });
     }
+    const cachedPopular = cacheGet<PopularItem[]>('popular-home', 300_000);
+    if (cachedPopular) { setPopularItems(cachedPopular); setPopularLoading(false); return; }
     setPopularLoading(true);
     fetch(`${API_BASE}/home/popular`)
       .then(r => r.json())
-      .then(data => setPopularItems(Array.isArray(data) ? data : []))
+      .then(data => { const items = Array.isArray(data) ? data : []; cacheSet('popular-home', items); setPopularItems(items); })
       .catch(() => {})
       .finally(() => setPopularLoading(false));
   }, []));

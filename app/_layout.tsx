@@ -7,6 +7,7 @@ import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth
 import { NotificationSettingsProvider } from '../contexts/notificationSettings';
 import { TutorialProvider, useTutorial } from '../contexts/tutorial';
 import { TutorialSlideshow } from '../components/TutorialSlideshow';
+import { prefetchAll } from '../utils/prefetch';
 
 function WebTutorialOverlay() {
   const { visible, complete } = useTutorial();
@@ -155,6 +156,7 @@ function AppNavigator() {
         if (user) {
           await setAuthTokens({ accessToken: stored.accessToken, refreshToken: stored.refreshToken });
           setUser(user);
+          prefetchAll(stored.accessToken);
           await minSplash(2000);
           routeByProfile(user);
           return;
@@ -165,6 +167,7 @@ function AppNavigator() {
       if (cancelled) return;
       if (!refreshed) {
         await clearAuth();
+        prefetchAll(null);
         await minSplash(2000);
         if (!cancelled) router.replace('/login');
         return;
@@ -175,10 +178,12 @@ function AppNavigator() {
       if (cancelled) return;
       if (user) {
         setUser(user);
+        prefetchAll(refreshed.accessToken);
         await minSplash(2000);
         routeByProfile(user);
       } else {
         await clearAuth();
+        prefetchAll(null);
         await minSplash(2000);
         if (!cancelled) router.replace('/login');
       }

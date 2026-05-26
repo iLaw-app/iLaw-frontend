@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Alert, Modal, FlatList,
+  StyleSheet, ScrollView, Alert, FlatList, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
+import { BottomSheet } from '../components/AppModal';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -33,7 +34,7 @@ function PickerModal({
   selected: string; onSelect: (v: string) => void; onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <BottomSheet visible={visible} onRequestClose={onClose}>
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
@@ -59,7 +60,7 @@ function PickerModal({
           )}
         />
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -89,7 +90,7 @@ function BirthDatePickerModal({
     />
   );
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <BottomSheet visible={visible} onRequestClose={onClose}>
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
@@ -102,13 +103,34 @@ function BirthDatePickerModal({
           {renderCol(days, day, onDayChange, '일', 1)}
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, accessToken, setUser, role } = useAuth();
+  const { user, accessToken, setUser, role, clearAuth } = useAuth();
+
+  const handleLogout = () => {
+    const doLogout = async () => {
+      if (accessToken) {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }).catch(() => {});
+      }
+      await clearAuth();
+      router.replace('/login');
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('로그아웃 하시겠습니까?')) doLogout();
+      return;
+    }
+    Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      { text: '로그아웃', onPress: doLogout },
+    ]);
+  };
 
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [nicknameError, setNicknameError] = useState('');
@@ -280,6 +302,11 @@ export default function EditProfileScreen() {
         >
           <Text style={styles.submitBtnText}>{saving ? '저장 중...' : '저장하기'}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
+          <Ionicons name="log-out-outline" size={16} color="#C10007" />
+          <Text style={styles.logoutBtnText}>로그아웃</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <PickerModal
@@ -351,6 +378,11 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 12, marginTop: 4, marginBottom: 8,
+  },
+  logoutBtnText: { fontSize: 14, fontWeight: '600', color: '#C10007' },
 });
 
 const pickerStyles = StyleSheet.create({

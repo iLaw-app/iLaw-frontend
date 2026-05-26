@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -193,7 +194,7 @@ export default function AskPage() {
       </ScrollView>
 
 
-      <Modal visible={showSuccess} transparent animationType="fade">
+      <AppModal visible={showSuccess}>
         <View style={styles.modalOverlay}>
           <View style={styles.successCard}>
             <View style={styles.checkCircle}>
@@ -215,7 +216,7 @@ export default function AskPage() {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }

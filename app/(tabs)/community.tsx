@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal, Pressable, BackHandler, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, BackHandler, Image, TextInput } from 'react-native';
+import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,13 +9,13 @@ import { useAuth } from '../context/auth';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
-function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
+function HighlightText({ text, keywords, style, numberOfLines }: { text: string; keywords: string[]; style?: any; numberOfLines?: number }) {
   const active = keywords.map(k => k.trim()).filter(k => k);
-  if (active.length === 0) return <Text style={style}>{text}</Text>;
+  if (active.length === 0) return <Text style={style} numberOfLines={numberOfLines}>{text}</Text>;
   const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return (
-    <Text style={style}>
+    <Text style={style} numberOfLines={numberOfLines}>
       {parts.map((part, i) =>
         active.some(k => part.toLowerCase() === k.toLowerCase())
           ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
@@ -127,9 +128,7 @@ function PostCard({ item, onPress, isOwner, onMenuPress, keywords = [] }: {
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.cardTop}>
         <View style={styles.avatarRow}>
-          <View style={styles.avatar}>
-            <PersonIcon />
-          </View>
+          <Image source={require('../../assets/Container.png')} style={styles.avatar} resizeMode="contain" />
           <Text style={styles.nickname}>{item.nickname}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -148,7 +147,7 @@ function PostCard({ item, onPress, isOwner, onMenuPress, keywords = [] }: {
 
       <HighlightText text={item.title} keywords={keywords} style={styles.title} />
       {item.content ? (
-        <HighlightText text={item.content} keywords={keywords} style={styles.content} />
+        <HighlightText text={item.content} keywords={keywords} style={styles.content} numberOfLines={3} />
       ) : null}
 
       {item.imageUrls && item.imageUrls.length > 0 && (
@@ -234,7 +233,19 @@ export default function CommunityScreen() {
           if (res.ok && !cancelled) {
             const data = await res.json();
             const list: any[] = Array.isArray(data) ? data : Array.isArray(data.posts) ? data.posts : [];
-            setPosts(list.map((p: any) => ({ ...p, poll: mapPoll(p.poll) })));
+            const posts = list.map((p: any) => ({ ...p, poll: mapPoll(p.poll) }));
+            setPosts(posts);
+            // 목록 API가 imageUrls를 포함하지 않으므로 상세 API로 보강
+            if (posts.length > 0) {
+              Promise.all(
+                posts.map(p =>
+                  fetch(`${API_BASE}/community/${p.id}`, { headers })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => ({ ...p, imageUrls: d?.imageUrls ?? [] }))
+                    .catch(() => ({ ...p, imageUrls: [] }))
+                )
+              ).then(enriched => { if (!cancelled) setPosts(enriched); });
+            }
           }
         } catch {
           if (!cancelled) setPosts([]);
@@ -255,11 +266,13 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>커뮤니티</Text>
-        <View style={styles.subRow}>
-          <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
-          <TouchableOpacity style={styles.sortBtn} activeOpacity={0.7} onPress={() => setSort(s => s === 'latest' ? 'popular' : 'latest')}>
-            {sort === 'latest' ? <ClockIcon /> : <ThumbsUpIcon />}
-            <Text style={styles.sortText}>{sort === 'latest' ? '최신순' : '인기순'}</Text>
+        <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
+        <View style={styles.sortBtns}>
+          <TouchableOpacity style={[styles.sortBtn, sort === 'popular' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('popular')}>
+            <Text style={styles.sortText}>인기순</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('latest')}>
+            <Text style={styles.sortText}>최신순</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -293,7 +306,6 @@ export default function CommunityScreen() {
                   onPress={() => router.push(`/community/${item.id}` as any)}
                   isOwner={user?.nickname === item.nickname}
                   onMenuPress={handleMenuPress}
-                  keywords={searchQuery.trim() ? [searchQuery] : []}
                 />
               </View>
             )}
@@ -311,10 +323,10 @@ export default function CommunityScreen() {
       </View>
 
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => router.push('/community/write' as any)}>
-        <Text style={styles.fabText}>+</Text>
+        <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
 
-      <Modal visible={menuPostId !== null} transparent animationType="fade" onRequestClose={() => setMenuPostId(null)}>
+      <AppModal visible={menuPostId !== null} onRequestClose={() => setMenuPostId(null)}>
         <Pressable style={{ flex: 1 }} onPress={() => setMenuPostId(null)}>
           <Pressable style={[menuS.dropdown, { top: menuY + 20, right: 16 }]} onPress={() => {}}>
             <TouchableOpacity style={menuS.item} activeOpacity={0.7} onPress={handleDelete}>
@@ -328,7 +340,7 @@ export default function CommunityScreen() {
             </TouchableOpacity>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }
@@ -364,13 +376,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
-  headerSub: { flex: 1, fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  headerSub: { fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  sortBtns: { flexDirection: 'row', gap: 6 },
   sortBtn: {
-    height: 32, paddingHorizontal: 7,
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4,
-    borderRadius: 8, borderWidth: 1, borderColor: '#D1D5DC',
+    width: 74, height: 25,
+    justifyContent: 'center', alignItems: 'center',
+    borderRadius: 50, borderWidth: 1, borderColor: '#D1D5DC',
     backgroundColor: '#fff',
   },
+  sortBtnActive: { backgroundColor: '#EFF4E1', borderColor: '#CCD9BA' },
   sortText: { fontSize: 14, fontWeight: '500', color: '#6A7282', lineHeight: 20, letterSpacing: 0.1 },
   divider: { height: 1, backgroundColor: '#F3F4F6' },
   searchArea: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12 },
@@ -403,26 +417,22 @@ const styles = StyleSheet.create({
 
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatar: {
-    width: 32, height: 32, borderRadius: 22750400,
-    backgroundColor: '#CCD9BA',
-    justifyContent: 'center', alignItems: 'center',
-  },
+  avatar: { width: 32, height: 32, borderRadius: 16 },
   nickname: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
   date: { fontSize: 12, fontWeight: '500', color: '#99A1AF', lineHeight: 16 },
 
   title: {
-    fontSize: 16, fontWeight: '700', color: '#586144',
-    lineHeight: 24, marginBottom: 4,
+    fontSize: 18, fontWeight: '700', color: '#586144',
+    lineHeight: 27, letterSpacing: -0.439, marginBottom: 4,
   },
   content: {
-    fontSize: 13, color: '#586144', lineHeight: 19,
+    fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20,
     letterSpacing: -0.15, marginBottom: 8,
   },
 
   poll: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 16, gap: 8, marginTop: 8, marginBottom: 4 },
 
-  cardThumb: { width: '100%', height: 180, borderRadius: 10, marginTop: 8 },
+  cardThumb: { width: 100, height: 100, borderRadius: 10, marginTop: 8 },
   cardBottom: { flexDirection: 'row', gap: 12, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 13, color: '#6A7282' },
@@ -437,7 +447,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12, shadowRadius: 15,
   },
-  fabText: { fontSize: 30, color: '#fff', lineHeight: 34 },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },

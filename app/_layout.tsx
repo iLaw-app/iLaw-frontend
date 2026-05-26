@@ -5,6 +5,13 @@ import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
 import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth';
 import { NotificationSettingsProvider } from './context/notificationSettings';
+import { TutorialProvider, useTutorial } from './context/tutorial';
+import { TutorialSlideshow } from '../components/TutorialSlideshow';
+
+function WebTutorialOverlay() {
+  const { visible, complete } = useTutorial();
+  return <TutorialSlideshow visible={visible} onDone={complete} />;
+}
 
 const API_BASE_URL = 'https://ilaw-backend.up.railway.app';
 
@@ -14,7 +21,7 @@ const PHONE_H = 844;
 export default function RootLayout() {
   if (Platform.OS === 'web') {
     const { width: vw, height: vh } = Dimensions.get('window');
-    const scale = Math.min(1, Math.min((vh - 80) / PHONE_H, (vw - 80) / PHONE_W));
+    const scale = Math.min(1, Math.min((vh - 16) / PHONE_H, (vw - 16) / PHONE_W));
     return (
       <View style={webStyles.bg}>
         <View style={{
@@ -33,23 +40,30 @@ export default function RootLayout() {
             backgroundColor: '#FDFFF8',
             transform: [{ scale }],
             transformOrigin: '0% 0%' as any,
+            paddingTop: 30,
+            paddingBottom: 5,
           }}>
-            <AuthProvider>
-              <NotificationSettingsProvider>
-                <AppNavigator />
-              </NotificationSettingsProvider>
-            </AuthProvider>
+            <TutorialProvider>
+              <AuthProvider>
+                <NotificationSettingsProvider>
+                  <AppNavigator />
+                </NotificationSettingsProvider>
+              </AuthProvider>
+              <WebTutorialOverlay />
+            </TutorialProvider>
           </View>
         </View>
       </View>
     );
   }
   return (
-    <AuthProvider>
-      <NotificationSettingsProvider>
-        <AppNavigator />
-      </NotificationSettingsProvider>
-    </AuthProvider>
+    <TutorialProvider>
+      <AuthProvider>
+        <NotificationSettingsProvider>
+          <AppNavigator />
+        </NotificationSettingsProvider>
+      </AuthProvider>
+    </TutorialProvider>
   );
 }
 
@@ -205,6 +219,8 @@ function AppNavigator() {
       <Stack.Screen name="notification-settings" />
       <Stack.Screen name="my-answers" />
       <Stack.Screen name="ai-chat" />
+      <Stack.Screen name="terms" />
+      <Stack.Screen name="privacy" />
     </Stack>
   );
 }

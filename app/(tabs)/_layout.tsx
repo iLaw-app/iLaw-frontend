@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, TouchableOpacity, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, BackHandler, Platform } from 'react-native';
+import { TutorialSlideshow } from '../../components/TutorialSlideshow';
+import { useTutorial } from '../context/tutorial';
 
 const TAB_SCREENS = [
   { name: 'home',      title: '홈',       icon: 'home-outline'        } as const,
@@ -83,24 +85,29 @@ const s = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  const { visible, complete } = useTutorial();
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
   }, []);
 
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-      backBehavior="none"
-    >
-      {TAB_SCREENS.map((screen) => (
-        <Tabs.Screen
-          key={screen.name}
-          name={screen.name}
-          options={{ title: screen.title }}
-        />
-      ))}
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
+        backBehavior="none"
+      >
+        {TAB_SCREENS.map((screen) => (
+          <Tabs.Screen
+            key={screen.name}
+            name={screen.name}
+            options={{ title: screen.title }}
+          />
+        ))}
+      </Tabs>
+      {Platform.OS !== 'web' && <TutorialSlideshow visible={visible} onDone={complete} />}
+    </View>
   );
 }

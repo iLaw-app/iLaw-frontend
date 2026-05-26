@@ -24,7 +24,7 @@ function HighlightText({ text, keywords, style }: { text: string; keywords: stri
 
 function AnsweredChatIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Svg width={17} height={16} viewBox="0 0 20 20" fill="none">
       <Path
         d="M6.58042 16.6589C8.17017 17.4744 9.99892 17.6953 11.7371 17.2817C13.4753 16.8682 15.0087 15.8474 16.0609 14.4034C17.113 12.9594 17.6149 11.187 17.4759 9.40569C17.3369 7.62439 16.5663 5.95129 15.3029 4.68789C14.0395 3.42449 12.3664 2.65387 10.5851 2.51491C8.80381 2.37594 7.03144 2.87776 5.58739 3.92995C4.14335 4.98213 3.12259 6.51548 2.70905 8.25368C2.29552 9.99188 2.51641 11.8206 3.33192 13.4104L1.66602 18.3248L6.58042 16.6589Z"
         stroke="#2B56B5" strokeWidth="1.6659" strokeLinecap="round" strokeLinejoin="round"
@@ -150,27 +150,31 @@ export default function QnaPage() {
           <ActivityIndicator color="#3C6802" style={{ marginTop: 40 }} />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.lawyerList}>
-            <View style={styles.sectionRow}>
-              <Ionicons name="time-outline" size={18} color="#C10007" />
-              <Text style={[styles.sectionTitle, { color: '#C10007' }]}>답변 대기 중 ({pendingPosts.length})</Text>
+            <View style={styles.sectionBox}>
+              <View style={styles.sectionRow}>
+                <Ionicons name="time-outline" size={17} color="#C10007" style={{ width: 17, height: 16 }} />
+                <Text style={[styles.sectionTitle, { color: '#C10007' }]}>답변 대기 중 ({pendingPosts.length})</Text>
+              </View>
+              {pendingPosts.length === 0
+                ? <Text style={styles.sectionEmpty}>대기 중인 질문이 없습니다</Text>
+                : <View style={styles.sectionList}>
+                    {pendingPosts.map(item => <QnaCard key={item.id} item={item} onPress={() => router.push(`/qna/${item.id}`)} />)}
+                  </View>
+              }
             </View>
-            {pendingPosts.length === 0
-              ? <Text style={styles.sectionEmpty}>대기 중인 질문이 없습니다</Text>
-              : <View style={styles.sectionList}>
-                  {pendingPosts.map(item => <QnaCard key={item.id} item={item} onPress={() => router.push(`/qna/${item.id}`)} />)}
-                </View>
-            }
 
-            <View style={[styles.sectionRow, { marginTop: 24 }]}>
-              <AnsweredChatIcon />
-              <Text style={[styles.sectionTitle, { color: '#2B56B5' }]}>답변 완료 ({answeredPosts.length})</Text>
+            <View style={styles.sectionBox}>
+              <View style={styles.sectionRow}>
+                <AnsweredChatIcon />
+                <Text style={[styles.sectionTitle, { color: '#2B56B5' }]}>답변 완료 ({answeredPosts.length})</Text>
+              </View>
+              {answeredPosts.length === 0
+                ? <Text style={styles.sectionEmpty}>완료된 답변이 없습니다</Text>
+                : <View style={styles.sectionList}>
+                    {answeredPosts.map(item => <QnaCard key={item.id} item={item} onPress={() => router.push(`/qna/${item.id}`)} />)}
+                  </View>
+              }
             </View>
-            {answeredPosts.length === 0
-              ? <Text style={styles.sectionEmpty}>완료된 답변이 없습니다</Text>
-              : <View style={styles.sectionList}>
-                  {answeredPosts.map(item => <QnaCard key={item.id} item={item} onPress={() => router.push(`/qna/${item.id}`)} />)}
-                </View>
-            }
           </ScrollView>
         )}
       </SafeAreaView>
@@ -221,7 +225,7 @@ export default function QnaPage() {
       )}
 
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/qna/ask')}>
-        <Text style={styles.fabText}>+</Text>
+        <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
 
     </SafeAreaView>
@@ -320,11 +324,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 15,
   },
-  fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, color: '#9CAF88' },
 
-  lawyerList: { paddingHorizontal: 16, paddingBottom: 40 },
+  lawyerList: { paddingHorizontal: 16, paddingBottom: 40, gap: 16 },
+  sectionBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#CCD9BA',
+    backgroundColor: '#FFF',
+    padding: 16,
+  },
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   sectionTitle: { fontSize: 20, fontWeight: '700', lineHeight: 28, letterSpacing: -0.449 },
   sectionEmpty: { fontSize: 14, color: '#9CAF88', paddingLeft: 4, marginBottom: 12 },

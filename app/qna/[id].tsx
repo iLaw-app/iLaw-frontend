@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Modal, TextInput, Alert, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Image, TextInput, Alert, Pressable } from 'react-native';
+import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,15 @@ import { useAuth } from '../context/auth';
 import { BottomNav } from '../../components/BottomNav';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
+
+function calcAge(birthDate: string): string {
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return `만 ${age}세`;
+}
 
 type QnADetail = {
   id: number;
@@ -263,57 +273,6 @@ export default function QnaDetailPage() {
           )}
         </View>
 
-        {/* 이미지 전체보기 모달 */}
-        <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
-            <Image source={{ uri: selectedImage! }} style={styles.modalImage} resizeMode="contain" />
-          </TouchableOpacity>
-        </Modal>
-
-        <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
-          <Pressable style={styles.deleteOverlay} onPress={() => setShowDeleteModal(false)}>
-            <Pressable style={styles.deleteCard} onPress={() => {}}>
-              <View style={styles.deleteIconCircle}>
-                <Ionicons name="trash-outline" size={32} color="#C10007" />
-              </View>
-              <Text style={styles.deleteTitle}>질문 삭제</Text>
-              <View style={styles.deleteTextContainer}>
-                <Text style={styles.deleteBody}>이 질문을 삭제하시겠습니까?</Text>
-                <Text style={styles.deleteWarning}>삭제 후에는 복구할 수 없습니다.</Text>
-              </View>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => { setShowDeleteModal(false); handleDelete(); }}>
-                <Text style={styles.deleteBtnText}>삭제하기</Text>
-              </TouchableOpacity>
-            </Pressable>
-          </Pressable>
-        </Modal>
-
-        <Modal visible={showAnswerSuccessModal} transparent animationType="fade" onRequestClose={() => setShowAnswerSuccessModal(false)}>
-          <View style={styles.deleteOverlay}>
-            <View style={styles.successCard}>
-              <View style={styles.successIconCircle}>
-                <Ionicons name="checkmark" size={36} color="#FFFFFF" />
-              </View>
-              <Text style={styles.successTitle}>답변 완료!</Text>
-              <Text style={styles.successBody}>답변이 성공적으로 등록됐습니다.</Text>
-              <View style={styles.successBtns}>
-                <TouchableOpacity
-                  style={styles.successBtnOutline}
-                  onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/qna' as any); }}
-                >
-                  <Text style={styles.successBtnOutlineText}>목록으로</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.successBtnPrimary}
-                  onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/home' as any); }}
-                >
-                  <Text style={styles.successBtnPrimaryText}>홈으로</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
         {/* 답변 영역 */}
         {role === 'lawyer' ? (
           <>
@@ -323,7 +282,7 @@ export default function QnaDetailPage() {
                 <Text style={styles.studentInfoTitle}>학생 정보</Text>
               </View>
               <View style={styles.studentInfoRow}>
-                <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>생년월일</Text> {post.author.birthDate ? post.author.birthDate.replace(/-/g, '.') : '-'}</Text>
+                <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>나이</Text> {post.author.birthDate ? calcAge(post.author.birthDate) : '-'}</Text>
                 <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>지역</Text> {post.author.region ?? '-'}</Text>
                 <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>성별</Text> {post.author.gender === 'female' ? '여성' : post.author.gender === 'male' ? '남성' : post.author.gender === 'other' ? '기타' : '-'}</Text>
               </View>
@@ -434,6 +393,57 @@ export default function QnaDetailPage() {
           </View>
         )}
       </ScrollView>
+
+      <AppModal visible={!!selectedImage} onRequestClose={() => setSelectedImage(null)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
+          <Image source={{ uri: selectedImage! }} style={styles.modalImage} resizeMode="contain" />
+        </TouchableOpacity>
+      </AppModal>
+
+      <AppModal visible={showDeleteModal} onRequestClose={() => setShowDeleteModal(false)}>
+        <Pressable style={styles.deleteOverlay} onPress={() => setShowDeleteModal(false)}>
+          <Pressable style={styles.deleteCard} onPress={() => {}}>
+            <View style={styles.deleteIconCircle}>
+              <Ionicons name="trash-outline" size={32} color="#C10007" />
+            </View>
+            <Text style={styles.deleteTitle}>질문 삭제</Text>
+            <View style={styles.deleteTextContainer}>
+              <Text style={styles.deleteBody}>이 질문을 삭제하시겠습니까?</Text>
+              <Text style={styles.deleteWarning}>삭제 후에는 복구할 수 없습니다.</Text>
+            </View>
+            <TouchableOpacity style={styles.deleteBtn} onPress={() => { setShowDeleteModal(false); handleDelete(); }}>
+              <Text style={styles.deleteBtnText}>삭제하기</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </AppModal>
+
+      <AppModal visible={showAnswerSuccessModal} onRequestClose={() => setShowAnswerSuccessModal(false)}>
+        <View style={styles.deleteOverlay}>
+          <View style={styles.successCard}>
+            <View style={styles.successIconCircle}>
+              <Ionicons name="checkmark" size={36} color="#FFFFFF" />
+            </View>
+            <Text style={styles.successTitle}>답변 완료!</Text>
+            <Text style={styles.successBody}>답변이 성공적으로 등록됐습니다.</Text>
+            <View style={styles.successBtns}>
+              <TouchableOpacity
+                style={styles.successBtnOutline}
+                onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/qna' as any); }}
+              >
+                <Text style={styles.successBtnOutlineText}>목록으로</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.successBtnPrimary}
+                onPress={() => { setShowAnswerSuccessModal(false); router.navigate('/(tabs)/home' as any); }}
+              >
+                <Text style={styles.successBtnPrimaryText}>홈으로</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </AppModal>
+
       <BottomNav activeTab="qna" />
     </SafeAreaView>
   );
@@ -510,7 +520,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 6,
   },
-  divider: { height: 1.544, backgroundColor: '#CCD9BA' },
+  divider: { height: 1.544, backgroundColor: '#F3F4F6' },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: {
     width: 44, height: 44, borderRadius: 9999,

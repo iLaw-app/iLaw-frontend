@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Alert, Modal, FlatList, Image,
+  StyleSheet, ScrollView, Alert, FlatList, Image,
 } from 'react-native';
+import { BottomSheet } from '../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -41,7 +42,7 @@ function PickerModal({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <BottomSheet visible={visible} onRequestClose={onClose}>
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
@@ -67,7 +68,7 @@ function PickerModal({
           )}
         />
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -97,7 +98,7 @@ function BirthDatePickerModal({
     />
   );
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <BottomSheet visible={visible} onRequestClose={onClose}>
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
@@ -110,7 +111,7 @@ function BirthDatePickerModal({
           {renderCol(days, day, onDayChange, '일', 1)}
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -204,6 +205,9 @@ export default function OnboardingScreen() {
     });
     if (meRes.ok) setUser(await meRes.json());
     await SecureStore.deleteItemAsync('airo_tutorial_done').catch(() => {});
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      sessionStorage.setItem('airo_tutorial_pending', '1');
+    }
     router.replace('/(tabs)/home');
   };
 
@@ -214,7 +218,7 @@ export default function OnboardingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Image
-          source={require('../assets/logo3.png')}
+          source={require('../assets/logo2.png')}
           style={styles.robotHead}
           resizeMode="contain"
         />

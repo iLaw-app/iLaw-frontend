@@ -1,7 +1,8 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Modal, Linking, ActivityIndicator,
+  ScrollView, Linking, ActivityIndicator,
 } from 'react-native';
+import { AppModal } from '../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -159,7 +160,7 @@ export default function ManualHelpScreen() {
       </ScrollView>
 
       {/* 지역 선택 모달 */}
-      <Modal visible={regionModalVisible} transparent animationType="fade" onRequestClose={() => setRegionModalVisible(false)}>
+      <AppModal visible={regionModalVisible} onRequestClose={() => setRegionModalVisible(false)}>
         <TouchableOpacity style={s.regionModalOverlay} activeOpacity={1} onPress={() => setRegionModalVisible(false)}>
           <View style={s.regionModalCard}>
             <Text style={s.regionModalTitle}>지역 선택</Text>
@@ -177,10 +178,10 @@ export default function ManualHelpScreen() {
             </ScrollView>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
 
       {/* 전화 걸기 팝업 — 1단계: 기관 정보 */}
-      <Modal visible={callTarget !== null && !showTips} transparent animationType="fade" onRequestClose={() => setCallTarget(null)}>
+      <AppModal visible={callTarget !== null && !showTips} onRequestClose={() => setCallTarget(null)}>
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
             <View style={s.modalHeader}>
@@ -205,10 +206,10 @@ export default function ManualHelpScreen() {
             )}
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* 전화 걸기 팝업 — 2단계: 말하기 팁 폼 */}
-      <Modal visible={callTarget !== null && showTips} transparent animationType="fade" onRequestClose={() => setShowTips(false)}>
+      <AppModal visible={callTarget !== null && showTips} onRequestClose={() => setShowTips(false)}>
         <View style={s.tipsOverlay}>
           <View style={s.tipsCardShadow}>
             <View style={s.tipsCardInner}>
@@ -271,7 +272,7 @@ export default function ManualHelpScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       <BottomNav activeTab="consult" />
     </SafeAreaView>
@@ -410,8 +411,8 @@ const s = StyleSheet.create({
     gap: 12,
   },
   tipsHint: { gap: 4 },
-  tipsHintTitle: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
-  tipsHintSub: { fontSize: 12, fontWeight: '400', color: '#586144', lineHeight: 16 },
+  tipsHintTitle: { fontSize: 19, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  tipsHintSub: { fontSize: 15, fontWeight: '400', color: '#586144', lineHeight: 25 },
 
   tipsField: { gap: 4 },
   tipsFieldLabel: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },

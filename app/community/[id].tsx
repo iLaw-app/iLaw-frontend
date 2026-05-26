@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, Modal,
+  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from 'react-native';
+import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -126,9 +127,7 @@ function mapPoll(poll: any): { options: PollOption[]; total: number; votedOption
 
 function Avatar({ size = 32 }: { size?: number }) {
   return (
-    <View style={[s.avatar, { width: size, height: size }]}>
-      <PersonIcon size={Math.round(size * 0.47)} />
-    </View>
+    <Image source={require('../../assets/Container.png')} style={{ width: size, height: size, borderRadius: size / 2 }} resizeMode="contain" />
   );
 }
 
@@ -587,13 +586,13 @@ export default function CommunityDetailScreen() {
           ))}
         </ScrollView>
 
-        <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
+        <AppModal visible={!!selectedImage} onRequestClose={() => setSelectedImage(null)}>
           <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setSelectedImage(null)}>
             <Image source={{ uri: selectedImage! }} style={s.modalImage} resizeMode="contain" />
           </TouchableOpacity>
-        </Modal>
+        </AppModal>
 
-        <Modal visible={showDeleteModal} transparent animationType="fade" onRequestClose={() => setShowDeleteModal(false)}>
+        <AppModal visible={showDeleteModal} onRequestClose={() => setShowDeleteModal(false)}>
           <Pressable style={s.deleteOverlay} onPress={() => setShowDeleteModal(false)}>
             <Pressable style={s.deleteCard} onPress={() => {}}>
               <View style={s.deleteIconCircle}>
@@ -609,9 +608,9 @@ export default function CommunityDetailScreen() {
               </TouchableOpacity>
             </Pressable>
           </Pressable>
-        </Modal>
+        </AppModal>
 
-        <Modal visible={showCommentDeleteModal} transparent animationType="fade" onRequestClose={() => setShowCommentDeleteModal(false)}>
+        <AppModal visible={showCommentDeleteModal} onRequestClose={() => setShowCommentDeleteModal(false)}>
           <Pressable style={s.deleteOverlay} onPress={() => setShowCommentDeleteModal(false)}>
             <Pressable style={s.deleteCard} onPress={() => {}}>
               <View style={s.deleteIconCircle}>
@@ -627,7 +626,7 @@ export default function CommunityDetailScreen() {
               </TouchableOpacity>
             </Pressable>
           </Pressable>
-        </Modal>
+        </AppModal>
 
         {/* Comment Input */}
         <View style={s.inputBar}>

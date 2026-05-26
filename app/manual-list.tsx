@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   questionItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingVertical: 18,
     gap: 8,

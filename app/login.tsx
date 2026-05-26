@@ -92,7 +92,7 @@ export default function LoginScreen() {
             <Text style={[styles.btnText, { color: '#333' }]}>구글 로그인</Text>
           </TouchableOpacity>
 
-          {Platform.OS === 'web' && (
+          {false && Platform.OS === 'web' && (
             <TouchableOpacity
               style={styles.demoBtn}
               onPress={() => router.replace('/(tabs)/home')}

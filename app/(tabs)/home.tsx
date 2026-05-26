@@ -1,15 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, TextInput, ActivityIndicator, PanResponder, BackHandler, Image,
+  ScrollView, TextInput, ActivityIndicator, PanResponder, BackHandler, Image, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, G, ClipPath, Rect, Defs } from 'react-native-svg';
+import Svg, { Path, G, ClipPath, Rect, Defs, Ellipse } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
-import { TutorialSlideshow } from '../../components/TutorialSlideshow';
+import { useTutorial } from '../context/tutorial';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -91,7 +91,7 @@ function BookIcon() {
 
 function QnaIcon() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+    <Svg width={15} height={15} viewBox="0 0 16 16" fill="none">
       <Path d="M5.26641 13.3332C6.53874 13.9859 8.00235 14.1627 9.39349 13.8317C10.7846 13.5007 12.0118 12.6838 12.8539 11.5281C13.696 10.3723 14.0976 8.95386 13.9864 7.52822C13.8752 6.10259 13.2585 4.76355 12.2473 3.75241C11.2362 2.74127 9.89714 2.12452 8.4715 2.0133C7.04586 1.90208 5.62738 2.30371 4.47166 3.1458C3.31594 3.9879 2.499 5.21509 2.16803 6.60623C1.83707 7.99737 2.01385 9.46098 2.66653 10.7333L1.33325 14.6665L5.26641 13.3332Z" stroke="#678720" strokeWidth="1.33327" strokeLinecap="round" strokeLinejoin="round"/>
     </Svg>
   );
@@ -195,7 +195,7 @@ export default function HomeScreen() {
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
-  const [tutorialVisible, setTutorialVisible] = useState(false);
+  const { show: showTutorial } = useTutorial();
 
   useEffect(() => {
     const handler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -209,9 +209,20 @@ export default function HomeScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => {
-    SecureStore.getItemAsync('airo_tutorial_done').then(done => {
-      if (!done) setTutorialVisible(true);
-    });
+    // 웹: 신규 가입 시 onboarding에서 세팅한 pending 플래그가 있을 때만 튜토리얼 표시
+    // 네이티브: SecureStore에 done 플래그 없으면 표시
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const done = localStorage.getItem('airo_tutorial_done');
+      const pending = sessionStorage.getItem('airo_tutorial_pending');
+      if (!done && pending) {
+        sessionStorage.removeItem('airo_tutorial_pending');
+        showTutorial();
+      }
+    } else {
+      SecureStore.getItemAsync('airo_tutorial_done').then(done => {
+        if (!done) showTutorial();
+      });
+    }
     setPopularLoading(true);
     fetch(`${API_BASE}/home/popular`)
       .then(r => r.json())
@@ -219,11 +230,6 @@ export default function HomeScreen() {
       .catch(() => {})
       .finally(() => setPopularLoading(false));
   }, []));
-
-  const handleTutorialDone = async (dontShowAgain: boolean) => {
-    if (dontShowAgain) await SecureStore.setItemAsync('airo_tutorial_done', '1');
-    setTutorialVisible(false);
-  };
 
   const swipeBackPan = useRef(
     PanResponder.create({
@@ -402,16 +408,14 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 140 }}
       >
-        <View style={styles.titleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.mainTitle}>혼자 고민하지 않아도 괜찮아요</Text>
-            <Text style={styles.mainSub}>필요한 도움을 찾아보세요</Text>
-          </View>
+        <View style={styles.heroSection}>
           <TouchableOpacity style={styles.bellBtn} onPress={() => router.push('/notifications')}>
             <Ionicons name="notifications-outline" size={24} color="#858D7A" />
             {hasNotification && <View style={styles.notiBadge} />}
           </TouchableOpacity>
+          <Image source={require('../../assets/logo2.png')} style={styles.heroLogo} resizeMode="contain" />
         </View>
+        <Text style={styles.mainTitle}>{"혼자 고민하지 않아도 괜찮아요\n아이로와 함께해요!"}</Text>
 
         <View style={styles.searchArea}>
           <View style={styles.searchBox}>
@@ -440,10 +444,10 @@ export default function HomeScreen() {
               아직 인기 콘텐츠가 없어요
             </Text>
           ) : (
-            popularItems.map((item, index) => (
+            popularItems.slice(0, 3).map((item, index, arr) => (
               <TouchableOpacity
                 key={`${item.type}-${item.id}`}
-                style={[styles.recommendItem, index === popularItems.length - 1 && styles.recommendItemLast]}
+                style={[styles.recommendItem, index === arr.length - 1 && styles.recommendItemLast]}
                 activeOpacity={0.7}
                 onPress={() => item.type === 'qna'
                   ? router.push(`/qna/${item.id}` as any)
@@ -453,16 +457,14 @@ export default function HomeScreen() {
                 <Text style={styles.recommendNum}>{index + 1}</Text>
                 <View style={styles.recommendContent}>
                   <View style={styles.recommendMeta}>
-                    {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
+                      <View style={styles.categoryBadge}>
+                        <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                      </View>
                     </View>
                   </View>
                   <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
-                  <Ionicons name="bookmark" size={12} color="#9CAF88" />
-                  <Text style={{ fontSize: 12, color: '#9CAF88' }}>{item.scrapCount}</Text>
-                </View>
                 </View>
               </TouchableOpacity>
             ))
@@ -470,11 +472,23 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+      <View style={styles.speechBubbleWrapper}>
+        <Svg
+          width={115} height={74} viewBox="0 0 95 60"
+          style={Platform.OS === 'web' ? { filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.25))' } as any : undefined}
+        >
+          <Ellipse cx={46.5} cy={25} rx={45.5} ry={25} fill="white" />
+          <Path d="M84.5596 54.0391L64.9844 40.0523L82.2344 30.093L84.5596 54.0391Z" fill="white" />
+        </Svg>
+        <View style={styles.speechBubbleTextArea}>
+          <Text style={styles.speechBubbleText}>{"챗봇 '아이로'에게\n물어보세요!"}</Text>
+        </View>
+      </View>
+
       <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
         <Image source={require('../../assets/chatbot_logo.png')} style={styles.aiFabImage} resizeMode="contain" />
       </TouchableOpacity>
 
-      <TutorialSlideshow visible={tutorialVisible} onDone={handleTutorialDone} />
     </SafeAreaView>
   );
 }
@@ -483,7 +497,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
 
   topBar: { alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 8 },
+  heroSection: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
   bellBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 20,
     width: 48, height: 48, borderRadius: 9999,
     backgroundColor: '#fff',
     justifyContent: 'center', alignItems: 'center',
@@ -493,17 +516,25 @@ const styles = StyleSheet.create({
   },
   notiBadge: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' },
 
-  titleRow: {
-    flexDirection: 'row', alignItems: 'flex-start',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20, gap: 12,
+  bellRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
-  mainTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
-  mainSub: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    justifyContent: 'space-between',
+  },
+  heroLogo: { width: 134, height: 134, marginBottom: 0 },
+  mainTitle: { fontSize: 18, fontWeight: '400', color: '#586144', lineHeight: 32, letterSpacing: 0.07, textAlign: 'center', fontFamily: 'AiroFont', paddingHorizontal: 20, marginTop: -8, marginBottom: 12 },
 
   recommendTitle: {
     fontSize: 18, fontWeight: '700', color: '#586144',
     lineHeight: 30, letterSpacing: -0.449,
-    marginHorizontal: 20, marginTop: 20, marginBottom: 8,
+    marginHorizontal: 20, marginTop: 8, marginBottom: 8,
   },
   recommendContainer: {
     marginHorizontal: 20,
@@ -521,7 +552,8 @@ const styles = StyleSheet.create({
   recommendItemLast: { borderBottomWidth: 0 },
   recommendNum: { fontSize: 16, fontWeight: '700', color: '#586144', width: 18, textAlign: 'center' },
   recommendContent: { flex: 1, gap: 4 },
-  recommendMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  recommendMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  scrapMeta: { fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
   categoryBadge: {
     backgroundColor: '#EEF8D9', borderRadius: 9999,
     paddingHorizontal: 8, paddingVertical: 2,
@@ -617,8 +649,32 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: '#9CAF88', marginTop: 12 },
 
   aiFab: {
-    position: 'absolute', right: 6, bottom: 12,
-    width: 90, height: 90,
+    position: 'absolute', right: 0, bottom: -8,
+    width: 130, height: 130,
   },
-  aiFabImage: { width: 90, height: 90 },
+  aiFabImage: { width: 130, height: 130 },
+  speechBubbleWrapper: {
+    position: 'absolute',
+    right: 116,
+    bottom: 58,
+    width: 115,
+    height: 74,
+  },
+  speechBubbleTextArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speechBubbleText: {
+    color: '#8C937D',
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.07,
+    textAlign: 'center',
+    fontFamily: 'AiroFont',
+  },
 });

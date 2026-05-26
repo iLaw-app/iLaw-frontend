@@ -24,13 +24,14 @@ function HighlightText({ text, keywords, style }: { text: string; keywords: stri
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 const SLUG_TO_NAME: Record<string, string> = {
-  'finance': '금융(빚 사기 도박)',
+  'finance': '금융',
   'labor': '노동',
-  'sexual-violence': '성폭력 데이트폭력 성착취',
+  'sexual-violence': '성폭력',
   'child-abuse': '아동학대/가정폭력',
   'online-violence': '온라인폭력',
-  'birth-and-parenting': '출생과 양육',
-  'parental-rights': '친권 미성년후견',
+  'birth-and-parenting': '출생/양육',
+  'parental-rights': '법정대리인',
+  'school-violence': '학교폭력',
 };
 
 type Article = { id: number; question: string; summary: string | null; order: number };

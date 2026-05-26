@@ -114,7 +114,7 @@ export default function ManualDetailScreen() {
 
           {article.summary && (
             <View style={s.summaryBox}>
-              <Text style={s.summaryText}>{stripInline(article.summary)}</Text>
+              <Text style={s.summaryText}>{article.summary}</Text>
             </View>
           )}
 

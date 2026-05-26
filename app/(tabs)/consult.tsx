@@ -69,6 +69,14 @@ function IconBaby() {
   );
 }
 
+function IconSchool() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path d="M22 10V6L12 2L2 6V10C2 15.55 6.84 20.74 12 22C17.16 20.74 22 15.55 22 10Z" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
+    </Svg>
+  );
+}
+
 function IconScale() {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -89,6 +97,7 @@ const categories = [
   { id: 'online-violence',     label: '온라인폭력',        desc: '사이버 괴롭힘, 악플, 신고',  Icon: IconWifi },
   { id: 'birth-and-parenting', label: '출생·양육',         desc: '출생신고, 입양, 양육비',     Icon: IconBaby },
   { id: 'parental-rights',     label: '법정대리인',        desc: '친권, 후견, 보호제도',       Icon: IconScale },
+  { id: 'school-violence',    label: '학교폭력',          desc: '학교폭력, 신고절차, 보호',   Icon: IconSchool },
 ];
 
 export default function ManualScreen() {

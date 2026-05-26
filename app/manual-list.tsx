@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { BottomNav } from '../components/BottomNav';
+import { cacheGet, cacheSet } from '../utils/cache';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.filter(k => k.trim());
@@ -51,9 +52,12 @@ export default function ManualListScreen() {
 
 
   useEffect(() => {
+    const cacheKey = `manual-articles-${categoryId}`;
+    const cached = cacheGet<Article[]>(cacheKey, 300_000); // 5분 캐시
+    if (cached) { setArticles(cached); setLoading(false); return; }
     fetch(`${API_BASE}/manual/categories/${categoryId}/articles`)
       .then(r => r.json())
-      .then(data => setArticles(Array.isArray(data) ? data : []))
+      .then(data => { const list = Array.isArray(data) ? data : []; cacheSet(cacheKey, list); setArticles(list); })
       .catch(() => setArticles([]))
       .finally(() => setLoading(false));
   }, [categoryId]);

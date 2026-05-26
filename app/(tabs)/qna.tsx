@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
+import { cacheGet, cacheSet } from '../../utils/cache';
 
 function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
   const active = keywords.map(k => k.trim()).filter(k => k);
@@ -95,38 +96,22 @@ export default function QnaPage() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
+      const cacheKey = `qa-list-${accessToken ?? 'guest'}`;
+      const cached = cacheGet<QnAPost[]>(cacheKey, 30_000);
+      if (cached) { setPosts(cached); setLoadedOnce(true); setLoading(false); return; }
       if (!loadedOnce) setLoading(true);
       const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : null;
       const options = authHeaders ? { headers: authHeaders } : undefined;
       fetch(`${API_BASE}/qa`, options)
         .then(r => r.json())
-        .then(async (data) => {
+        .then((data) => {
           if (cancelled) return;
           const list: QnAPost[] = Array.isArray(data) ? data : [];
-          if (authHeaders && list.length > 0) {
-            const withScrap = await Promise.all(
-              list.map(async (post) => {
-                try {
-                  const res = await fetch(`${API_BASE}/qa/${post.id}/scrap`, { headers: authHeaders });
-                  if (res.ok) {
-                    const scrapData = await res.json();
-                    return { ...post, scrapCount: scrapData.count };
-                  }
-                } catch {}
-                return post;
-              })
-            );
-            if (!cancelled) { setPosts(withScrap); setLoadedOnce(true); }
-          } else {
-            if (!cancelled) { setPosts(list); setLoadedOnce(true); }
-          }
+          cacheSet(cacheKey, list);
+          if (!cancelled) { setPosts(list); setLoadedOnce(true); }
         })
-        .catch(() => {
-          if (!cancelled) setPosts([]);
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        .catch(() => { if (!cancelled) setPosts([]); })
+        .finally(() => { if (!cancelled) setLoading(false); });
       return () => { cancelled = true; };
     }, [accessToken, loadedOnce])
   );

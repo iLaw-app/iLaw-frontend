@@ -6,6 +6,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../context/auth';
+import { cacheGet, cacheSet } from '../../utils/cache';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -228,6 +229,9 @@ export default function CommunityScreen() {
     useCallback(() => {
       let cancelled = false;
       async function loadPosts() {
+        const cacheKey = 'community-list';
+        const cached = cacheGet<any[]>(cacheKey, 30_000);
+        if (cached) { setPosts(cached); setLoading(false); return; }
         setLoading(true);
         try {
           const headers: Record<string, string> = {};
@@ -237,18 +241,8 @@ export default function CommunityScreen() {
             const data = await res.json();
             const list: any[] = Array.isArray(data) ? data : Array.isArray(data.posts) ? data.posts : [];
             const posts = list.map((p: any) => ({ ...p, poll: mapPoll(p.poll) }));
+            cacheSet(cacheKey, posts);
             setPosts(posts);
-            // 목록 API가 imageUrls를 포함하지 않으므로 상세 API로 보강
-            if (posts.length > 0) {
-              Promise.all(
-                posts.map(p =>
-                  fetch(`${API_BASE}/community/${p.id}`, { headers })
-                    .then(r => r.ok ? r.json() : null)
-                    .then(d => ({ ...p, imageUrls: d?.imageUrls ?? [] }))
-                    .catch(() => ({ ...p, imageUrls: [] }))
-                )
-              ).then(enriched => { if (!cancelled) setPosts(enriched); });
-            }
           }
         } catch {
           if (!cancelled) setPosts([]);

@@ -68,28 +68,14 @@ export default function MyScrapsScreen() {
   const [loadingQna, setLoadingQna] = useState(true);
   const [loadingCommunity, setLoadingCommunity] = useState(true);
 
+  const [loadedTabs, setLoadedTabs] = useState<Set<Tab>>(new Set());
+
   const fetchManual = useCallback(() => {
     if (!accessToken) { setLoadingManual(false); return; }
     setLoadingManual(true);
-    const headers = { Authorization: `Bearer ${accessToken}` };
-    fetch(`${API_BASE}/manual/my-scraps`, { headers })
+    fetch(`${API_BASE}/manual/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
-      .then(async (data) => {
-        const list: ManualScrap[] = Array.isArray(data) ? data : [];
-        const withScrap = await Promise.all(
-          list.map(async (item) => {
-            try {
-              const res = await fetch(`${API_BASE}/manual/articles/${item.id}/scrap`, { headers });
-              if (res.ok) {
-                const scrapData = await res.json();
-                return { ...item, scrapCount: scrapData.count };
-              }
-            } catch {}
-            return item;
-          })
-        );
-        setManualItems(withScrap);
-      })
+      .then(data => setManualItems(Array.isArray(data) ? data : []))
       .catch(() => setManualItems([]))
       .finally(() => setLoadingManual(false));
   }, [accessToken]);
@@ -97,35 +83,9 @@ export default function MyScrapsScreen() {
   const fetchQna = useCallback(() => {
     if (!accessToken) { setLoadingQna(false); return; }
     setLoadingQna(true);
-    const headers = { Authorization: `Bearer ${accessToken}` };
-    fetch(`${API_BASE}/qa/my-scraps`, { headers })
+    fetch(`${API_BASE}/qa/my-scraps`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
-      .then(async (data) => {
-        const list: QnaScrap[] = Array.isArray(data) ? data : [];
-        const withData = await Promise.all(
-          list.map(async (item) => {
-            try {
-              const [detailRes, scrapRes] = await Promise.all([
-                fetch(`${API_BASE}/qa/${item.id}`, { headers }),
-                fetch(`${API_BASE}/qa/${item.id}/scrap`, { headers }),
-              ]);
-              const result = { ...item };
-              if (detailRes.ok) {
-                const detail = await detailRes.json();
-                result.content = detail.content ?? undefined;
-                result.author = detail.author ?? undefined;
-              }
-              if (scrapRes.ok) {
-                const scrapData = await scrapRes.json();
-                result.scrapCount = scrapData.count;
-              }
-              return result;
-            } catch {}
-            return item;
-          })
-        );
-        setQnaItems(withData);
-      })
+      .then(data => setQnaItems(Array.isArray(data) ? data : []))
       .catch(() => setQnaItems([]))
       .finally(() => setLoadingQna(false));
   }, [accessToken]);
@@ -140,7 +100,14 @@ export default function MyScrapsScreen() {
       .finally(() => setLoadingCommunity(false));
   }, [accessToken]);
 
-  useEffect(() => { fetchManual(); fetchQna(); fetchCommunity(); }, [fetchManual, fetchQna, fetchCommunity]);
+  // 탭 전환 시에만 해당 탭 로드 (lazy load)
+  useEffect(() => {
+    if (loadedTabs.has(activeTab)) return;
+    setLoadedTabs(prev => new Set(prev).add(activeTab));
+    if (activeTab === 'manual') fetchManual();
+    else if (activeTab === 'qna') fetchQna();
+    else fetchCommunity();
+  }, [activeTab, accessToken]);
 
   const loading = activeTab === 'manual' ? loadingManual : activeTab === 'qna' ? loadingQna : loadingCommunity;
 

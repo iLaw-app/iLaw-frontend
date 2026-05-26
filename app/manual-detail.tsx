@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/auth';
 import { BottomNav } from '../components/BottomNav';
+import RenderHtml, { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -16,76 +17,32 @@ type ArticleDetail = {
   category: { name: string; slug: string };
 };
 
-function stripInline(text: string) {
-  return text
-    .replace(/!\[.*?\]\(.*?\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .trim();
-}
-
-function MarkdownRenderer({ content }: { content: string }) {
-  const lines = content.split('\n');
-  const elements: React.ReactNode[] = [];
-  let bulletBuffer: string[] = [];
-  let key = 0;
-
-  const flushBullets = () => {
-    if (bulletBuffer.length === 0) return;
-    elements.push(
-      <View key={`b-${key++}`} style={s.bulletContainer}>
-        {bulletBuffer.map((item, i) => (
-          <View key={i} style={s.bulletItem}>
-            <Text style={s.bulletDot}>•</Text>
-            <Text style={s.bulletText}>{stripInline(item)}</Text>
-          </View>
-        ))}
-      </View>
-    );
-    bulletBuffer = [];
-  };
-
-  for (const line of lines) {
-    const t = line.trim();
-    if (/^-{3,}$/.test(t)) {
-      flushBullets();
-      elements.push(<View key={key++} style={s.divider} />);
-    } else if (t.startsWith('|')) {
-      // skip table rows
-    } else if (t.startsWith('![')) {
-      flushBullets();
-      const imgMatch = t.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-      if (imgMatch) {
-        elements.push(
-          <Image key={key++} source={{ uri: imgMatch[2] }} style={s.contentImage} resizeMode="contain" />
-        );
-      }
-    } else if (t.startsWith('>')) {
-      flushBullets();
-      const quotedText = stripInline(t.replace(/^>\s*/, ''));
-      if (quotedText) {
-        elements.push(<Text key={key++} style={s.blockquote}>{quotedText}</Text>);
-      }
-    } else if (t.startsWith('## ')) {
-      flushBullets();
-      elements.push(<Text key={key++} style={s.heading}>{stripInline(t.slice(3))}</Text>);
-    } else if (t.startsWith('### ')) {
-      flushBullets();
-      elements.push(<Text key={key++} style={s.subheading}>{stripInline(t.slice(4))}</Text>);
-    } else if (t.startsWith('- ') || t.startsWith('* ')) {
-      bulletBuffer.push(t.slice(2));
-    } else if (t === '') {
-      flushBullets();
-    } else {
-      flushBullets();
-      const cleaned = stripInline(t);
-      if (cleaned) {
-        elements.push(<Text key={key++} style={s.bodyText}>{cleaned}</Text>);
-      }
-    }
-  }
-  flushBullets();
-  return <>{elements}</>;
+function HtmlRenderer({ content }: { content: string }) {
+  const { width } = useWindowDimensions();
+  return (
+    <RenderHtml
+      contentWidth={width - 40}
+      source={{ html: content }}
+      tagsStyles={{
+        h2: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
+        h3: { fontSize: 15, fontWeight: '700', color: '#333', marginTop: 18, marginBottom: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: '#CCD9BA' },
+        p: { fontSize: 14, color: '#364153', lineHeight: 23, marginBottom: 10 },
+        li: { fontSize: 14, color: '#364153', lineHeight: 22 },
+        ul: { marginBottom: 10 },
+        ol: { marginBottom: 10 },
+        strong: { fontWeight: '700' },
+        blockquote: { fontSize: 14, color: '#364153', lineHeight: 22, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F7FEE7', borderTopRightRadius: 10, borderBottomRightRadius: 10, borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA', marginBottom: 8 },
+        figcaption: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 4 },
+        hr: { backgroundColor: '#eee', height: 1, marginVertical: 12 },
+      }}
+      classesStyles={{
+        'bulleted-list': { marginBottom: 10 },
+      }}
+      renderersProps={{
+        img: { enableExperimentalPercentWidth: true },
+      }}
+    />
+  );
 }
 
 export default function ManualDetailScreen() {
@@ -161,7 +118,7 @@ export default function ManualDetailScreen() {
             </View>
           )}
 
-          <MarkdownRenderer content={article.content ?? ''} />
+          <HtmlRenderer content={article.content ?? ''} />
 
           <View style={s.scrapArea}>
             <TouchableOpacity
@@ -206,28 +163,7 @@ const s = StyleSheet.create({
     borderLeftColor: '#CCD9BA',
   },
   summaryText: { fontSize: 15, color: '#364153', lineHeight: 22, fontWeight: '500' },
-  heading: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
-  subheading: {
-    fontSize: 15, fontWeight: '700', color: '#333',
-    marginTop: 18, marginBottom: 8, paddingLeft: 10,
-    borderLeftWidth: 3, borderLeftColor: '#CCD9BA',
-  },
-  bodyText: { fontSize: 14, color: '#364153', lineHeight: 23, marginBottom: 10 },
-  bulletContainer: { marginBottom: 10 },
-  bulletItem: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  bulletDot: { fontSize: 14, color: '#586144', lineHeight: 22, marginTop: 1 },
-  bulletText: { flex: 1, fontSize: 14, color: '#364153', lineHeight: 22 },
   headerDivider: { height: 2.5, backgroundColor: '#CCD9BA', width: 348, alignSelf: 'center', marginTop: 8, marginBottom: 8 },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
-  contentImage: { width: '100%', height: 200, borderRadius: 8, marginBottom: 12 },
-  blockquote: {
-    fontSize: 14, color: '#364153', lineHeight: 22,
-    paddingHorizontal: 12, paddingVertical: 12,
-    backgroundColor: '#F7FEE7',
-    borderTopRightRadius: 10, borderBottomRightRadius: 10,
-    borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA',
-    marginBottom: 8,
-  },
   scrapArea: { alignItems: 'center', marginTop: 36, marginBottom: 40 },
   scrapBtn: {
     width: 290,

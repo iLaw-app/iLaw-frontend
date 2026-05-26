@@ -145,14 +145,17 @@ function PostCard({ item, onPress, isOwner, onMenuPress, keywords = [] }: {
         </View>
       </View>
 
-      <HighlightText text={item.title} keywords={keywords} style={styles.title} />
-      {item.content ? (
-        <HighlightText text={item.content} keywords={keywords} style={styles.content} numberOfLines={3} />
-      ) : null}
-
-      {item.imageUrls && item.imageUrls.length > 0 && (
-        <Image source={{ uri: item.imageUrls[0] }} style={styles.cardThumb} resizeMode="cover" />
-      )}
+      <View style={styles.cardBody}>
+        <View style={styles.cardTextArea}>
+          <HighlightText text={item.title} keywords={keywords} style={styles.title} />
+          {item.content ? (
+            <HighlightText text={item.content} keywords={keywords} style={styles.content} numberOfLines={2} />
+          ) : null}
+        </View>
+        {item.imageUrls && item.imageUrls.length > 0 && (
+          <Image source={{ uri: item.imageUrls[0] }} style={styles.cardThumb} resizeMode="cover" />
+        )}
+      </View>
 
       {item.poll && (
         <View style={styles.poll}>
@@ -432,7 +435,9 @@ const styles = StyleSheet.create({
 
   poll: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 16, gap: 8, marginTop: 8, marginBottom: 4 },
 
-  cardThumb: { width: 100, height: 100, borderRadius: 10, marginTop: 8 },
+  cardBody: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  cardTextArea: { flex: 1 },
+  cardThumb: { width: 72, height: 72, borderRadius: 8, flexShrink: 0 },
   cardBottom: { flexDirection: 'row', gap: 12, marginTop: 12 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 13, color: '#6A7282' },

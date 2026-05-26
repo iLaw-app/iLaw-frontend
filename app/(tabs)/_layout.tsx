@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity, StyleSheet, BackHandler, Platform } from 'react-native';
 import { TutorialSlideshow } from '../../components/TutorialSlideshow';
-import { useTutorial } from '../context/tutorial';
+import { useTutorial } from '../../contexts/tutorial';
 
 const TAB_SCREENS = [
   { name: 'home',      title: '홈',       icon: 'home-outline'        } as const,

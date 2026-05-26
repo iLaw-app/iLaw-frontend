@@ -4,8 +4,8 @@ import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
 import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth';
-import { NotificationSettingsProvider } from './context/notificationSettings';
-import { TutorialProvider, useTutorial } from './context/tutorial';
+import { NotificationSettingsProvider } from '../contexts/notificationSettings';
+import { TutorialProvider, useTutorial } from '../contexts/tutorial';
 import { TutorialSlideshow } from '../components/TutorialSlideshow';
 
 function WebTutorialOverlay() {

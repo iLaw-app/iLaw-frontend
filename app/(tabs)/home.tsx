@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, ClipPath, Rect, Defs, Ellipse } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import * as SecureStore from 'expo-secure-store';
-import { useTutorial } from '../context/tutorial';
+import { useTutorial } from '../../contexts/tutorial';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 

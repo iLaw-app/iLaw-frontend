@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './context/auth';
-import { useNotificationSettings } from './context/notificationSettings';
+import { useNotificationSettings } from '../contexts/notificationSettings';
 import { BottomNav } from '../components/BottomNav';
 
 function CustomToggle({ value, onValueChange }: { value: boolean; onValueChange: () => void }) {

@@ -5,7 +5,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from './context/auth';
-import { useNotificationSettings } from './context/notificationSettings';
+import { useNotificationSettings } from '../contexts/notificationSettings';
 import { BottomNav } from '../components/BottomNav';
 
 type NotificationSettingKey = 'answer' | 'scrap' | 'manual' | 'newQuestion' | 'community';

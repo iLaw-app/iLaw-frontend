@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, BackHandler, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -43,6 +43,19 @@ const LAWYER_MENU_ITEMS = [
 export default function ProfilePage() {
   const router = useRouter();
   const { user, role, setRoleOverride } = useAuth();
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVersionTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 1500);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      setRoleOverride(role === 'lawyer' ? 'user' : 'lawyer');
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -112,26 +125,19 @@ export default function ProfilePage() {
             );
           })}
           <View style={styles.menuDivider} />
-          <View style={styles.menuRow}>
+          <TouchableOpacity
+            style={styles.menuRow}
+            activeOpacity={1}
+            onPress={handleVersionTap}
+          >
             <View style={styles.menuLeft}>
               <Ionicons name="information-circle-outline" size={20} color="#586144" />
               <Text style={styles.menuLabel}>앱버전</Text>
             </View>
             <Text style={styles.versionText}>v1.0.0</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* DEV: 역할 전환 */}
-        <TouchableOpacity
-          style={styles.devToggle}
-          onPress={() => setRoleOverride(role === 'lawyer' ? 'user' : 'lawyer')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="swap-horizontal-outline" size={14} color="#9CAF88" />
-          <Text style={styles.devToggleText}>
-            [DEV] {role === 'lawyer' ? '변호사 모드' : '유저 모드'} — 탭하여 전환
-          </Text>
-        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>

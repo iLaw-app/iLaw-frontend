@@ -1,13 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/auth';
 import { BottomNav } from '../components/BottomNav';
-import RenderHtml, { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
-import TableRenderer, { tableModel, IGNORED_TAGS, cssRules } from '@native-html/table-plugin';
-import WebView from 'react-native-webview';
+import RenderHtml from 'react-native-render-html';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -19,47 +17,103 @@ type ArticleDetail = {
   category: { name: string; slug: string };
 };
 
-const renderers = { table: TableRenderer };
-const customHTMLElementModels = { table: tableModel };
+type Cell = { text: string; isHeader: boolean };
+type TableRow = Cell[];
+
+function parseTableRows(tableHtml: string): TableRow[] {
+  const rows: TableRow[] = [];
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let trMatch;
+  while ((trMatch = trRegex.exec(tableHtml)) !== null) {
+    const cells: Cell[] = [];
+    const cellRegex = /<(th|td)[^>]*>([\s\S]*?)<\/\1>/gi;
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(trMatch[1])) !== null) {
+      cells.push({
+        isHeader: cellMatch[1].toLowerCase() === 'th',
+        text: cellMatch[2].replace(/<[^>]+>/g, '').trim(),
+      });
+    }
+    if (cells.length > 0) rows.push(cells);
+  }
+  return rows;
+}
+
+function NativeTable({ rows }: { rows: TableRow[] }) {
+  if (rows.length === 0) return null;
+  const colCount = Math.max(...rows.map(r => r.length));
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={ts.wrapper}>
+      <View style={ts.table}>
+        {rows.map((row, ri) => (
+          <View key={ri} style={[ts.row, ri % 2 === 1 && ts.rowEven]}>
+            {Array.from({ length: colCount }).map((_, ci) => {
+              const cell = row[ci];
+              return (
+                <View key={ci} style={[ts.cell, cell?.isHeader && ts.headerCell]}>
+                  <Text style={[ts.cellText, cell?.isHeader && ts.headerText]}>
+                    {cell?.text ?? ''}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+type HtmlSegment = { type: 'html'; html: string } | { type: 'table'; rows: TableRow[] };
+
+function splitSegments(html: string): HtmlSegment[] {
+  const segments: HtmlSegment[] = [];
+  const tableRegex = /<table[\s\S]*?<\/table>/gi;
+  let last = 0;
+  let m;
+  while ((m = tableRegex.exec(html)) !== null) {
+    if (m.index > last) segments.push({ type: 'html', html: html.slice(last, m.index) });
+    segments.push({ type: 'table', rows: parseTableRows(m[0]) });
+    last = m.index + m[0].length;
+  }
+  if (last < html.length) segments.push({ type: 'html', html: html.slice(last) });
+  return segments;
+}
+
+const HTML_TAGS_STYLES = {
+  h2: { fontSize: 16, fontWeight: '700' as const, color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
+  h3: { fontSize: 15, fontWeight: '700' as const, color: '#333', marginTop: 18, marginBottom: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: '#CCD9BA' },
+  p: { fontSize: 14, color: '#364153', lineHeight: 23, marginBottom: 10 },
+  li: { fontSize: 14, color: '#364153', lineHeight: 22 },
+  ul: { marginBottom: 10, paddingLeft: 22 },
+  ol: { marginBottom: 10, paddingLeft: 22 },
+  strong: { fontWeight: '700' as const },
+  blockquote: { fontSize: 14, color: '#364153', lineHeight: 22, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F7FEE7', borderTopRightRadius: 10, borderBottomRightRadius: 10, borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA', marginBottom: 8 },
+  figcaption: { fontSize: 12, color: '#888', textAlign: 'center' as const, marginTop: 4 },
+  hr: { backgroundColor: '#eee', height: 1, marginVertical: 12 },
+  mark: { backgroundColor: 'transparent' as const, color: '#364153' },
+};
 
 function HtmlRenderer({ content }: { content: string }) {
   const { width } = useWindowDimensions();
-  const contentWidth = Platform.OS === 'web' ? Math.min(width, 390) - 40 : width - 40;
+  const segments = splitSegments(content);
   return (
-    <RenderHtml
-      contentWidth={contentWidth}
-      source={{ html: content }}
-      renderers={renderers}
-      customHTMLElementModels={customHTMLElementModels}
-      WebView={WebView}
-      renderersProps={{
-        img: { enableExperimentalPercentWidth: true },
-        table: {
-          cssRules: cssRules + `
-            table { border-collapse: collapse; width: 100%; font-size: 13px; }
-            th, td { border: 1px solid #CCD9BA; padding: 7px 10px; color: #364153; }
-            th { background-color: #F0F7E0; font-weight: bold; text-align: center; }
-            tr:nth-child(even) { background-color: #F9FCF4; }
-          `,
-        },
-      }}
-      tagsStyles={{
-        h2: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
-        h3: { fontSize: 15, fontWeight: '700', color: '#333', marginTop: 18, marginBottom: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: '#CCD9BA' },
-        p: { fontSize: 14, color: '#364153', lineHeight: 23, marginBottom: 10 },
-        li: { fontSize: 14, color: '#364153', lineHeight: 22 },
-        ul: { marginBottom: 10, paddingLeft: 22 },
-        ol: { marginBottom: 10, paddingLeft: 22 },
-        strong: { fontWeight: '700' },
-        blockquote: { fontSize: 14, color: '#364153', lineHeight: 22, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F7FEE7', borderTopRightRadius: 10, borderBottomRightRadius: 10, borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA', marginBottom: 8 },
-        figcaption: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 4 },
-        hr: { backgroundColor: '#eee', height: 1, marginVertical: 12 },
-        mark: { backgroundColor: 'transparent', color: '#364153' },
-      }}
-      classesStyles={{
-        'bulleted-list': { marginBottom: 10 },
-      }}
-    />
+    <View>
+      {segments.map((seg, i) =>
+        seg.type === 'table' ? (
+          <NativeTable key={i} rows={seg.rows} />
+        ) : (
+          <RenderHtml
+            key={i}
+            contentWidth={width - 40}
+            source={{ html: seg.html }}
+            tagsStyles={HTML_TAGS_STYLES}
+            classesStyles={{ 'bulleted-list': { marginBottom: 10 } }}
+            renderersProps={{ img: { enableExperimentalPercentWidth: true } }}
+          />
+        )
+      )}
+    </View>
   );
 }
 
@@ -154,6 +208,17 @@ export default function ManualDetailScreen() {
     </SafeAreaView>
   );
 }
+
+const ts = StyleSheet.create({
+  wrapper: { marginBottom: 12 },
+  table: { borderWidth: 1, borderColor: '#CCD9BA', borderRadius: 6, overflow: 'hidden' },
+  row: { flexDirection: 'row', backgroundColor: '#fff' },
+  rowEven: { backgroundColor: '#F9FCF4' },
+  cell: { flex: 1, minWidth: 80, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#CCD9BA', paddingHorizontal: 10, paddingVertical: 7 },
+  headerCell: { backgroundColor: '#F0F7E0' },
+  cellText: { fontSize: 13, color: '#364153', lineHeight: 18 },
+  headerText: { fontWeight: '700', textAlign: 'center' },
+});
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },

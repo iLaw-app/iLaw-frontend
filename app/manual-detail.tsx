@@ -35,6 +35,7 @@ function HtmlRenderer({ content }: { content: string }) {
         blockquote: { fontSize: 14, color: '#364153', lineHeight: 22, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F7FEE7', borderTopRightRadius: 10, borderBottomRightRadius: 10, borderLeftWidth: 3.861, borderLeftColor: '#CCD9BA', marginBottom: 8 },
         figcaption: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 4 },
         hr: { backgroundColor: '#eee', height: 1, marginVertical: 12 },
+        mark: { backgroundColor: 'transparent', color: '#364153' },
       }}
       classesStyles={{
         'bulleted-list': { marginBottom: 10 },

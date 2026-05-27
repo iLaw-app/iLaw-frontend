@@ -475,10 +475,10 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.speechBubbleWrapper}>
+      <View style={[styles.speechBubbleWrapper, Platform.OS === 'web' && { shadowOpacity: 0, elevation: 0 } as any]}>
         <Svg
           width={115} height={74} viewBox="0 0 95 60"
-          style={Platform.OS === 'web' ? { filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.25))' } as any : undefined}
+          style={Platform.OS === 'web' ? { filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.25))' } as any : undefined}
         >
           <Ellipse cx={46.5} cy={25} rx={45.5} ry={25} fill="white" />
           <Path d="M84.5596 54.0391L64.9844 40.0523L82.2344 30.093L84.5596 54.0391Z" fill="white" />
@@ -662,6 +662,11 @@ const styles = StyleSheet.create({
     bottom: 58,
     width: 115,
     height: 74,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1,
+    elevation: 2,
   },
   speechBubbleTextArea: {
     position: 'absolute',

@@ -1,10 +1,5 @@
-import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-const BASE_W = Math.min(screenWidth, 390);
-const LOGO_W = BASE_W - 75;
-const LOGO_H = LOGO_W * (2622 / 1206);
 
 export default function SplashScreen() {
   return (
@@ -17,7 +12,7 @@ export default function SplashScreen() {
       />
 
       {/* 텍스트 — 로고 위(앞)에 렌더링 */}
-      <View style={styles.textArea}>
+      <View style={[styles.textArea, Platform.OS === 'web' && { paddingTop: 170 }]}>
         <Text style={styles.tagline}>아이들을 위한 길,{'\n'}아이들을 위한 LAW</Text>
         <Text style={styles.appName}>아이로</Text>
       </View>
@@ -30,27 +25,31 @@ const styles = StyleSheet.create({
 
   robotImage: {
     position: 'absolute',
-    left: 100,
-    bottom: -80,
-    width: LOGO_W,
-    height: LOGO_H,
+    left: 112,
+    bottom: 146.94,
+    width: 262,
+    height: 323,
+    aspectRatio: 73 / 90,
   },
   textArea: {
-    paddingTop: screenHeight * 0.22,
+    position: 'absolute',
+    paddingTop: 211,
     paddingHorizontal: 36,
   },
   tagline: {
-    fontSize: 30,
+    width: 280,
+    fontSize: 24,
     color: '#69764C',
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 32,
     letterSpacing: 0.07,
-    marginBottom: 10,
+    marginBottom: 17,
     fontFamily: 'AiroFont',
   },
   appName: {
-    fontSize: 64,
-    fontWeight: '700',
+    width: 300,
+    fontSize: 75,
+    fontWeight: '400',
     color: '#586144',
     lineHeight: 72,
     letterSpacing: 0.123,

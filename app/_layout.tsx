@@ -84,124 +84,127 @@ function AppNavigator() {
   const { setAuthTokens, clearAuth, setUser } = useAuth();
 
   useEffect(() => {
-    let cancelled = false;
+    // DEV: splash preview — set true to restore normal flow
+    const DEV_SPLASH_ONLY = false;
+    if (!DEV_SPLASH_ONLY) {
+      let cancelled = false;
 
-    async function fetchMe(accessToken: string): Promise<UserInfo | null> {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      return res.ok ? res.json() : null;
-    }
+      async function fetchMe(accessToken: string): Promise<UserInfo | null> {
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        return res.ok ? res.json() : null;
+      }
 
-    async function refreshTokens(refreshToken: string) {
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      return res.ok ? res.json() as Promise<{ accessToken: string; refreshToken: string }> : null;
-    }
+      async function refreshTokens(refreshToken: string) {
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        return res.ok ? res.json() as Promise<{ accessToken: string; refreshToken: string }> : null;
+      }
 
-    function routeByProfile(user: UserInfo | null, profileCompleted?: boolean) {
-      router.replace((profileCompleted ?? user?.profileCompleted) ? '/(tabs)/home' : '/onboarding');
-    }
+      function routeByProfile(user: UserInfo | null, profileCompleted?: boolean) {
+        router.replace((profileCompleted ?? user?.profileCompleted) ? '/(tabs)/home' : '/onboarding');
+      }
 
-    async function handleAuthCallback(url: string): Promise<boolean> {
-      const { path, queryParams } = Linking.parse(url);
-      if (path !== 'auth') return false;
+      async function handleAuthCallback(url: string): Promise<boolean> {
+        const { path, queryParams } = Linking.parse(url);
+        if (path !== 'auth') return false;
 
-      if (queryParams?.error) {
-        await clearAuth();
+        if (queryParams?.error) {
+          await clearAuth();
+          if (cancelled) return true;
+          Alert.alert('로그인 실패', '다시 시도해주세요.\n(' + queryParams.error + ')');
+          router.replace('/login');
+          return true;
+        }
+
+        const accessToken = queryParams?.accessToken as string | undefined;
+        const refreshToken = queryParams?.refreshToken as string | undefined;
+        if (!accessToken || !refreshToken) return false;
+
+        await setAuthTokens({ accessToken, refreshToken });
+        const user = await fetchMe(accessToken);
         if (cancelled) return true;
-        Alert.alert('로그인 실패', '다시 시도해주세요.\n(' + queryParams.error + ')');
-        router.replace('/login');
+        if (user) setUser(user);
+        const profileCompleted = queryParams?.profileCompleted === 'true';
+        routeByProfile(user, profileCompleted);
         return true;
       }
 
-      const accessToken = queryParams?.accessToken as string | undefined;
-      const refreshToken = queryParams?.refreshToken as string | undefined;
-      if (!accessToken || !refreshToken) return false;
+      async function restoreSession() {
+        const startTime = Date.now();
+        const minSplash = (ms: number) => new Promise<void>(resolve =>
+          setTimeout(resolve, Math.max(0, ms - (Date.now() - startTime)))
+        );
 
-      await setAuthTokens({ accessToken, refreshToken });
-      const user = await fetchMe(accessToken);
-      if (cancelled) return true;
-      if (user) setUser(user);
-      const profileCompleted = queryParams?.profileCompleted === 'true';
-      routeByProfile(user, profileCompleted);
-      return true;
-    }
+        const initialUrl = await Linking.getInitialURL();
+        if (cancelled) return;
+        if (initialUrl && await handleAuthCallback(initialUrl)) return;
 
-    async function restoreSession() {
-      const startTime = Date.now();
-      const minSplash = (ms: number) => new Promise<void>(resolve =>
-        setTimeout(resolve, Math.max(0, ms - (Date.now() - startTime)))
-      );
+        const stored = await getStoredTokens();
+        if (cancelled) return;
+        if (!stored.refreshToken) {
+          await clearAuth();
+          await minSplash(2000);
+          if (!cancelled) router.replace('/login');
+          return;
+        }
 
-      const initialUrl = await Linking.getInitialURL();
-      if (cancelled) return;
-      if (initialUrl && await handleAuthCallback(initialUrl)) return;
+        if (stored.accessToken) {
+          const user = await fetchMe(stored.accessToken).catch(() => null);
+          if (cancelled) return;
+          if (user) {
+            await setAuthTokens({ accessToken: stored.accessToken, refreshToken: stored.refreshToken });
+            setUser(user);
+            prefetchAll(stored.accessToken);
+            await minSplash(2000);
+            routeByProfile(user);
+            return;
+          }
+        }
 
-      const stored = await getStoredTokens();
-      if (cancelled) return;
-      if (!stored.refreshToken) {
-        await clearAuth();
-        await minSplash(2000);
-        if (!cancelled) router.replace('/login');
-        return;
-      }
+        const refreshed = await refreshTokens(stored.refreshToken).catch(() => null);
+        if (cancelled) return;
+        if (!refreshed) {
+          await clearAuth();
+          prefetchAll(null);
+          await minSplash(2000);
+          if (!cancelled) router.replace('/login');
+          return;
+        }
 
-      if (stored.accessToken) {
-        const user = await fetchMe(stored.accessToken).catch(() => null);
+        await setAuthTokens(refreshed);
+        const user = await fetchMe(refreshed.accessToken).catch(() => null);
         if (cancelled) return;
         if (user) {
-          await setAuthTokens({ accessToken: stored.accessToken, refreshToken: stored.refreshToken });
           setUser(user);
-          prefetchAll(stored.accessToken);
+          prefetchAll(refreshed.accessToken);
           await minSplash(2000);
           routeByProfile(user);
-          return;
+        } else {
+          await clearAuth();
+          prefetchAll(null);
+          await minSplash(2000);
+          if (!cancelled) router.replace('/login');
         }
       }
 
-      const refreshed = await refreshTokens(stored.refreshToken).catch(() => null);
-      if (cancelled) return;
-      if (!refreshed) {
-        await clearAuth();
-        prefetchAll(null);
-        await minSplash(2000);
-        if (!cancelled) router.replace('/login');
-        return;
-      }
+      restoreSession();
 
-      await setAuthTokens(refreshed);
-      const user = await fetchMe(refreshed.accessToken).catch(() => null);
-      if (cancelled) return;
-      if (user) {
-        setUser(user);
-        prefetchAll(refreshed.accessToken);
-        await minSplash(2000);
-        routeByProfile(user);
-      } else {
-        await clearAuth();
-        prefetchAll(null);
-        await minSplash(2000);
-        if (!cancelled) router.replace('/login');
-      }
-    }
-
-    restoreSession();
-
-    // Warm start: 앱 실행 중 딥링크 수신
-    const sub = Linking.addEventListener('url', ({ url }) => {
-      handleAuthCallback(url).catch(() => {
-        clearAuth().finally(() => router.replace('/login'));
+      const sub = Linking.addEventListener('url', ({ url }) => {
+        handleAuthCallback(url).catch(() => {
+          clearAuth().finally(() => router.replace('/login'));
+        });
       });
-    });
 
-    return () => {
-      cancelled = true;
-      sub.remove();
-    };
+      return () => {
+        cancelled = true;
+        sub.remove();
+      };
+    }
   }, []);
 
   if (!fontsLoaded) return null;

@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './context/auth';
 import { BottomNav } from '../components/BottomNav';
 import RenderHtml, { HTMLContentModel, HTMLElementModel } from 'react-native-render-html';
+import TableRenderer, { tableModel, IGNORED_TAGS, cssRules } from '@native-html/table-plugin';
+import WebView from 'react-native-webview';
 
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
@@ -17,6 +19,9 @@ type ArticleDetail = {
   category: { name: string; slug: string };
 };
 
+const renderers = { table: TableRenderer };
+const customHTMLElementModels = { table: tableModel };
+
 function HtmlRenderer({ content }: { content: string }) {
   const { width } = useWindowDimensions();
   const contentWidth = Platform.OS === 'web' ? Math.min(width, 390) - 40 : width - 40;
@@ -24,6 +29,20 @@ function HtmlRenderer({ content }: { content: string }) {
     <RenderHtml
       contentWidth={contentWidth}
       source={{ html: content }}
+      renderers={renderers}
+      customHTMLElementModels={customHTMLElementModels}
+      WebView={WebView}
+      renderersProps={{
+        img: { enableExperimentalPercentWidth: true },
+        table: {
+          cssRules: cssRules + `
+            table { border-collapse: collapse; width: 100%; font-size: 13px; }
+            th, td { border: 1px solid #CCD9BA; padding: 7px 10px; color: #364153; }
+            th { background-color: #F0F7E0; font-weight: bold; text-align: center; }
+            tr:nth-child(even) { background-color: #F9FCF4; }
+          `,
+        },
+      }}
       tagsStyles={{
         h2: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },
         h3: { fontSize: 15, fontWeight: '700', color: '#333', marginTop: 18, marginBottom: 8, paddingLeft: 10, borderLeftWidth: 3, borderLeftColor: '#CCD9BA' },
@@ -39,9 +58,6 @@ function HtmlRenderer({ content }: { content: string }) {
       }}
       classesStyles={{
         'bulleted-list': { marginBottom: 10 },
-      }}
-      renderersProps={{
-        img: { enableExperimentalPercentWidth: true },
       }}
     />
   );

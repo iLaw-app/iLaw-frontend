@@ -267,10 +267,9 @@ const styles = StyleSheet.create({
   noteBullet: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, width: 12 },
   placeholderNote: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312, flex: 1 },
 
-  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
+  photoRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, alignItems: 'center', marginTop: 15 },
   photoBtn: {
     flexDirection: 'row',
-    width: 112,
     height: 40,
     paddingHorizontal: 16,
     justifyContent: 'center',
@@ -278,8 +277,9 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 10,
     backgroundColor: '#F3F4F6',
+    alignSelf: 'flex-start',
   },
-  photoBtnText: { fontSize: 14, fontWeight: '600', color: '#364153' },
+  photoBtnText: { fontSize: 14, fontWeight: '600', color: '#364153', whiteSpace: 'nowrap' } as any,
   imageThumbWrap: { position: 'relative' },
   imageThumb: { width: 80, height: 80, borderRadius: 10 },
   imageRemove: {

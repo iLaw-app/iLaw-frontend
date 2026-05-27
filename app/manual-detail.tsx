@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,9 +19,10 @@ type ArticleDetail = {
 
 function HtmlRenderer({ content }: { content: string }) {
   const { width } = useWindowDimensions();
+  const contentWidth = Platform.OS === 'web' ? Math.min(width, 390) - 40 : width - 40;
   return (
     <RenderHtml
-      contentWidth={width - 40}
+      contentWidth={contentWidth}
       source={{ html: content }}
       tagsStyles={{
         h2: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginTop: 20, marginBottom: 10 },

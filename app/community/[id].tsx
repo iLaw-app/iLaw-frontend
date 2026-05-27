@@ -721,7 +721,6 @@ const s = StyleSheet.create({
   commentNickname: { fontSize: 13, fontWeight: '700', color: '#1E2939' },
   replyNickname: { fontSize: 13, fontWeight: '700', color: '#6A7282' },
   authorNickname: { fontSize: 14, fontWeight: '700', color: '#5A7B10', lineHeight: 20, letterSpacing: -0.15 },
-  deleteBtn: { fontSize: 12, color: '#C10007', fontWeight: '600' },
   replyDate: { fontSize: 11, color: '#6A7282' },
   commentText: { fontSize: 15, color: '#1a1a1a', lineHeight: 23, marginBottom: 6 },
   commentActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },

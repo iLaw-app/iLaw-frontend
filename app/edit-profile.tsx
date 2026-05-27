@@ -177,7 +177,7 @@ export default function EditProfileScreen() {
       });
 
       if (res.status === 409) {
-        Alert.alert('아이디 중복', '이미 사용 중인 아이디입니다.');
+        setNicknameError('이미 사용 중인 아이디입니다.');
         return;
       }
       if (res.status === 400) {

@@ -106,6 +106,14 @@ export default function AiChatScreen() {
 
   const scroll = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
+  // 새 질문 시작: 화면을 첫 인사로 초기화 (지난 대화는 서버에 그대로 보관됨)
+  const handleNewChat = () => {
+    Keyboard.dismiss();
+    setInput('');
+    setMessages([{ ...GREETING, time: nowStr() }]);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -145,13 +153,18 @@ export default function AiChatScreen() {
     <View style={s.container}>
       {/* Header extends into notch */}
       <View style={[s.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={22} color="#586144" />
-        </TouchableOpacity>
-        <View>
-          <Text style={s.headerTitle}>상황 진단하기</Text>
-          <Text style={s.headerSub}>AI 법률 진단 챗봇</Text>
+        <View style={s.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={22} color="#586144" />
+          </TouchableOpacity>
+          <View>
+            <Text style={s.headerTitle}>상황 진단하기</Text>
+            <Text style={s.headerSub}>AI 법률 진단 챗봇</Text>
+          </View>
         </View>
+        <TouchableOpacity style={s.newChatBtn} onPress={handleNewChat} activeOpacity={0.8}>
+          <Text style={s.newChatBtnText}>다른질문하기</Text>
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -280,15 +293,25 @@ const s = StyleSheet.create({
     backgroundColor: '#EFF4E1',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    gap: 4,
+    gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 6,
     elevation: 4,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
+  newChatBtn: {
+    backgroundColor: '#DFEDBE',
+    borderRadius: 9999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    flexShrink: 0,
+  },
+  newChatBtnText: { fontSize: 13, fontWeight: '700', color: '#586144' },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 26 },
   headerSub: { fontSize: 12, color: '#9CAF88', lineHeight: 18 },

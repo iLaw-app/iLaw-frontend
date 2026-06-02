@@ -1,6 +1,6 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Linking, ActivityIndicator, Pressable,
+  ScrollView, Linking, ActivityIndicator,
 } from 'react-native';
 import { AppModal } from '../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,7 +79,6 @@ export default function ManualHelpScreen() {
   const [regionModalVisible, setRegionModalVisible] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [tipsValues, setTipsValues] = useState<Record<TipsKey, string>>(initTips());
-  const [emergencyChoice, setEmergencyChoice] = useState<{ label: string; numbers: string[] } | null>(null);
 
   useEffect(() => {
     const url = selectedRegion === '전체'
@@ -110,20 +109,13 @@ export default function ManualHelpScreen() {
     Linking.openURL(`tel:${number.replace(/[^0-9]/g, '')}`);
   };
 
+  // "/", "또는", "," 모두 구분자로 처리 ("112 또는 1577-1391" → ["112", "1577-1391"])
   const getNumbers = (contact: string) =>
-    contact.split('/').map(n => n.trim()).filter(Boolean);
+    contact.split(/\/|또는|,/).map(n => n.trim()).filter(Boolean);
 
-  // 긴급 신고 번호 문자열에서 실제 전화번호들만 추출 ("112 또는 1577-1391" → ["112", "1577-1391"])
-  const parseEmergencyNumbers = (text: string) =>
-    text.split(/또는|,|\//).map(n => n.trim()).filter(n => /\d/.test(n));
-
+  // 긴급 신고 번호도 기관 카드처럼 '전화 걸기' 팝업(이렇게 말하면 좋아요 / 전화 걸기)을 띄운다
   const handleEmergencyPress = (item: { label: string; number: string }) => {
-    const numbers = parseEmergencyNumbers(item.number);
-    if (numbers.length <= 1) {
-      handleCall(numbers[0] ?? item.number);
-    } else {
-      setEmergencyChoice({ label: item.label, numbers });
-    }
+    setCallTarget({ id: -1, region: '', name: item.label, role: '', contact: item.number });
   };
 
   return (
@@ -158,7 +150,6 @@ export default function ManualHelpScreen() {
                 <Text style={s.emergencyLabel}>{e.label}: </Text>
                 {e.number}
               </Text>
-              <Ionicons name="call" size={15} color="#C10007" />
             </TouchableOpacity>
           ))}
         </View>
@@ -220,9 +211,17 @@ export default function ManualHelpScreen() {
                   <TouchableOpacity style={s.tipsBtn} activeOpacity={0.85} onPress={handleOpenTips}>
                     <Text style={s.tipsBtnText}>이렇게 말하면 좋아요!</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0])}>
-                    <Text style={s.callBtnText}>전화 걸기</Text>
-                  </TouchableOpacity>
+                  {getNumbers(callTarget.contact).length > 1 ? (
+                    getNumbers(callTarget.contact).map((num) => (
+                      <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
+                        <Text style={s.callBtnText}>전화 걸기 ({num})</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0] ?? callTarget.contact)}>
+                      <Text style={s.callBtnText}>전화 걸기</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </>
             )}
@@ -285,46 +284,21 @@ export default function ManualHelpScreen() {
 
               {/* 고정 하단 */}
               <View style={s.tipsCardBottom}>
-                {callTarget && (
-                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0])}>
+                {callTarget && (getNumbers(callTarget.contact).length > 1 ? (
+                  getNumbers(callTarget.contact).map((num) => (
+                    <TouchableOpacity key={num} style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(num)}>
+                      <Text style={s.callBtnText}>전화 걸기 ({num})</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <TouchableOpacity style={s.callBtn} activeOpacity={0.85} onPress={() => handleCall(getNumbers(callTarget.contact)[0] ?? callTarget.contact)}>
                     <Text style={s.callBtnText}>전화 걸기</Text>
                   </TouchableOpacity>
-                )}
+                ))}
               </View>
             </View>
           </View>
         </View>
-      </AppModal>
-
-      {/* 긴급 신고 번호 선택 (번호가 여러 개일 때) */}
-      <AppModal visible={emergencyChoice !== null} onRequestClose={() => setEmergencyChoice(null)}>
-        <Pressable style={s.modalOverlay} onPress={() => setEmergencyChoice(null)}>
-          <Pressable style={s.modalCard} onPress={() => {}}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>전화 걸기</Text>
-              <TouchableOpacity onPress={() => setEmergencyChoice(null)}>
-                <Ionicons name="close" size={22} color="#586144" />
-              </TouchableOpacity>
-            </View>
-            {emergencyChoice && (
-              <>
-                <Text style={s.modalCenterName}>{emergencyChoice.label}</Text>
-                <View style={{ gap: 10, marginTop: 4 }}>
-                  {emergencyChoice.numbers.map((num) => (
-                    <TouchableOpacity
-                      key={num}
-                      style={s.callBtn}
-                      activeOpacity={0.85}
-                      onPress={() => { setEmergencyChoice(null); handleCall(num); }}
-                    >
-                      <Text style={s.callBtnText}>{num}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
-          </Pressable>
-        </Pressable>
       </AppModal>
 
       <BottomNav activeTab="consult" />

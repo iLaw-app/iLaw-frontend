@@ -224,18 +224,17 @@ export default function QnaDetailPage() {
         </View>
       </View>
 
-      {/* 3-dot 메뉴 — 바깥(팝업이 아닌 화면 어디든)을 누르면 닫히도록 전체화면 오버레이 위에 표시 */}
-      {post.isAuthor && showMenu && (
-        <>
-          <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 50 }]} onPress={() => setShowMenu(false)} />
-          <View style={styles.dropdown}>
+      {/* 3-dot 메뉴 — AppModal로 띄워 웹/네이티브 모두 동작, 바깥(메뉴가 아닌 화면) 누르면 닫힘 */}
+      <AppModal visible={!!post.isAuthor && showMenu} onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={{ flex: 1 }} onPress={() => setShowMenu(false)}>
+          <Pressable style={styles.dropdown} onPress={() => {}}>
             <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); setShowDeleteModal(true); }}>
               <Ionicons name="trash-outline" size={14} color="#586144" />
               <Text style={styles.dropdownTextRed}>삭제하기</Text>
             </TouchableOpacity>
-          </View>
-        </>
-      )}
+          </Pressable>
+        </Pressable>
+      </AppModal>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* 질문 카드 */}
@@ -478,7 +477,7 @@ const styles = StyleSheet.create({
   backText: { fontSize: 20, color: '#586144', fontWeight: '700' },
   menuBtn: { padding: 4 },
   dropdown: {
-    position: 'absolute', top: 50, right: 12, backgroundColor: '#fff',
+    position: 'absolute', top: 90, right: 16, backgroundColor: '#fff',
     borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
     minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden',
@@ -497,7 +496,7 @@ const styles = StyleSheet.create({
   scrapBottomText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   scrapBottomCount: { color: '#fff', fontSize: 14, fontWeight: '700', marginLeft: 2 },
 
-  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 140 },
   deleteCard: {
     backgroundColor: '#fff', borderRadius: 24, padding: 28,
     alignItems: 'center', gap: 12, marginHorizontal: 32, width: '80%',

@@ -335,13 +335,16 @@ export default function CommunityScreen() {
             data={displayPosts}
             keyExtractor={(item) => String(item.id)}
             ListHeaderComponent={
-              <View style={styles.sortBtns}>
-                <TouchableOpacity style={[styles.sortBtn, sort === 'popular' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('popular')}>
-                  <Text style={styles.sortText}>인기순</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('latest')}>
-                  <Text style={styles.sortText}>최신순</Text>
-                </TouchableOpacity>
+              <View>
+                <View style={styles.sortBtns}>
+                  <TouchableOpacity style={[styles.sortBtn, sort === 'popular' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('popular')}>
+                    <Text style={styles.sortText}>인기순</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('latest')}>
+                    <Text style={styles.sortText}>최신순</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.sortDivider} />
               </View>
             }
             renderItem={({ item }) => (
@@ -423,6 +426,7 @@ const styles = StyleSheet.create({
   subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
   headerSub: { fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 28, letterSpacing: 0.07 },
   sortBtns: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 },
+  sortDivider: { height: 1, backgroundColor: '#F0F0F0' },
   sortBtn: {
     width: 74, height: 25,
     justifyContent: 'center', alignItems: 'center',
@@ -439,12 +443,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: '#CCD9BA',
     backgroundColor: '#FFF',
     paddingLeft: 20, paddingRight: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 8, elevation: 5,
   },
   searchInput: { flex: 1, fontSize: 14, color: '#333', height: '100%', paddingVertical: 0, textAlignVertical: 'center' },
   searchBtn: {
-    width: 32, height: 32, borderRadius: 9999,
+    width: 32, height: 32, borderRadius: 16,
     backgroundColor: '#CCD9BA',
     justifyContent: 'center', alignItems: 'center',
   },

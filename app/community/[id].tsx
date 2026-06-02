@@ -146,14 +146,15 @@ function PollBar({ option, total, selected, onVote }: { option: PollOption; tota
 
 function ReplyItem({ reply, onDelete, onLike, postNickname, viewerIsPostAuthor }: { reply: Comment; onDelete: (id: number) => void; onLike: (id: number) => void; postNickname: string; viewerIsPostAuthor: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
-  const isOP = !!reply.isPostAuthor || (reply.isAuthor && viewerIsPostAuthor) || reply.nickname === postNickname;
+  // 닉네임(익명1·익명2·익명(글쓴이))은 백엔드가 정한 그대로 표시. isOP는 글씨 색 용도로만.
+  const isOP = !!reply.isPostAuthor;
   return (
     <View style={s.replyRow}>
       <Avatar size={28} />
       <View style={{ flex: 1 }}>
         <View style={s.commentMeta}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={isOP ? s.authorNickname : s.replyNickname}>{isOP ? '익명(글쓴이)' : reply.nickname}</Text>
+            <Text style={isOP ? s.authorNickname : s.replyNickname}>{reply.nickname}</Text>
             <Text style={s.replyDate}>{reply.date}</Text>
           </View>
           {reply.isAuthor && (
@@ -184,7 +185,8 @@ function ReplyItem({ reply, onDelete, onLike, postNickname, viewerIsPostAuthor }
 
 function CommentItem({ comment, onReply, onDelete, onLike, postNickname, viewerIsPostAuthor }: { comment: Comment; onReply: (id: number) => void; onDelete: (id: number) => void; onLike: (id: number) => void; postNickname: string; viewerIsPostAuthor: boolean }) {
   const [showMenu, setShowMenu] = useState(false);
-  const isOP = !!comment.isPostAuthor || (comment.isAuthor && viewerIsPostAuthor) || comment.nickname === postNickname;
+  // 닉네임(익명1·익명2·익명(글쓴이))은 백엔드가 정한 그대로 표시. isOP는 글씨 색 용도로만.
+  const isOP = !!comment.isPostAuthor;
   return (
     <View>
       <View style={s.commentRow}>
@@ -192,7 +194,7 @@ function CommentItem({ comment, onReply, onDelete, onLike, postNickname, viewerI
         <View style={{ flex: 1 }}>
           <View style={s.commentMeta}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={isOP ? s.authorNickname : s.commentNickname}>{isOP ? '익명(글쓴이)' : comment.nickname}</Text>
+              <Text style={isOP ? s.authorNickname : s.commentNickname}>{comment.nickname}</Text>
               <Text style={s.replyDate}>{comment.date}</Text>
             </View>
             {comment.isAuthor && (
@@ -491,11 +493,10 @@ export default function CommunityDetailScreen() {
           )}
         </View>
 
-        {/* 삭제/수정 메뉴 — 팝업 바깥(화면 어디든) 누르면 닫힘 */}
-        {post.isAuthor && showMenu && (
-          <>
-            <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 50 }]} onPress={() => setShowMenu(false)} />
-            <View style={s.dropdown}>
+        {/* 삭제/수정 메뉴 — AppModal로 띄워 웹/네이티브 모두 동작, 바깥(메뉴가 아닌 화면) 누르면 닫힘 */}
+        <AppModal visible={!!post.isAuthor && showMenu} onRequestClose={() => setShowMenu(false)}>
+          <Pressable style={{ flex: 1 }} onPress={() => setShowMenu(false)}>
+            <Pressable style={s.dropdown} onPress={() => {}}>
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
                 setShowMenu(false);
                 setShowDeleteModal(true);
@@ -511,9 +512,9 @@ export default function CommunityDetailScreen() {
                 <Ionicons name="create-outline" size={14} color="#586144" />
                 <Text style={s.dropdownText}>수정하기</Text>
               </TouchableOpacity>
-            </View>
-          </>
-        )}
+            </Pressable>
+          </Pressable>
+        </AppModal>
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setShowMenu(false)}>
           {/* Author */}
@@ -690,7 +691,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, position: 'relative', zIndex: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   backBtn: { padding: 4 },
   menuBtn: { padding: 4 },
-  dropdown: { position: 'absolute', top: 48, right: 16, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 8, minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' },
+  dropdown: { position: 'absolute', top: 88, right: 16, backgroundColor: '#fff', borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 8, minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
   dropdownDivider: { height: 1, backgroundColor: '#E5E7EB' },
   dropdownText: { fontSize: 14, color: '#586144', fontWeight: '500' },

@@ -475,10 +475,6 @@ export default function HomeScreen() {
                         <Text style={styles.categoryBadgeText}>{item.category}</Text>
                       </View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                      <Ionicons name="bookmark-outline" size={13} color="#9CAF88" />
-                      <Text style={styles.scrapMeta}>{item.scrapCount ?? 0}</Text>
-                    </View>
                   </View>
                   <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
                 </View>
@@ -502,9 +498,19 @@ export default function HomeScreen() {
       </View>
 
       <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
+        {/* 평소엔 기본 이미지, 윙크할 때만 살짝 작고 그림자 있는 wink 이미지로 */}
         <Image
-          source={winking ? require('../../assets/wink.png') : require('../../assets/chatbot_logo.png')}
-          style={styles.aiFabImage}
+          source={require('../../assets/chatbot_logo.png')}
+          style={[styles.aiFabImage, winking && { opacity: 0 }]}
+          resizeMode="contain"
+        />
+        <Image
+          source={require('../../assets/wink.png')}
+          style={[
+            styles.aiFabWinkImage,
+            Platform.OS === 'web' && ({ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.18))' } as any),
+            !winking && { opacity: 0 },
+          ]}
           resizeMode="contain"
         />
       </TouchableOpacity>
@@ -673,6 +679,13 @@ const styles = StyleSheet.create({
     width: 130, height: 130,
   },
   aiFabImage: { width: 130, height: 130 },
+  // 윙크 이미지만 살짝 작게(118) + 130 박스 중앙에 두고 그림자
+  aiFabWinkImage: {
+    position: 'absolute', top: 6, left: 6,
+    width: 118, height: 118,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18, shadowRadius: 2, elevation: 3,
+  },
   speechBubbleWrapper: {
     position: 'absolute',
     right: 116,

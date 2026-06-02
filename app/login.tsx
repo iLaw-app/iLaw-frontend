@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -33,6 +34,12 @@ function GoogleIcon() {
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuthTokens, setUser } = useAuth();
+
+  // 진입 화면 — 하드웨어 뒤로가기로 스플래시 등 이전 화면으로 돌아가지 않게 막는다
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
 
   const handleLogin = async (provider: 'kakao' | 'google') => {
     const appRedirectUri = Linking.createURL('auth');

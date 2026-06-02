@@ -40,6 +40,11 @@ export default function AskPage() {
   const [images, setImages] = useState<{ uri: string; type: string; name: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [contentFocused, setContentFocused] = useState(false);
+  const [titleFocused, setTitleFocused] = useState(false);
+
+  // 내용 입력란에 커서가 들어가거나 내용을 입력하면 주의사항 안내를 숨기고 박스를 줄인다 (제목 포커스와는 무관)
+  const showPlaceholder = !content && !contentFocused;
 
   const handlePickImage = async () => {
     if (images.length >= 3) return;
@@ -111,21 +116,25 @@ export default function AskPage() {
         <View style={styles.inputCard}>
           <TextInput
             style={styles.titleInput}
-            placeholder="제목을 입력하세요"
+            placeholder={titleFocused ? '' : '제목을 입력하세요'}
             placeholderTextColor="#99A1AF"
             value={title}
             onChangeText={setTitle}
+            onFocus={() => setTitleFocused(true)}
+            onBlur={() => setTitleFocused(false)}
           />
           <View style={styles.cardDivider} />
-          <View style={styles.contentWrapper}>
+          <View style={[styles.contentWrapper, { minHeight: showPlaceholder ? 257 : 100 }]}>
             <TextInput
-              style={styles.contentInput}
+              style={[styles.contentInput, { minHeight: showPlaceholder ? 257 : 100 }]}
               value={content}
               onChangeText={setContent}
+              onFocus={() => setContentFocused(true)}
+              onBlur={() => setContentFocused(false)}
               multiline
               textAlignVertical="top"
             />
-            {!content && (
+            {showPlaceholder && (
               <View style={styles.contentPlaceholder} pointerEvents="none">
                 <Text style={styles.placeholderMain}>내용을 입력하세요</Text>
                 <Text style={styles.placeholderSub}>{'\n'}질문 전 꼭 확인해 주세요</Text>
@@ -138,8 +147,11 @@ export default function AskPage() {
               </View>
             )}
           </View>
+        </View>
 
-          {/* 사진 추가 - 카드 내부 */}
+        {/* 사진 추가 - 카드 바깥 (커뮤니티 글쓰기처럼 구분선으로 분리) */}
+        <View style={styles.photoSection}>
+          <View style={styles.photoDivider} />
           <View style={styles.photoRow}>
             {images.length < 3 && (
               <TouchableOpacity style={styles.photoBtn} onPress={handlePickImage} activeOpacity={0.7}>
@@ -242,7 +254,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   titleInput: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1a1a1a',
     letterSpacing: -0.449,
@@ -261,13 +273,15 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   contentPlaceholder: { position: 'absolute', top: 0, left: 0, right: 0 },
-  placeholderMain: { fontSize: 14, fontWeight: '400', color: '#99A1AF', lineHeight: 24, letterSpacing: -0.312 },
-  placeholderSub: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312 },
+  placeholderMain: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312 },
+  placeholderSub: { fontSize: 12, fontWeight: '400', color: '#99A1AF', lineHeight: 20, letterSpacing: -0.312 },
   noteRow: { flexDirection: 'row', gap: 4 },
-  noteBullet: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, width: 12 },
-  placeholderNote: { fontSize: 13, fontWeight: '400', color: '#99A1AF', lineHeight: 22, letterSpacing: -0.312, flex: 1 },
+  noteBullet: { fontSize: 12, fontWeight: '400', color: '#99A1AF', lineHeight: 20, width: 12 },
+  placeholderNote: { fontSize: 12, fontWeight: '400', color: '#99A1AF', lineHeight: 20, letterSpacing: -0.312, flex: 1 },
 
-  photoRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, alignItems: 'center', marginTop: 15 },
+  photoSection: { gap: 16 },
+  photoDivider: { height: 1, backgroundColor: '#E5E7EB' },
+  photoRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, alignItems: 'center' },
   photoBtn: {
     flexDirection: 'row',
     height: 40,

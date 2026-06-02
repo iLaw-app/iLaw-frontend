@@ -68,6 +68,7 @@ export default function CommunityWriteScreen() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [contentFocused, setContentFocused] = useState(false);
+  const [titleFocused, setTitleFocused] = useState(false);
 
   const addOption = () => {
     if (pollOptions.length < 5) setPollOptions(prev => [...prev, '']);
@@ -178,10 +179,12 @@ export default function CommunityWriteScreen() {
           <View style={s.inputCard}>
             <TextInput
               style={s.titleInput}
-              placeholder="제목을 입력하세요"
+              placeholder={titleFocused ? '' : '제목을 입력하세요'}
               placeholderTextColor="#99A1AF"
               value={title}
               onChangeText={setTitle}
+              onFocus={() => setTitleFocused(true)}
+              onBlur={() => setTitleFocused(false)}
               maxLength={100}
             />
             <View style={s.cardDivider} />
@@ -337,13 +340,13 @@ const s = StyleSheet.create({
     textAlignVertical: 'top', padding: 0,
   },
   placeholder: { position: 'absolute', top: 0, left: 0, right: 0 },
-  phMain:       { fontSize: 14, color: '#99A1AF', lineHeight: 24 },
-  phBlank:      { fontSize: 14, color: 'transparent', lineHeight: 20 },
-  phSection:    { fontSize: 15, fontWeight: '700', color: '#99A1AF', lineHeight: 24 },
-  phDesc:       { fontSize: 14, color: '#99A1AF', lineHeight: 22 },
+  phMain:       { fontSize: 13, color: '#99A1AF', lineHeight: 22 },
+  phBlank:      { fontSize: 13, color: 'transparent', lineHeight: 18 },
+  phSection:    { fontSize: 14, fontWeight: '700', color: '#99A1AF', lineHeight: 22 },
+  phDesc:       { fontSize: 12, color: '#99A1AF', lineHeight: 20 },
   phItemRow:    { flexDirection: 'row', gap: 4 },
-  phItemNum:    { fontSize: 13, color: '#99A1AF', lineHeight: 22, width: 18 },
-  phItem:       { fontSize: 13, color: '#99A1AF', lineHeight: 22, flex: 1 },
+  phItemNum:    { fontSize: 12, color: '#99A1AF', lineHeight: 20, width: 18 },
+  phItem:       { fontSize: 12, color: '#99A1AF', lineHeight: 20, flex: 1 },
 
   pollCard: {
     borderRadius: 14,

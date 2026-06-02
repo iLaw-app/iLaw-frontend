@@ -72,7 +72,10 @@ function IconBaby() {
 function IconSchool() {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-      <Path d="M22 10V6L12 2L2 6V10C2 15.55 6.84 20.74 12 22C17.16 20.74 22 15.55 22 10Z" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M3 21H21" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M4 21V8.5L12 3.5L20 8.5V21" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M10 21V15.5H14V21" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M12 3.5V1.5" stroke="white" strokeWidth="2.49989" strokeLinecap="round" strokeLinejoin="round"/>
     </Svg>
   );
 }

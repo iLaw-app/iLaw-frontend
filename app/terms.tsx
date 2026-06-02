@@ -237,7 +237,7 @@ export default function TermsScreen() {
           <Pressable style={s.modalCard} onPress={() => {}}>
             <Text style={s.modalTitle}>회원탈퇴가 완료되었습니다.</Text>
             <Text style={s.modalBody}>{'언제든 다시 돌아와주세요.\n아이로는 항상 여러분을 응원합니다!'}</Text>
-            <TouchableOpacity style={s.confirmBtn} onPress={() => { setShowWithdrawSuccess(false); router.replace('/login'); }} activeOpacity={0.8}>
+            <TouchableOpacity style={s.confirmBtn} onPress={() => { setShowWithdrawSuccess(false); router.replace('/'); }} activeOpacity={0.8}>
               <Text style={s.confirmBtnText}>확인</Text>
             </TouchableOpacity>
           </Pressable>

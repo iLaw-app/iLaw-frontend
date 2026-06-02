@@ -1,7 +1,24 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import { getStoredTokens } from './context/auth';
 
 
 export default function SplashScreen() {
+  const router = useRouter();
+
+  // 토큰이 없으면(로그아웃·회원탈퇴 직후 포함) 스플래시를 잠깐 보여준 뒤 로그인으로 이동.
+  // 토큰이 있는 정상 콜드스타트는 RootLayout의 restoreSession이 라우팅을 담당하므로 건드리지 않는다.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    getStoredTokens().then(({ refreshToken }) => {
+      if (cancelled || refreshToken) return;
+      timer = setTimeout(() => { if (!cancelled) router.replace('/login'); }, 2000);
+    });
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* 로고 이미지 — 텍스트 뒤(아래)에 렌더링 */}

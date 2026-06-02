@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   searchBoxActive: { borderColor: '#3C6802' },
-  searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', height: '100%', paddingVertical: 0, textAlignVertical: 'center' },
   searchBtn: {
     width: 32, height: 32, borderRadius: 16,
     justifyContent: 'center', alignItems: 'center',

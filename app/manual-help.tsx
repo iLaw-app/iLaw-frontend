@@ -1,6 +1,6 @@
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Linking, ActivityIndicator,
+  ScrollView, Linking, ActivityIndicator, Pressable,
 } from 'react-native';
 import { AppModal } from '../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,6 +79,7 @@ export default function ManualHelpScreen() {
   const [regionModalVisible, setRegionModalVisible] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [tipsValues, setTipsValues] = useState<Record<TipsKey, string>>(initTips());
+  const [emergencyChoice, setEmergencyChoice] = useState<{ label: string; numbers: string[] } | null>(null);
 
   useEffect(() => {
     const url = selectedRegion === '전체'
@@ -112,6 +113,19 @@ export default function ManualHelpScreen() {
   const getNumbers = (contact: string) =>
     contact.split('/').map(n => n.trim()).filter(Boolean);
 
+  // 긴급 신고 번호 문자열에서 실제 전화번호들만 추출 ("112 또는 1577-1391" → ["112", "1577-1391"])
+  const parseEmergencyNumbers = (text: string) =>
+    text.split(/또는|,|\//).map(n => n.trim()).filter(n => /\d/.test(n));
+
+  const handleEmergencyPress = (item: { label: string; number: string }) => {
+    const numbers = parseEmergencyNumbers(item.number);
+    if (numbers.length <= 1) {
+      handleCall(numbers[0] ?? item.number);
+    } else {
+      setEmergencyChoice({ label: item.label, numbers });
+    }
+  };
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
@@ -134,10 +148,18 @@ export default function ManualHelpScreen() {
             <Text style={s.emergencyTitle}>긴급 신고 (전국 공통)</Text>
           </View>
           {emergency.map((e, i) => (
-            <Text key={i} style={s.emergencyLine}>
-              <Text style={s.emergencyLabel}>{e.label}: </Text>
-              {e.number}
-            </Text>
+            <TouchableOpacity
+              key={i}
+              style={s.emergencyRow}
+              activeOpacity={0.7}
+              onPress={() => handleEmergencyPress(e)}
+            >
+              <Text style={s.emergencyLine}>
+                <Text style={s.emergencyLabel}>{e.label}: </Text>
+                {e.number}
+              </Text>
+              <Ionicons name="call" size={15} color="#C10007" />
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -274,6 +296,37 @@ export default function ManualHelpScreen() {
         </View>
       </AppModal>
 
+      {/* 긴급 신고 번호 선택 (번호가 여러 개일 때) */}
+      <AppModal visible={emergencyChoice !== null} onRequestClose={() => setEmergencyChoice(null)}>
+        <Pressable style={s.modalOverlay} onPress={() => setEmergencyChoice(null)}>
+          <Pressable style={s.modalCard} onPress={() => {}}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>전화 걸기</Text>
+              <TouchableOpacity onPress={() => setEmergencyChoice(null)}>
+                <Ionicons name="close" size={22} color="#586144" />
+              </TouchableOpacity>
+            </View>
+            {emergencyChoice && (
+              <>
+                <Text style={s.modalCenterName}>{emergencyChoice.label}</Text>
+                <View style={{ gap: 10, marginTop: 4 }}>
+                  {emergencyChoice.numbers.map((num) => (
+                    <TouchableOpacity
+                      key={num}
+                      style={s.callBtn}
+                      activeOpacity={0.85}
+                      onPress={() => { setEmergencyChoice(null); handleCall(num); }}
+                    >
+                      <Text style={s.callBtnText}>{num}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </AppModal>
+
       <BottomNav activeTab="consult" />
     </SafeAreaView>
   );
@@ -304,7 +357,8 @@ const s = StyleSheet.create({
   },
   emergencyHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   emergencyTitle: { fontSize: 18, fontWeight: '700', color: '#C10007', lineHeight: 27, letterSpacing: -0.439 },
-  emergencyLine: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
+  emergencyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4, gap: 8 },
+  emergencyLine: { flex: 1, fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
   emergencyLabel: { fontWeight: '700' },
 
   centerCard: {

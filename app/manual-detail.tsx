@@ -124,6 +124,7 @@ export default function ManualDetailScreen() {
   const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrapped, setScrapped] = useState(false);
+  const [scrapCount, setScrapCount] = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE}/manual/articles/${articleId}`)
@@ -141,6 +142,7 @@ export default function ManualDetailScreen() {
       .then(r => r.json())
       .then(data => {
         setScrapped(data.scrapped);
+        setScrapCount(data.count ?? 0);
       })
       .catch(() => {});
   }, [articleId, accessToken]);
@@ -157,6 +159,8 @@ export default function ManualDetailScreen() {
       });
       const data = await res.json();
       setScrapped(data.scrapped);
+      if (typeof data.count === 'number') setScrapCount(data.count);
+      else setScrapCount(prev => Math.max(0, prev + (data.scrapped ? 1 : -1)));
     } catch {
       Alert.alert('오류', '스크랩 처리에 실패했습니다.');
     }
@@ -200,6 +204,7 @@ export default function ManualDetailScreen() {
             >
               <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={18} color="#fff" />
               <Text style={s.scrapBtnText}>{scrapped ? '스크랩됨' : '스크랩하기'}</Text>
+              {scrapCount > 0 && <Text style={s.scrapBtnCount}>{scrapCount}</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -265,4 +270,5 @@ const s = StyleSheet.create({
   },
   scrapBtnActive: { backgroundColor: '#3C6802' },
   scrapBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  scrapBtnCount: { color: '#fff', fontSize: 14, fontWeight: '700', marginLeft: 2 },
 });

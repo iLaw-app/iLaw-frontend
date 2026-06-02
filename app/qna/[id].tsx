@@ -68,6 +68,7 @@ export default function QnaDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [scrapped, setScrapped] = useState(false);
+  const [scrapCount, setScrapCount] = useState(0);
   const [scrapLoading, setScrapLoading] = useState(false);
   const [answerText, setAnswerText] = useState('');
   const [answerSubmitting, setAnswerSubmitting] = useState(false);
@@ -127,6 +128,8 @@ export default function QnaDetailPage() {
       });
       const data = await res.json();
       setScrapped(data.scrapped);
+      if (typeof data.count === 'number') setScrapCount(data.count);
+      else setScrapCount(prev => Math.max(0, prev + (data.scrapped ? 1 : -1)));
     } finally {
       setScrapLoading(false);
     }
@@ -177,7 +180,7 @@ export default function QnaDetailPage() {
     if (accessToken) {
       fetch(`${API_BASE}/qa/${id}/scrap`, { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(r => r.json())
-        .then(data => setScrapped(data.scrapped ?? false))
+        .then(data => { setScrapped(data.scrapped ?? false); setScrapCount(data.count ?? 0); })
         .catch(() => {});
     }
   }, [id, accessToken]));
@@ -214,25 +217,25 @@ export default function QnaDetailPage() {
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           {post.isAuthor && (
-            <View style={{ position: 'relative' }}>
-              <TouchableOpacity onPress={() => setShowMenu(v => !v)} style={styles.menuBtn}>
-                <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
-              </TouchableOpacity>
-              {showMenu && (
-                <View style={styles.dropdown}>
-                  <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); setShowDeleteModal(true); }}>
-                    <Ionicons name="trash-outline" size={14} color="#586144" />
-                    <Text style={styles.dropdownTextRed}>삭제하기</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+            <TouchableOpacity onPress={() => setShowMenu(v => !v)} style={styles.menuBtn}>
+              <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
+            </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={handleScrap} disabled={scrapLoading} style={styles.scrapBtn}>
-            <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={28} color={scrapped ? '#3C6802' : '#9CAF88'} />
-          </TouchableOpacity>
         </View>
       </View>
+
+      {/* 3-dot 메뉴 — 바깥(팝업이 아닌 화면 어디든)을 누르면 닫히도록 전체화면 오버레이 위에 표시 */}
+      {post.isAuthor && showMenu && (
+        <>
+          <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 50 }]} onPress={() => setShowMenu(false)} />
+          <View style={styles.dropdown}>
+            <TouchableOpacity style={styles.dropdownItem} onPress={() => { setShowMenu(false); setShowDeleteModal(true); }}>
+              <Ionicons name="trash-outline" size={14} color="#586144" />
+              <Text style={styles.dropdownTextRed}>삭제하기</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* 질문 카드 */}
@@ -392,6 +395,21 @@ export default function QnaDetailPage() {
             <Text style={styles.answerContent}>{post.answer?.content}</Text>
           </View>
         )}
+
+        {role !== 'lawyer' && (
+          <View style={styles.scrapArea}>
+            <TouchableOpacity
+              style={[styles.scrapBottomBtn, scrapped && styles.scrapBottomBtnActive]}
+              activeOpacity={0.85}
+              onPress={handleScrap}
+              disabled={scrapLoading}
+            >
+              <Ionicons name={scrapped ? 'bookmark' : 'bookmark-outline'} size={18} color="#fff" />
+              <Text style={styles.scrapBottomText}>{scrapped ? '스크랩됨' : '스크랩하기'}</Text>
+              {scrapCount > 0 && <Text style={styles.scrapBottomCount}>{scrapCount}</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       <AppModal visible={!!selectedImage} onRequestClose={() => setSelectedImage(null)}>
@@ -460,7 +478,7 @@ const styles = StyleSheet.create({
   backText: { fontSize: 20, color: '#586144', fontWeight: '700' },
   menuBtn: { padding: 4 },
   dropdown: {
-    position: 'absolute', top: 32, right: 0, backgroundColor: '#fff',
+    position: 'absolute', top: 50, right: 12, backgroundColor: '#fff',
     borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 8,
     minWidth: 120, zIndex: 100, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden',
@@ -468,6 +486,16 @@ const styles = StyleSheet.create({
   dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
   dropdownTextRed: { fontSize: 14, color: '#586144', fontWeight: '500' },
   scrapBtn: { padding: 4 },
+  scrapArea: { alignItems: 'center', marginTop: 20, marginBottom: 8 },
+  scrapBottomBtn: {
+    width: 290, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#B2D36E', paddingVertical: 16, borderRadius: 9999, gap: 7,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.10, shadowRadius: 15, elevation: 6,
+  },
+  scrapBottomBtnActive: { backgroundColor: '#3C6802' },
+  scrapBottomText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  scrapBottomCount: { color: '#fff', fontSize: 14, fontWeight: '700', marginLeft: 2 },
 
   deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   deleteCard: {
@@ -532,7 +560,7 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   userDate: { fontSize: 12, fontWeight: '400', color: '#4A5565', lineHeight: 18, letterSpacing: -0.15 },
   questionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', lineHeight: 27, letterSpacing: -0.439 },
-  contentBox: { borderRadius: 16, backgroundColor: '#F9FAFB', padding: 16 },
+  contentBox: {},
   questionBody: { fontSize: 15, color: '#444', lineHeight: 23 },
   imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   imageThumb: { width: 90, height: 90, borderRadius: 10 },
@@ -587,7 +615,7 @@ const styles = StyleSheet.create({
   lawyerName: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 24, letterSpacing: -0.312 },
   orgRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   lawyerOrg: { fontSize: 12, color: '#4A5565' },
-  answerDivider: { height: 1.544, backgroundColor: '#FFF' },
+  answerDivider: { height: 1.544, backgroundColor: '#E5E7EB' },
   answerContent: { fontSize: 15, color: '#333', lineHeight: 23 },
 
   lawyerBackText: { fontSize: 24, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },

@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, BackHandler, Image, TextInput } from 'react-native';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, BackHandler, Image, TextInput, Keyboard, PanResponder } from 'react-native';
 import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, Rect, Defs, ClipPath } from 'react-native-svg';
 import { useAuth } from '../context/auth';
@@ -187,13 +187,51 @@ export default function CommunityScreen() {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<'latest' | 'popular'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const isSearchingRef = useRef(false);
+  const navigation = useNavigation();
   const [menuPostId, setMenuPostId] = useState<number | null>(null);
   const [menuY, setMenuY] = useState(0);
 
+  const exitSearch = () => {
+    isSearchingRef.current = false;
+    setIsSearching(false);
+    setSearchQuery('');
+    Keyboard.dismiss();
+  };
+
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) { exitSearch(); return; }
+    isSearchingRef.current = true;
+    setIsSearching(true);
+    Keyboard.dismiss();
+  };
+
+  // 검색 중 왼쪽→오른쪽 스와이프하면 검색 전 화면으로 복귀
+  const swipeBackPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        isSearchingRef.current && gs.dx > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 2.5,
+      onPanResponderRelease: (_, gs) => { if (gs.dx > 80) exitSearch(); },
+    })
+  ).current;
+
+  // 검색 중에는 하드웨어 뒤로가기로 검색을 닫고 목록으로 돌아간다
   useFocusEffect(useCallback(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isSearchingRef.current) { exitSearch(); return true; }
+      return true;
+    });
     return () => sub.remove();
   }, []));
+
+  // 커뮤니티 탭을 다시 누르면 검색을 닫고 첫 화면으로 리셋
+  useEffect(() => {
+    const unsub = navigation.addListener('tabPress' as any, () => {
+      if (isSearchingRef.current) exitSearch();
+    });
+    return unsub;
+  }, [navigation]);
 
   const handleMenuPress = (postId: number, y: number) => {
     setMenuPostId(postId);
@@ -256,22 +294,14 @@ export default function CommunityScreen() {
   );
 
   const displayPosts = [...posts]
-    .filter(p => !searchQuery.trim() || p.title.includes(searchQuery) || (p.content ?? '').includes(searchQuery))
+    .filter(p => !(isSearching && searchQuery.trim()) || p.title.includes(searchQuery) || (p.content ?? '').includes(searchQuery))
     .sort((a, b) => sort === 'popular' ? b.likes - a.likes : 0);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} {...swipeBackPan.panHandlers}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>커뮤니티</Text>
         <Text style={styles.headerSub}>정보 공유를 통해 함께 도움을 주고받아요</Text>
-        <View style={styles.sortBtns}>
-          <TouchableOpacity style={[styles.sortBtn, sort === 'popular' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('popular')}>
-            <Text style={styles.sortText}>인기순</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('latest')}>
-            <Text style={styles.sortText}>최신순</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <View style={styles.searchArea}>
@@ -281,11 +311,19 @@ export default function CommunityScreen() {
             placeholder="키워드로 검색해보세요!"
             placeholderTextColor="#9CAF88"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={(t) => { setSearchQuery(t); if (!t.trim()) exitSearch(); }}
+            onSubmitEditing={handleSearchSubmit}
+            returnKeyType="search"
           />
-          <View style={styles.searchBtn}>
-            <Ionicons name="search" size={16} color="#fff" />
-          </View>
+          {isSearching ? (
+            <TouchableOpacity style={styles.searchBtn} onPress={exitSearch}>
+              <Ionicons name="close" size={16} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.searchBtn} onPress={handleSearchSubmit}>
+              <Ionicons name="search" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -296,6 +334,16 @@ export default function CommunityScreen() {
           <FlatList
             data={displayPosts}
             keyExtractor={(item) => String(item.id)}
+            ListHeaderComponent={
+              <View style={styles.sortBtns}>
+                <TouchableOpacity style={[styles.sortBtn, sort === 'popular' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('popular')}>
+                  <Text style={styles.sortText}>인기순</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.sortBtn, sort === 'latest' && styles.sortBtnActive]} activeOpacity={0.7} onPress={() => setSort('latest')}>
+                  <Text style={styles.sortText}>최신순</Text>
+                </TouchableOpacity>
+              </View>
+            }
             renderItem={({ item }) => (
               <View>
                 <PostCard
@@ -307,7 +355,7 @@ export default function CommunityScreen() {
               </View>
             )}
             contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             ListEmptyComponent={
               <View style={styles.empty}>
                 <Ionicons name="chatbubble-outline" size={40} color="#CCD9BA" />
@@ -345,7 +393,7 @@ export default function CommunityScreen() {
 const ps = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   barBg: {
-    flex: 1, height: 34, borderRadius: 10,
+    flex: 1, height: 30, borderRadius: 8,
     backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -353,9 +401,9 @@ const ps = StyleSheet.create({
   },
   barFill: {
     position: 'absolute', left: 0, top: 0, bottom: 0,
-    backgroundColor: '#EFF4E1', borderRadius: 10,
+    backgroundColor: '#EFF4E1', borderRadius: 8,
   },
-  barLabel: { fontSize: 13, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
+  barLabel: { fontSize: 12, color: '#586144', fontWeight: '500', marginLeft: 12, zIndex: 1 },
   pct: { fontSize: 13, color: '#586144', fontWeight: '600', width: 40, textAlign: 'right' },
 });
 
@@ -363,18 +411,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
 
   header: {
-    paddingTop: 19.991,
+    paddingTop: 16,
     paddingHorizontal: 19.991,
-    paddingBottom: 8,
+    paddingBottom: 2,
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 3.994,
+    gap: 2,
     flexShrink: 0,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
   subRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 8 },
-  headerSub: { fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
-  sortBtns: { flexDirection: 'row', gap: 6 },
+  headerSub: { fontSize: 17, fontWeight: '300', color: '#586144', lineHeight: 28, letterSpacing: 0.07 },
+  sortBtns: { flexDirection: 'row', gap: 6, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 },
   sortBtn: {
     width: 74, height: 25,
     justifyContent: 'center', alignItems: 'center',
@@ -384,7 +432,7 @@ const styles = StyleSheet.create({
   sortBtnActive: { backgroundColor: '#EFF4E1', borderColor: '#CCD9BA' },
   sortText: { fontSize: 14, fontWeight: '500', color: '#6A7282', lineHeight: 20, letterSpacing: 0.1 },
   divider: { height: 1, backgroundColor: '#F3F4F6' },
-  searchArea: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 12 },
+  searchArea: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
     height: 52, borderRadius: 9999,
@@ -394,7 +442,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', height: '100%', paddingVertical: 0, textAlignVertical: 'center' },
   searchBtn: {
     width: 32, height: 32, borderRadius: 9999,
     backgroundColor: '#CCD9BA',
@@ -415,7 +463,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   avatar: { width: 32, height: 32, borderRadius: 16 },
-  nickname: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  nickname: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 22, letterSpacing: -0.15 },
   date: { fontSize: 12, fontWeight: '500', color: '#99A1AF', lineHeight: 16 },
 
   title: {
@@ -439,7 +487,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute', right: 20, bottom: 20,
     width: 56, height: 56, borderRadius: 9999,
-    paddingHorizontal: 16,
     backgroundColor: '#678720',
     justifyContent: 'center', alignItems: 'center',
     elevation: 16,

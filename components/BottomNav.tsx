@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 const TABS = [
   { name: 'home',      label: '홈',       icon: 'home-outline'        } as const,
   { name: 'consult',   label: '매뉴얼',   icon: 'book-outline'        } as const,
-  { name: 'qna',       label: 'QnA',      icon: 'chatbubbles-outline' } as const,
+  { name: 'qna',       label: 'Q&A',      icon: 'chatbubbles-outline' } as const,
   { name: 'community', label: '커뮤니티', icon: 'people-outline'      } as const,
   { name: 'profile',   label: '마이페이지', icon: 'person-outline'   } as const,
 ];

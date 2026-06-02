@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Alert, FlatList, Image,
+  StyleSheet, ScrollView, Alert, FlatList, Image, BackHandler,
 } from 'react-native';
 import { BottomSheet } from '../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -135,6 +135,12 @@ export default function OnboardingScreen() {
   const [showRegionPicker, setShowRegionPicker] = useState(false);
   const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
 
+  // 진입 플로우 화면 — 하드웨어 뒤로가기로 로그인 화면으로 되돌아가지 않게 막는다
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
   const allRequiredAgreed = agreedTerms && agreedPrivacy && agreedAge14;
 
   const handleNicknameChange = (text: string) => {
@@ -187,7 +193,7 @@ export default function OnboardingScreen() {
     });
 
     if (res.status === 409) {
-      Alert.alert('아이디 중복', '이미 사용 중인 아이디입니다.');
+      setNicknameError('이미 사용 중인 아이디입니다.');
       return;
     }
     if (res.status === 400) {

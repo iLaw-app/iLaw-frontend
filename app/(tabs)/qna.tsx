@@ -1,19 +1,19 @@
-import { useCallback, useState } from 'react';
-import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, BackHandler } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, BackHandler, Keyboard, PanResponder } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../context/auth';
 import { cacheGet, cacheSet } from '../../utils/cache';
 
-function HighlightText({ text, keywords, style }: { text: string; keywords: string[]; style?: any }) {
+function HighlightText({ text, keywords, style, numberOfLines }: { text: string; keywords: string[]; style?: any; numberOfLines?: number }) {
   const active = keywords.map(k => k.trim()).filter(k => k);
-  if (active.length === 0) return <Text style={style}>{text}</Text>;
+  if (active.length === 0) return <Text style={style} numberOfLines={numberOfLines}>{text}</Text>;
   const escaped = active.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
   return (
-    <Text style={style}>
+    <Text style={style} numberOfLines={numberOfLines}>
       {parts.map((part, i) =>
         active.some(k => part.toLowerCase() === k.toLowerCase())
           ? <Text key={i} style={{ backgroundColor: '#E0E0E0' }}>{part}</Text>
@@ -61,8 +61,8 @@ function QnaCard({ item, onPress, keywords = [] }: { item: QnAPost; onPress: () 
           <Text style={styles.badgeText}>{item.category}</Text>
         </View>
       </View>
-      <HighlightText text={item.title} keywords={keywords} style={[styles.cardTitle, { flexShrink: 1 }]} />
-      {item.content ? <HighlightText text={item.content} keywords={keywords} style={styles.cardContent} /> : null}
+      <HighlightText text={item.title} keywords={keywords} style={[styles.cardTitle, { flexShrink: 1 }]} numberOfLines={2} />
+      {item.content ? <HighlightText text={item.content} keywords={keywords} style={styles.cardContent} numberOfLines={2} /> : null}
       <View style={styles.cardMeta}>
         <View style={styles.metaLeft}>
           <Ionicons name="chatbubble-outline" size={12} color="#586144" />
@@ -87,11 +87,49 @@ export default function QnaPage() {
   const [loading, setLoading] = useState(true);
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const isSearchingRef = useRef(false);
+  const navigation = useNavigation();
 
+  const exitSearch = () => {
+    isSearchingRef.current = false;
+    setIsSearching(false);
+    setSearchQuery('');
+    Keyboard.dismiss();
+  };
+
+  const handleSearchSubmit = () => {
+    if (!searchQuery.trim()) { exitSearch(); return; }
+    isSearchingRef.current = true;
+    setIsSearching(true);
+    Keyboard.dismiss();
+  };
+
+  // 검색 중 왼쪽→오른쪽 스와이프하면 검색 전 화면으로 복귀
+  const swipeBackPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        isSearchingRef.current && gs.dx > 20 && Math.abs(gs.dx) > Math.abs(gs.dy) * 2.5,
+      onPanResponderRelease: (_, gs) => { if (gs.dx > 80) exitSearch(); },
+    })
+  ).current;
+
+  // 검색 중에는 하드웨어 뒤로가기로 검색을 닫고 목록으로 돌아간다
   useFocusEffect(useCallback(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isSearchingRef.current) { exitSearch(); return true; }
+      return true;
+    });
     return () => sub.remove();
   }, []));
+
+  // Q&A 탭을 다시 누르면 검색을 닫고 첫 화면으로 리셋
+  useEffect(() => {
+    const unsub = navigation.addListener('tabPress' as any, () => {
+      if (isSearchingRef.current) exitSearch();
+    });
+    return unsub;
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -116,7 +154,7 @@ export default function QnaPage() {
     }, [accessToken, loadedOnce])
   );
 
-  const filteredPosts = searchQuery.trim()
+  const filteredPosts = isSearching && searchQuery.trim()
     ? posts.filter(p => p.title.includes(searchQuery) || p.content?.includes(searchQuery) || p.category.includes(searchQuery))
     : posts;
 
@@ -167,7 +205,7 @@ export default function QnaPage() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']} {...swipeBackPan.panHandlers}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Q&A</Text>
         <Text style={styles.headerSub}>변호사님이 직접 답변해 드립니다</Text>
@@ -180,11 +218,19 @@ export default function QnaPage() {
             placeholder="키워드로 검색해보세요!"
             placeholderTextColor="#9CAF88"
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={(t) => { setSearchQuery(t); if (!t.trim()) exitSearch(); }}
+            onSubmitEditing={handleSearchSubmit}
+            returnKeyType="search"
           />
-          <View style={styles.searchBtn}>
-            <Ionicons name="search" size={16} color="#fff" />
-          </View>
+          {isSearching ? (
+            <TouchableOpacity style={styles.searchBtn} onPress={exitSearch}>
+              <Ionicons name="close" size={16} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.searchBtn} onPress={handleSearchSubmit}>
+              <Ionicons name="search" size={16} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -219,22 +265,22 @@ export default function QnaPage() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 2 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#586144', lineHeight: 32, letterSpacing: 0.07 },
-  headerSub: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 32, letterSpacing: 0.07, marginTop: 2 },
-  searchArea: { paddingHorizontal: 16, paddingBottom: 12 },
+  headerSub: { fontSize: 18, fontWeight: '300', color: '#586144', lineHeight: 28, letterSpacing: 0.07, marginTop: 2 },
+  searchArea: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
     height: 52, borderRadius: 9999,
     borderWidth: 1.5, borderColor: '#CCD9BA',
     backgroundColor: '#FFF',
     paddingLeft: 20, paddingRight: 10,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 8, elevation: 5,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#333', paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', height: '100%', paddingVertical: 0, textAlignVertical: 'center' },
   searchBtn: {
-    width: 32, height: 32, borderRadius: 9999,
+    width: 32, height: 32, borderRadius: 16,
     backgroundColor: '#CCD9BA',
     justifyContent: 'center', alignItems: 'center',
   },

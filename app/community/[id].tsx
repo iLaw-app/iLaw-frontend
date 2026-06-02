@@ -489,8 +489,12 @@ export default function CommunityDetailScreen() {
               <Ionicons name="ellipsis-vertical" size={20} color="#586144" />
             </TouchableOpacity>
           )}
-          {post.isAuthor && showMenu && (
+        </View>
 
+        {/* 삭제/수정 메뉴 — 팝업 바깥(화면 어디든) 누르면 닫힘 */}
+        {post.isAuthor && showMenu && (
+          <>
+            <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 50 }]} onPress={() => setShowMenu(false)} />
             <View style={s.dropdown}>
               <TouchableOpacity style={s.dropdownItem} onPress={() => {
                 setShowMenu(false);
@@ -499,19 +503,17 @@ export default function CommunityDetailScreen() {
                 <Ionicons name="trash-outline" size={14} color="#586144" />
                 <Text style={s.dropdownTextRed}>삭제하기</Text>
               </TouchableOpacity>
-              <>
-                <View style={s.dropdownDivider} />
-                <TouchableOpacity style={s.dropdownItem} onPress={() => {
-                  setShowMenu(false);
-                  router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
-                }}>
-                  <Ionicons name="create-outline" size={14} color="#586144" />
-                  <Text style={s.dropdownText}>수정하기</Text>
-                </TouchableOpacity>
-              </>
+              <View style={s.dropdownDivider} />
+              <TouchableOpacity style={s.dropdownItem} onPress={() => {
+                setShowMenu(false);
+                router.push({ pathname: '/community/write', params: { editId: String(post.id), editTitle: post.title, editContent: post.content ?? '', editImageUrls: JSON.stringify(post.imageUrls ?? []), editPoll: post.poll ? JSON.stringify(post.poll.options) : '' } } as any);
+              }}>
+                <Ionicons name="create-outline" size={14} color="#586144" />
+                <Text style={s.dropdownText}>수정하기</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
+          </>
+        )}
 
         <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" onScrollBeginDrag={() => setShowMenu(false)}>
           {/* Author */}

@@ -169,7 +169,7 @@ export default function AiChatScreen() {
                   <View style={s.aiAvatarWrapper}>
                   <Image source={require('../assets/chatbot_profile.png')} style={s.aiAvatarImg} resizeMode="contain" />
                 </View>
-                  <Text style={s.msgTime}>{msg.time}</Text>
+                  <Text style={s.aiName}>아이로</Text>
                 </View>
 
                 {msg.summary ? (
@@ -221,6 +221,8 @@ export default function AiChatScreen() {
                     )}
                   </View>
                 )}
+
+                <Text style={s.msgTime}>{msg.time}</Text>
               </View>
             ) : (
               /* User message: bubble on top, time below (right-aligned) */
@@ -304,7 +306,8 @@ const s = StyleSheet.create({
   aiAvatarImg: {
     width: 26, height: 26, borderRadius: 9999,
   },
-  msgTime: { fontSize: 12, fontWeight: '400', color: '#6A7282', lineHeight: 16 },
+  aiName: { fontSize: 14, fontWeight: '700', color: '#586144', lineHeight: 20 },
+  msgTime: { fontSize: 11, fontWeight: '400', color: '#6A7282', lineHeight: 16, marginLeft: 4 },
 
   aiBoxes: { gap: 8 },
 
@@ -321,7 +324,7 @@ const s = StyleSheet.create({
     fontSize: 14, fontWeight: '700', color: '#1E2939',
     lineHeight: 20, letterSpacing: -0.15,
   },
-  aiBubbleText: { fontSize: 16, fontWeight: '400', color: '#1E2939', lineHeight: 26, letterSpacing: -0.312 },
+  aiBubbleText: { fontSize: 14, fontWeight: '400', color: '#1E2939', lineHeight: 22, letterSpacing: -0.15 },
   loadingDots: { fontSize: 20, color: '#9CAF88', letterSpacing: 4 },
 
   /* Suggestions box */
@@ -366,7 +369,7 @@ const s = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 12, paddingHorizontal: 16,
   },
-  userBubbleText: { fontSize: 15, color: '#1E2939', lineHeight: 22 },
+  userBubbleText: { fontSize: 14, color: '#1E2939', lineHeight: 21 },
 
   /* Input bar */
   inputBar: {

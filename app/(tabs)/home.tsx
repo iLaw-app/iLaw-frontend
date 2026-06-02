@@ -4,7 +4,7 @@ import {
   ScrollView, TextInput, ActivityIndicator, PanResponder, BackHandler, Image, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, G, ClipPath, Rect, Defs, Ellipse } from 'react-native-svg';
 import { useAuth } from '../context/auth';
@@ -110,8 +110,8 @@ function CommunityIcon() {
   );
 }
 
-function ResultCard({ item, keywords, accessToken, onPress }: {
-  item: SearchResult; keywords: string[]; accessToken: string | null; onPress: () => void
+function ResultCard({ item, keywords, onPress }: {
+  item: SearchResult; keywords: string[]; onPress: () => void
 }) {
   const [titleLines, setTitleLines] = useState(2);
   const [scrapped, setScrapped] = useState(item.scrapped ?? false);
@@ -119,19 +119,6 @@ function ResultCard({ item, keywords, accessToken, onPress }: {
 
   useEffect(() => { setScrapped(item.scrapped ?? false); }, [item.scrapped]);
   useEffect(() => { setScrapCount(item.scrapCount ?? 0); }, [item.scrapCount]);
-
-  const handleScrap = async () => {
-    if (!accessToken) return;
-    const url = item.type === 'manual'
-      ? `${API_BASE}/manual/articles/${item.id}/scrap`
-      : `${API_BASE}/qa/${item.id}/scrap`;
-    try {
-      const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
-      const data = await res.json();
-      setScrapped(data.scrapped);
-      setScrapCount(prev => prev + (data.scrapped ? 1 : -1));
-    } catch {}
-  };
 
   const tagIcon = item.type === 'qna' ? <QnaIcon /> : item.type === 'community' ? <CommunityIcon /> : <ManualIcon />;
   const tagLabel = item.type === 'qna' ? 'Q&A' : item.type === 'community' ? '커뮤니티' : '매뉴얼';
@@ -147,14 +134,13 @@ function ResultCard({ item, keywords, accessToken, onPress }: {
         </View>
         <View style={{ flex: 1 }} />
         {item.type !== 'community' && (
+          /* 검색 결과에서는 스크랩 토글 불가 — 상태/개수만 표시 */
           <>
-            <TouchableOpacity onPress={handleScrap} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons
-                name={scrapped ? 'bookmark' : 'bookmark-outline'}
-                size={16}
-                color={scrapped ? '#3C6802' : '#9CAF88'}
-              />
-            </TouchableOpacity>
+            <Ionicons
+              name={scrapped ? 'bookmark' : 'bookmark-outline'}
+              size={16}
+              color={scrapped ? '#3C6802' : '#9CAF88'}
+            />
             {scrapCount > 0 && (
               <Text style={styles.scrapCount}>{scrapCount}</Text>
             )}
@@ -192,10 +178,12 @@ export default function HomeScreen() {
   const [hasNotification, setHasNotification] = useState(false);
   const [popularItems, setPopularItems] = useState<PopularItem[]>([]);
   const [popularLoading, setPopularLoading] = useState(true);
+  const [winking, setWinking] = useState(false);
 
   const isSearchingRef = useRef(false);
   const searchQueryRef = useRef('');
 
+  const navigation = useNavigation();
   const { show: showTutorial } = useTutorial();
 
   useEffect(() => {
@@ -208,6 +196,28 @@ export default function HomeScreen() {
     });
     return () => handler.remove();
   }, []);
+
+  // 홈 탭을 다시 누르면(이미 홈에 있어도) 검색 화면을 닫고 초기 화면으로 리셋
+  useEffect(() => {
+    const unsub = navigation.addListener('tabPress' as any, () => {
+      if (isSearchingRef.current) handleClearSearch();
+    });
+    return unsub;
+  }, [navigation]);
+
+  // 홈 탭에 들어올 때마다 챗봇이 계속 윙크 (사진 → 윙크 → 사진 반복)
+  useFocusEffect(useCallback(() => {
+    let blinkTimer: ReturnType<typeof setTimeout> | undefined;
+    const interval = setInterval(() => {
+      setWinking(true);
+      blinkTimer = setTimeout(() => setWinking(false), 220);
+    }, 2200);
+    return () => {
+      clearInterval(interval);
+      if (blinkTimer) clearTimeout(blinkTimer);
+      setWinking(false);
+    };
+  }, []));
 
   useFocusEffect(useCallback(() => {
     // 웹: 신규 가입 시 onboarding에서 세팅한 pending 플래그가 있을 때만 튜토리얼 표시
@@ -252,7 +262,7 @@ export default function HomeScreen() {
       const [manualData, qnaData, communityData] = await Promise.all([
         fetch(`${API_BASE}/manual/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
         fetch(`${API_BASE}/qa/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()),
-        fetch(`${API_BASE}/community/posts/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()).catch(() => []),
+        fetch(`${API_BASE}/community/search?q=${encoded}`, authHeaders ? { headers: authHeaders } : undefined).then(r => r.json()).catch(() => []),
       ]);
       const mergedTerms = Array.from(new Set([
         ...(manualData.expandedTerms ?? []),
@@ -266,7 +276,7 @@ export default function HomeScreen() {
         id: item.id,
         type: 'qna' as const,
         question: item.title,
-        summary: null,
+        summary: item.content ? String(item.content).replace(/\*\*(.*?)\*\*/g, '$1') : null,
         category: { name: item.category, slug: item.category },
         scrapped: item.scrapped,
       }));
@@ -387,7 +397,6 @@ export default function HomeScreen() {
                   key={`${item.type}-${item.id}`}
                   item={item}
                   keywords={Array.from(new Set([searchQuery, ...expandedTerms]))}
-                  accessToken={accessToken}
                   onPress={() => {
                     if (item.type === 'qna') router.push(`/qna/${item.id}` as any);
                     else if (item.type === 'community') router.push(`/community/${item.id}` as any);
@@ -466,6 +475,10 @@ export default function HomeScreen() {
                         <Text style={styles.categoryBadgeText}>{item.category}</Text>
                       </View>
                     </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <Ionicons name="bookmark-outline" size={13} color="#9CAF88" />
+                      <Text style={styles.scrapMeta}>{item.scrapCount ?? 0}</Text>
+                    </View>
                   </View>
                   <Text style={styles.recommendLabel} numberOfLines={1}>{item.label}</Text>
                 </View>
@@ -489,7 +502,11 @@ export default function HomeScreen() {
       </View>
 
       <TouchableOpacity style={styles.aiFab} onPress={() => router.push('/ai-chat' as any)} activeOpacity={0.9}>
-        <Image source={require('../../assets/chatbot_logo.png')} style={styles.aiFabImage} resizeMode="contain" />
+        <Image
+          source={winking ? require('../../assets/wink.png') : require('../../assets/chatbot_logo.png')}
+          style={styles.aiFabImage}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
 
     </SafeAreaView>
@@ -556,7 +573,7 @@ const styles = StyleSheet.create({
   recommendNum: { fontSize: 16, fontWeight: '700', color: '#586144', width: 18, textAlign: 'center' },
   recommendContent: { flex: 1, gap: 4 },
   recommendMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  scrapMeta: { fontSize: 14, fontWeight: '400', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  scrapMeta: { fontSize: 12, fontWeight: '400', color: '#9CAF88', lineHeight: 16 },
   categoryBadge: {
     backgroundColor: '#EEF8D9', borderRadius: 9999,
     paddingHorizontal: 8, paddingVertical: 2,
@@ -581,7 +598,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#333' },
+  searchInput: { flex: 1, fontSize: 14, color: '#333', height: '100%', paddingVertical: 0, textAlignVertical: 'center' },
   searchBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', backgroundColor: '#CCD9BA' },
   searchExample: { fontSize: 12, color: '#9CAF88', marginBottom: 24, marginLeft: 24 },
 

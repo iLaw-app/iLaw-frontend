@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   scrapBottomText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   scrapBottomCount: { color: '#fff', fontSize: 14, fontWeight: '700', marginLeft: 2 },
 
-  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 140 },
+  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   deleteCard: {
     backgroundColor: '#fff', borderRadius: 24, padding: 28,
     alignItems: 'center', gap: 12, marginHorizontal: 32, width: '80%',

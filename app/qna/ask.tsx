@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { AppModal } from '../../components/AppModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -80,9 +80,13 @@ export default function AskPage() {
     return urls;
   };
 
+  const submittingRef = useRef(false);
+
   const handleSubmit = async () => {
+    if (submittingRef.current) return;            // 중복 제출(더블탭) 방지
     if (!title.trim() || !content.trim() || selectedCategories.length === 0) return;
     if (!accessToken) return;
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const imageUrls = await uploadImages();
@@ -97,6 +101,7 @@ export default function AskPage() {
       // silent — user stays on form to retry
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 

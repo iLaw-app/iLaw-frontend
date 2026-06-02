@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,6 +96,8 @@ const HTML_TAGS_STYLES = {
 
 function HtmlRenderer({ content }: { content: string }) {
   const { width } = useWindowDimensions();
+  // 웹 미리보기는 폰 프레임 폭(390)으로 고정해 이미지가 브라우저 폭만큼 커지지 않게 함
+  const contentWidth = (Platform.OS === 'web' ? Math.min(width, 390) : width) - 40;
   const segments = splitSegments(content);
   return (
     <View>
@@ -105,7 +107,7 @@ function HtmlRenderer({ content }: { content: string }) {
         ) : (
           <RenderHtml
             key={i}
-            contentWidth={width - 40}
+            contentWidth={contentWidth}
             source={{ html: seg.html }}
             tagsStyles={HTML_TAGS_STYLES}
             classesStyles={{ 'bulleted-list': { marginBottom: 10 } }}

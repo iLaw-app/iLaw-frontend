@@ -651,6 +651,8 @@ export default function CommunityDetailScreen() {
               value={commentText}
               onChangeText={setCommentText}
               multiline={false}
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
             />
             <TouchableOpacity
               style={[s.sendBtn, commentText.trim().length > 0 && s.sendBtnActive]}

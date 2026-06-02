@@ -55,7 +55,7 @@ function HighlightText({ text, keywords, style, numberOfLines, onTextLayout }: {
 }
 
 type PopularItem = {
-  type: 'manual' | 'qna';
+  type: 'manual' | 'qna' | 'community';
   id: number;
   label: string;
   category: string;
@@ -133,18 +133,14 @@ function ResultCard({ item, keywords, onPress }: {
           <Text style={tagTextStyle}>{tagLabel}</Text>
         </View>
         <View style={{ flex: 1 }} />
-        {item.type !== 'community' && (
-          /* 검색 결과에서는 스크랩 토글 불가 — 상태/개수만 표시 */
-          <>
-            <Ionicons
-              name={scrapped ? 'bookmark' : 'bookmark-outline'}
-              size={16}
-              color={scrapped ? '#3C6802' : '#9CAF88'}
-            />
-            {scrapCount > 0 && (
-              <Text style={styles.scrapCount}>{scrapCount}</Text>
-            )}
-          </>
+        {/* 검색 결과에서는 스크랩 토글 불가 — 상태/개수만 표시 (커뮤니티 포함) */}
+        <Ionicons
+          name={scrapped ? 'bookmark' : 'bookmark-outline'}
+          size={16}
+          color={scrapped ? '#3C6802' : '#9CAF88'}
+        />
+        {scrapCount > 0 && (
+          <Text style={styles.scrapCount}>{scrapCount}</Text>
         )}
       </View>
       <HighlightText
@@ -287,13 +283,14 @@ export default function HomeScreen() {
         question: item.title,
         summary: item.content ? String(item.content).replace(/\*\*(.*?)\*\*/g, '$1').substring(0, 120) : null,
         category: null,
+        scrapCount: item.bookmarks ?? 0,
       }));
       const combined = [...manualResults, ...qnaResults, ...communityResults];
 
       if (accessToken && combined.length > 0) {
         const scrapStates = await Promise.all(
           combined.map(item => {
-            if (item.type === 'community') return Promise.resolve({ scrapped: false, count: 0 });
+            if (item.type === 'community') return Promise.resolve({ scrapped: false, count: item.scrapCount ?? 0 });
             const url = item.type === 'manual'
               ? `${API_BASE}/manual/articles/${item.id}/scrap`
               : `${API_BASE}/qa/${item.id}/scrap`;
@@ -463,14 +460,16 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
                 onPress={() => item.type === 'qna'
                   ? router.push(`/qna/${item.id}` as any)
-                  : router.push(`/manual-detail?articleId=${item.id}` as any)
+                  : item.type === 'community'
+                    ? router.push(`/community/${item.id}` as any)
+                    : router.push(`/manual-detail?articleId=${item.id}` as any)
                 }
               >
                 <Text style={styles.recommendNum}>{index + 1}</Text>
                 <View style={styles.recommendContent}>
                   <View style={styles.recommendMeta}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {item.type === 'qna' ? <QnaIcon /> : <BookIcon />}
+                      {item.type === 'qna' ? <QnaIcon /> : item.type === 'community' ? <CommunityIcon /> : <BookIcon />}
                       <View style={styles.categoryBadge}>
                         <Text style={styles.categoryBadgeText}>{item.category}</Text>
                       </View>

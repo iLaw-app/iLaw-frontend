@@ -106,14 +106,6 @@ export default function AiChatScreen() {
 
   const scroll = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
-  // 새 질문 시작: 화면을 첫 인사로 초기화 (지난 대화는 서버에 그대로 보관됨)
-  const handleNewChat = () => {
-    Keyboard.dismiss();
-    setInput('');
-    setMessages([{ ...GREETING, time: nowStr() }]);
-    setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
-  };
-
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -151,6 +143,8 @@ export default function AiChatScreen() {
 
   return (
     <View style={s.container}>
+      {/* 웹 프레임 상단 여백을 헤더 바 색으로 채움 */}
+      {Platform.OS === 'web' && <View style={s.webTopBar} />}
       {/* Header extends into notch */}
       <View style={[s.header, { paddingTop: insets.top + 16 }]}>
         <View style={s.headerLeft}>
@@ -162,9 +156,9 @@ export default function AiChatScreen() {
             <Text style={s.headerSub}>AI 법률 진단 챗봇</Text>
           </View>
         </View>
-        <TouchableOpacity style={s.newChatBtn} onPress={handleNewChat} activeOpacity={0.8}>
+        <View style={s.newChatBtn}>
           <Text style={s.newChatBtnText}>다른질문하기</Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -270,6 +264,12 @@ export default function AiChatScreen() {
               value={input}
               onChangeText={setInput}
               multiline
+              onKeyPress={(e: any) => {
+                if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter' && !e.nativeEvent?.shiftKey) {
+                  e.preventDefault?.();
+                  handleSend();
+                }
+              }}
             />
             <TouchableOpacity
               style={[s.sendBtn, input.trim() && !loading ? s.sendBtnActive : null]}
@@ -288,6 +288,7 @@ export default function AiChatScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDFFF8' },
+  webTopBar: { position: 'absolute', top: -40, left: 0, right: 0, height: 40, backgroundColor: '#EFF4E1', zIndex: 1 },
 
   header: {
     backgroundColor: '#EFF4E1',
@@ -305,13 +306,17 @@ const s = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   newChatBtn: {
+    position: 'absolute',
+    right: 16.1,
+    bottom: 15.979,
+    width: 117,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
     backgroundColor: '#DFEDBE',
-    borderRadius: 9999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    flexShrink: 0,
   },
-  newChatBtnText: { fontSize: 13, fontWeight: '700', color: '#586144' },
+  newChatBtnText: { fontSize: 13, fontWeight: '700', color: '#678720' },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#586144', lineHeight: 26 },
   headerSub: { fontSize: 12, color: '#9CAF88', lineHeight: 18 },

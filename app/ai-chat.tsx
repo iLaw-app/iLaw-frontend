@@ -169,9 +169,11 @@ export default function AiChatScreen() {
             <Text style={s.headerSub}>AI 법률 진단 챗봇</Text>
           </View>
         </View>
-        <TouchableOpacity style={s.newChatBtn} onPress={handleNewChat} activeOpacity={0.75}>
-          <Text style={s.newChatBtnText}>다른질문하기</Text>
-        </TouchableOpacity>
+        {chatEnded && (
+          <TouchableOpacity style={s.newChatBtn} onPress={handleNewChat} activeOpacity={0.75}>
+            <Text style={s.newChatBtnText}>다른질문하기</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

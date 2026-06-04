@@ -72,6 +72,8 @@ export default function AiChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [kbVisible, setKbVisible] = useState(false);
+  const [hasAskedForMore, setHasAskedForMore] = useState(false);
+  const [chatEnded, setChatEnded] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export default function AiChatScreen() {
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || chatEnded) return;
 
     setMessages(prev => [...prev, { id: Date.now(), from: 'user', text, time: nowStr() }]);
     setInput('');
@@ -121,7 +123,7 @@ export default function AiChatScreen() {
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, hasAskedForMore }),
       });
       const data = await res.json();
       const now = nowStr();
@@ -130,6 +132,9 @@ export default function AiChatScreen() {
       if (advice) newMsgs.push({ id: Date.now() + 2, from: 'ai', time: now, text: advice, suggestions: data.suggestions });
       if (newMsgs.length === 0) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, text: '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.' });
       setMessages(prev => [...prev, ...newMsgs]);
+
+      if (data.status === 'insufficient' && !data.chatEnded) setHasAskedForMore(true);
+      if (data.chatEnded) setChatEnded(true);
     } catch {
       setMessages(prev => [...prev, {
         id: Date.now() + 1, from: 'ai', time: nowStr(),
@@ -256,30 +261,36 @@ export default function AiChatScreen() {
         </ScrollView>
 
         <View style={[s.inputBar, { paddingBottom: kbVisible ? 8 : Math.max(insets.bottom, 16) }]}>
-          <View style={s.inputRow}>
-            <TextInput
-              style={s.textInput}
-              placeholder="상황을 입력하세요"
-              placeholderTextColor="rgba(10,10,10,0.50)"
-              value={input}
-              onChangeText={setInput}
-              multiline
-              onKeyPress={(e: any) => {
-                if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter' && !e.nativeEvent?.shiftKey) {
-                  e.preventDefault?.();
-                  handleSend();
-                }
-              }}
-            />
-            <TouchableOpacity
-              style={[s.sendBtn, input.trim() && !loading ? s.sendBtnActive : null]}
-              onPress={handleSend}
-              disabled={!input.trim() || loading}
-              activeOpacity={0.8}
-            >
-              <SendIcon />
-            </TouchableOpacity>
-          </View>
+          {chatEnded ? (
+            <View style={s.chatEndedBar}>
+              <Text style={s.chatEndedText}>대화가 종료되었습니다</Text>
+            </View>
+          ) : (
+            <View style={s.inputRow}>
+              <TextInput
+                style={s.textInput}
+                placeholder="상황을 입력하세요"
+                placeholderTextColor="rgba(10,10,10,0.50)"
+                value={input}
+                onChangeText={setInput}
+                multiline
+                onKeyPress={(e: any) => {
+                  if (Platform.OS === 'web' && e.nativeEvent?.key === 'Enter' && !e.nativeEvent?.shiftKey) {
+                    e.preventDefault?.();
+                    handleSend();
+                  }
+                }}
+              />
+              <TouchableOpacity
+                style={[s.sendBtn, input.trim() && !loading ? s.sendBtnActive : null]}
+                onPress={handleSend}
+                disabled={!input.trim() || loading}
+                activeOpacity={0.8}
+              >
+                <SendIcon />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -408,6 +419,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  chatEndedBar: { alignItems: 'center', paddingVertical: 14 },
+  chatEndedText: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },
   textInput: {
     flex: 1,
     minHeight: 48,

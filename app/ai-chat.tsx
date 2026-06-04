@@ -72,7 +72,6 @@ export default function AiChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [kbVisible, setKbVisible] = useState(false);
-  const [hasAskedForMore, setHasAskedForMore] = useState(false);
   const [chatEnded, setChatEnded] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -111,7 +110,6 @@ export default function AiChatScreen() {
   const handleNewChat = () => {
     setMessages(prev => [...prev, { ...GREETING, id: Date.now(), time: nowStr() }]);
     setInput('');
-    setHasAskedForMore(false);
     setChatEnded(false);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
@@ -131,7 +129,7 @@ export default function AiChatScreen() {
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ message: text, hasAskedForMore }),
+        body: JSON.stringify({ message: text }),
       });
       const data = await res.json();
       const now = nowStr();
@@ -141,7 +139,6 @@ export default function AiChatScreen() {
       if (newMsgs.length === 0) newMsgs.push({ id: Date.now() + 1, from: 'ai', time: now, text: '죄송합니다, 답변을 불러오는 중 오류가 발생했습니다.' });
       setMessages(prev => [...prev, ...newMsgs]);
 
-      if (data.status === 'insufficient' && !data.chatEnded) setHasAskedForMore(true);
       if (data.chatEnded) setChatEnded(true);
     } catch {
       setMessages(prev => [...prev, {

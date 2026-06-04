@@ -109,11 +109,11 @@ export default function AiChatScreen() {
   const scroll = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
   const handleNewChat = () => {
-    setMessages([GREETING]);
+    setMessages(prev => [...prev, { ...GREETING, id: Date.now(), time: nowStr() }]);
     setInput('');
     setHasAskedForMore(false);
     setChatEnded(false);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   const handleSend = async () => {

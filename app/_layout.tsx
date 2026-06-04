@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Alert, View, Platform, StyleSheet, Dimensions } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
 import { AuthProvider, getStoredTokens, useAuth, UserInfo } from './context/auth';
@@ -20,6 +20,9 @@ const PHONE_W = 390;
 const PHONE_H = 844;
 
 export default function RootLayout() {
+  // 커뮤니티만 흰 배경 화면이라, 해당 탭/화면에서는 프레임 여백도 흰색으로 (그 외엔 크림)
+  const pathname = usePathname();
+  const frameBg = pathname?.startsWith('/community') ? '#FFFFFF' : '#FDFFF8';
   if (Platform.OS === 'web') {
     const { width: vw, height: vh } = Dimensions.get('window');
     const scale = Math.min(1, Math.min((vh - 16) / PHONE_H, (vw - 16) / PHONE_W));
@@ -38,7 +41,7 @@ export default function RootLayout() {
           <View style={{
             width: PHONE_W,
             height: PHONE_H,
-            backgroundColor: '#FDFFF8',
+            backgroundColor: frameBg,
             transform: [{ scale }],
             transformOrigin: '0% 0%' as any,
             paddingTop: 30,

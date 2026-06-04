@@ -108,6 +108,14 @@ export default function AiChatScreen() {
 
   const scroll = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
+  const handleNewChat = () => {
+    setMessages([GREETING]);
+    setInput('');
+    setHasAskedForMore(false);
+    setChatEnded(false);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 50);
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || loading || chatEnded) return;
@@ -161,9 +169,9 @@ export default function AiChatScreen() {
             <Text style={s.headerSub}>AI 법률 진단 챗봇</Text>
           </View>
         </View>
-        <View style={s.newChatBtn}>
+        <TouchableOpacity style={s.newChatBtn} onPress={handleNewChat} activeOpacity={0.75}>
           <Text style={s.newChatBtnText}>다른질문하기</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -263,7 +271,7 @@ export default function AiChatScreen() {
         <View style={[s.inputBar, { paddingBottom: kbVisible ? 8 : Math.max(insets.bottom, 16) }]}>
           {chatEnded ? (
             <View style={s.chatEndedBar}>
-              <Text style={s.chatEndedText}>대화가 종료되었습니다</Text>
+              <Text style={s.chatEndedText}>새 문의는 다른질문하기를 누르세요</Text>
             </View>
           ) : (
             <View style={s.inputRow}>
@@ -420,7 +428,7 @@ const s = StyleSheet.create({
   },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   chatEndedBar: { alignItems: 'center', paddingVertical: 14 },
-  chatEndedText: { fontSize: 14, color: '#9CAF88', fontWeight: '500' },
+  chatEndedText: { fontSize: 14, color: '#9CAF88', fontWeight: '500', textAlign: 'center' },
   textInput: {
     flex: 1,
     minHeight: 48,

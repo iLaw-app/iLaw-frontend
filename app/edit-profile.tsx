@@ -12,6 +12,7 @@ import { BottomSheet } from '../components/AppModal';
 const API_BASE = 'https://ilaw-backend.up.railway.app';
 
 const REGIONS = [
+  '선택안함',
   '서울', '부산', '대구', '인천', '대전', '광주', '울산', '제주', '세종',
   '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도',
 ];
@@ -65,11 +66,11 @@ function PickerModal({
 }
 
 function BirthDatePickerModal({
-  visible, year, month, day, onYearChange, onMonthChange, onDayChange, onClose,
+  visible, year, month, day, onYearChange, onMonthChange, onDayChange, onClose, onSkip,
 }: {
   visible: boolean; year: string; month: string; day: string;
   onYearChange: (v: string) => void; onMonthChange: (v: string) => void;
-  onDayChange: (v: string) => void; onClose: () => void;
+  onDayChange: (v: string) => void; onClose: () => void; onSkip: () => void;
 }) {
   const days = getBirthDays(year, month);
   const renderCol = (data: string[], selected: string, onSelect: (v: string) => void, suffix: string, flex: number) => (
@@ -94,6 +95,7 @@ function BirthDatePickerModal({
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
+          <TouchableOpacity onPress={onSkip}><Text style={pickerStyles.skipBtn}>선택안함</Text></TouchableOpacity>
           <Text style={pickerStyles.sheetTitle}>생년월일 선택</Text>
           <TouchableOpacity onPress={onClose}><Text style={pickerStyles.closeBtn}>확인</Text></TouchableOpacity>
         </View>
@@ -134,12 +136,12 @@ export default function EditProfileScreen() {
 
   const [nickname, setNickname] = useState(user?.nickname ?? '');
   const [nicknameError, setNicknameError] = useState('');
-  const [region, setRegion] = useState(user?.region ?? '');
+  const [region, setRegion] = useState(user?.region ?? '선택안함');
   const existingBirth = user?.birthDate ? new Date(user.birthDate) : null;
   const [birthYear, setBirthYear] = useState(existingBirth ? String(existingBirth.getFullYear()) : '');
   const [birthMonth, setBirthMonth] = useState(existingBirth ? String(existingBirth.getMonth() + 1).padStart(2, '0') : '');
   const [birthDay, setBirthDay] = useState(existingBirth ? String(existingBirth.getDate()).padStart(2, '0') : '');
-  const [gender, setGender] = useState(user?.gender ?? '');
+  const [gender, setGender] = useState(user?.gender ?? 'none');
   const [affiliation, setAffiliation] = useState(user?.affiliation ?? '');
   const [saving, setSaving] = useState(false);
 
@@ -156,8 +158,8 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!nickname || !region || !birthYear || !birthMonth || !birthDay || !gender) {
-      Alert.alert('입력 오류', '모든 항목을 입력해주세요.');
+    if (!nickname) {
+      Alert.alert('입력 오류', '아이디를 입력해주세요.');
       return;
     }
     if (!NICKNAME_REGEX.test(nickname)) {
@@ -173,7 +175,13 @@ export default function EditProfileScreen() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ nickname, region, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, gender, affiliation: role === 'lawyer' ? affiliation : undefined }),
+        body: JSON.stringify({
+          nickname,
+          region: region === '선택안함' || !region ? null : region,
+          birthDate: birthYear ? `${birthYear}-${birthMonth}-${birthDay}` : null,
+          gender: gender === 'none' || !gender ? null : gender,
+          affiliation: role === 'lawyer' ? affiliation : undefined,
+        }),
       });
 
       if (res.status === 409) {
@@ -191,7 +199,14 @@ export default function EditProfileScreen() {
       }
 
       if (user) {
-        setUser({ ...user, nickname, region, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, gender, affiliation: role === 'lawyer' ? affiliation : user.affiliation });
+        setUser({
+          ...user,
+          nickname,
+          region: region === '선택안함' || !region ? null : region,
+          birthDate: birthYear ? `${birthYear}-${birthMonth}-${birthDay}` : null,
+          gender: gender === 'none' || !gender ? null : gender,
+          affiliation: role === 'lawyer' ? affiliation : user.affiliation,
+        });
       }
       router.back();
     } finally {
@@ -280,7 +295,7 @@ export default function EditProfileScreen() {
             {[
               { value: 'male', label: '남성' },
               { value: 'female', label: '여성' },
-              { value: 'other', label: '기타' },
+              { value: 'none', label: '선택안함' },
             ].map((g) => (
               <TouchableOpacity
                 key={g.value}
@@ -322,6 +337,7 @@ export default function EditProfileScreen() {
         year={birthYear} month={birthMonth} day={birthDay}
         onYearChange={setBirthYear} onMonthChange={setBirthMonth} onDayChange={setBirthDay}
         onClose={() => setShowBirthDatePicker(false)}
+        onSkip={() => { setBirthYear(''); setBirthMonth(''); setBirthDay(''); setShowBirthDatePicker(false); }}
       />
     </SafeAreaView>
   );
@@ -395,6 +411,7 @@ const pickerStyles = StyleSheet.create({
   },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
   closeBtn: { fontSize: 14, color: '#3C6802', fontWeight: '600' },
+  skipBtn: { fontSize: 14, color: '#888', fontWeight: '500' },
   option: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 14,

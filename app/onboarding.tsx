@@ -11,6 +11,7 @@ import { useAuth } from './context/auth';
 
 
 const REGIONS = [
+  '선택안함',
   '서울', '부산', '대구', '인천', '대전', '광주', '울산', '제주', '세종',
   '경기도', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도',
 ];
@@ -73,11 +74,11 @@ function PickerModal({
 }
 
 function BirthDatePickerModal({
-  visible, year, month, day, onYearChange, onMonthChange, onDayChange, onClose,
+  visible, year, month, day, onYearChange, onMonthChange, onDayChange, onClose, onSkip,
 }: {
   visible: boolean; year: string; month: string; day: string;
   onYearChange: (v: string) => void; onMonthChange: (v: string) => void;
-  onDayChange: (v: string) => void; onClose: () => void;
+  onDayChange: (v: string) => void; onClose: () => void; onSkip: () => void;
 }) {
   const days = getBirthDays(year, month);
   const renderCol = (data: string[], selected: string, onSelect: (v: string) => void, suffix: string, flex: number) => (
@@ -102,6 +103,7 @@ function BirthDatePickerModal({
       <TouchableOpacity style={pickerStyles.overlay} activeOpacity={1} onPress={onClose} />
       <View style={pickerStyles.sheet}>
         <View style={pickerStyles.sheetHeader}>
+          <TouchableOpacity onPress={onSkip}><Text style={pickerStyles.skipBtn}>선택안함</Text></TouchableOpacity>
           <Text style={pickerStyles.sheetTitle}>생년월일 선택</Text>
           <TouchableOpacity onPress={onClose}><Text style={pickerStyles.closeBtn}>확인</Text></TouchableOpacity>
         </View>
@@ -161,8 +163,8 @@ export default function OnboardingScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!nickname || !region || !birthYear || !birthMonth || !birthDay || !gender) {
-      Alert.alert('입력 오류', '아이디, 지역, 생년월일, 성별을 모두 입력해주세요.');
+    if (!nickname) {
+      Alert.alert('입력 오류', '아이디를 입력해주세요.');
       return;
     }
     if (!NICKNAME_REGEX.test(nickname)) {
@@ -182,9 +184,9 @@ export default function OnboardingScreen() {
       },
       body: JSON.stringify({
         nickname,
-        region,
-        birthDate: `${birthYear}-${birthMonth}-${birthDay}`,
-        gender,
+        region: region === '선택안함' || !region ? null : region,
+        birthDate: birthYear ? `${birthYear}-${birthMonth}-${birthDay}` : null,
+        gender: gender === 'none' || !gender ? null : gender,
         agreedTermsOfService: agreedTerms,
         agreedPrivacyPolicy: agreedPrivacy,
         agreedAge14,
@@ -281,7 +283,7 @@ export default function OnboardingScreen() {
             {[
               { value: 'male', label: '남성' },
               { value: 'female', label: '여성' },
-              { value: 'other', label: '기타' },
+              { value: 'none', label: '선택안함' },
             ].map((g) => (
               <TouchableOpacity
                 key={g.value}
@@ -341,6 +343,7 @@ export default function OnboardingScreen() {
         year={birthYear} month={birthMonth} day={birthDay}
         onYearChange={setBirthYear} onMonthChange={setBirthMonth} onDayChange={setBirthDay}
         onClose={() => setShowBirthDatePicker(false)}
+        onSkip={() => { setBirthYear(''); setBirthMonth(''); setBirthDay(''); setShowBirthDatePicker(false); }}
       />
     </SafeAreaView>
   );
@@ -400,9 +403,9 @@ const styles = StyleSheet.create({
   selectArrow: { fontSize: 20, color: '#ccc' },
   genderRow: { flexDirection: 'row', gap: 10 },
   genderBtn: {
-    width: 89,
+    flex: 1,
     paddingVertical: 13,
-    paddingHorizontal: 29,
+    paddingHorizontal: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
     justifyContent: 'center',
@@ -472,6 +475,7 @@ const pickerStyles = StyleSheet.create({
   },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
   closeBtn: { fontSize: 14, color: '#3C6802', fontWeight: '600' },
+  skipBtn: { fontSize: 14, color: '#888', fontWeight: '500' },
   option: {
     flexDirection: 'row',
     alignItems: 'center',

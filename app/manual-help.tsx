@@ -439,7 +439,7 @@ const s = StyleSheet.create({
     gap: 12,
   },
   tipsHint: { gap: 4 },
-  tipsHintTitle: { fontSize: 19, fontWeight: '700', color: '#586144', lineHeight: 20, letterSpacing: -0.15 },
+  tipsHintTitle: { fontSize: 16, fontWeight: '700', color: '#586144', lineHeight: 22, letterSpacing: -0.3 },
   tipsHintSub: { fontSize: 15, fontWeight: '400', color: '#586144', lineHeight: 25 },
 
   tipsField: { gap: 4 },

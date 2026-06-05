@@ -87,7 +87,7 @@ function AppNavigator() {
   const { setAuthTokens, clearAuth, setUser } = useAuth();
 
   useEffect(() => {
-    // DEV: splash preview — set true to restore normal flow
+    // DEV: splash preview — set true to show only the splash
     const DEV_SPLASH_ONLY = false;
     if (!DEV_SPLASH_ONLY) {
       let cancelled = false;

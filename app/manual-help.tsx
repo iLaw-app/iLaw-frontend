@@ -22,6 +22,11 @@ const EMERGENCY: Record<string, { label: string; number: string }[]> = {
   'online-violence': [{ label: '사이버범죄 신고', number: '182' }],
   'labor': [{ label: '고용노동부 상담', number: '1350' }],
   'finance': [{ label: '금융감독원', number: '1332' }],
+  'school-violence': [
+    { label: '학교폭력 신고센터', number: '117' },
+    { label: '청소년사이버상담센터', number: '1388' },
+    { label: 'BTF 푸른나무재단', number: '1588-9128' },
+  ],
 };
 
 const REGIONS = ['전체', '서울', '부산', '대구', '인천', '대전', '광주', '울산', '세종', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];

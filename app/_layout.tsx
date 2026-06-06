@@ -20,9 +20,10 @@ const PHONE_W = 390;
 const PHONE_H = 844;
 
 export default function RootLayout() {
-  // 커뮤니티만 흰 배경 화면이라, 해당 탭/화면에서는 프레임 여백도 흰색으로 (그 외엔 크림)
+  // 화면별 프레임 여백 색: 스플래시(/)는 그라데이션 맨 위 초록, 커뮤니티는 흰색, 그 외 크림
   const pathname = usePathname();
-  const frameBg = pathname?.startsWith('/community') ? '#FFFFFF' : '#FDFFF8';
+  const isSplash = pathname === '/';
+  const frameBg = isSplash ? '#88A54D' : pathname?.startsWith('/community') ? '#FFFFFF' : '#FDFFF8';
   if (Platform.OS === 'web') {
     const { width: vw, height: vh } = Dimensions.get('window');
     const scale = Math.min(1, Math.min((vh - 16) / PHONE_H, (vw - 16) / PHONE_W));
@@ -45,7 +46,7 @@ export default function RootLayout() {
             transform: [{ scale }],
             transformOrigin: '0% 0%' as any,
             paddingTop: 30,
-            paddingBottom: 5,
+            paddingBottom: isSplash ? 0 : 5,
           }}>
             <TutorialProvider>
               <AuthProvider>

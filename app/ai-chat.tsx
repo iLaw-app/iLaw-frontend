@@ -267,6 +267,10 @@ export default function AiChatScreen() {
           )}
         </ScrollView>
 
+        <View style={s.disclaimerBar}>
+          <Text style={s.disclaimer}>AI 답변은 참고용입니다. 정확한 법률 판단은 반드시 변호사에게 문의하세요.</Text>
+        </View>
+
         <View style={[s.inputBar, { paddingBottom: kbVisible ? 8 : Math.max(insets.bottom, 16) }]}>
           {chatEnded ? (
             <View style={s.chatEndedBar}>
@@ -422,8 +426,19 @@ const s = StyleSheet.create({
     borderTopWidth: 0.77,
     borderTopColor: '#E5E7EB',
     backgroundColor: '#FFF',
-    paddingTop: 16,
+    paddingTop: 10,
     paddingHorizontal: 16,
+  },
+  disclaimerBar: {
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  disclaimer: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   chatEndedBar: { alignItems: 'center', paddingVertical: 14 },

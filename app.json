@@ -6,7 +6,7 @@
     "scheme": "ilaw",
     "main": "expo-router/entry",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -25,8 +25,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/app-icon-fg.png",
+        "backgroundColor": "#B2D36E"
       },
       "package": "com.anonymous.irawapp"
     },

@@ -281,7 +281,7 @@ export default function QnaDetailPage() {
             <View style={styles.studentInfoCard}>
               <View style={styles.studentInfoHeader}>
                 <Ionicons name="person-outline" size={16} color="#586144" />
-                <Text style={styles.studentInfoTitle}>학생 정보</Text>
+                <Text style={styles.studentInfoTitle}>아동 정보</Text>
               </View>
               <View style={styles.studentInfoRow}>
                 <Text style={styles.studentInfoItem}><Text style={styles.studentInfoLabel}>나이</Text> {post.author.birthDate ? calcAge(post.author.birthDate) : '-'}</Text>
@@ -296,7 +296,7 @@ export default function QnaDetailPage() {
                 <View style={styles.lawyerAnswerInputContainer}>
                   <TextInput
                     style={styles.lawyerAnswerInput}
-                    placeholder={'학생에게 도움이 될 수 있는 답변을\n작성해주세요.\n\n- 법적 근거를 명확히 제시해주세요\n- 구체적인 대처 방법을 알려주세요\n- 필요한 기관 연락처를 안내해주세요'}
+                    placeholder={'아동에게 도움이 될 수 있는 답변을\n작성해주세요.\n\n- 법적 근거를 명확히 제시해주세요\n- 구체적인 대처 방법을 알려주세요\n- 필요한 기관 연락처를 안내해주세요'}
                     placeholderTextColor="rgba(10,10,10,0.5)"
                     value={answerText}
                     onChangeText={setAnswerText}

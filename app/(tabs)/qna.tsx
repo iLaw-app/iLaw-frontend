@@ -166,7 +166,7 @@ export default function QnaPage() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Q&A 답변 관리</Text>
-          <Text style={styles.headerSub}>학생들의 질문에 답변해주세요</Text>
+          <Text style={styles.headerSub}>아동·청소년들의 질문에 답변해주세요</Text>
         </View>
 
         {loading ? (

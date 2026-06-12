@@ -39,18 +39,19 @@ function parseTableRows(tableHtml: string): TableRow[] {
   return rows;
 }
 
-function NativeTable({ rows }: { rows: TableRow[] }) {
+function NativeTable({ rows, width }: { rows: TableRow[]; width: number }) {
   if (rows.length === 0) return null;
   const colCount = Math.max(...rows.map(r => r.length));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={ts.wrapper}>
-      <View style={ts.table}>
+    <View style={ts.wrapper}>
+      {/* 화면 폭에 고정 + 칸 균등(flex) → 행마다 칸 폭이 같아져 줄이 딱 맞음, 긴 텍스트는 줄바꿈 */}
+      <View style={[ts.table, { width }]}>
         {rows.map((row, ri) => (
-          <View key={ri} style={[ts.row, ri % 2 === 1 && ts.rowEven]}>
+          <View key={ri} style={[ts.row, ri % 2 === 1 && ts.rowEven, ri === rows.length - 1 && ts.rowLast]}>
             {Array.from({ length: colCount }).map((_, ci) => {
               const cell = row[ci];
               return (
-                <View key={ci} style={[ts.cell, cell?.isHeader && ts.headerCell]}>
+                <View key={ci} style={[ts.cell, ci === colCount - 1 && ts.cellLast, cell?.isHeader && ts.headerCell]}>
                   <Text style={[ts.cellText, cell?.isHeader && ts.headerText]}>
                     {cell?.text ?? ''}
                   </Text>
@@ -60,7 +61,7 @@ function NativeTable({ rows }: { rows: TableRow[] }) {
           </View>
         ))}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -103,7 +104,7 @@ function HtmlRenderer({ content }: { content: string }) {
     <View>
       {segments.map((seg, i) =>
         seg.type === 'table' ? (
-          <NativeTable key={i} rows={seg.rows} />
+          <NativeTable key={i} rows={seg.rows} width={contentWidth} />
         ) : (
           <RenderHtml
             key={i}
@@ -218,10 +219,12 @@ export default function ManualDetailScreen() {
 
 const ts = StyleSheet.create({
   wrapper: { marginBottom: 12 },
-  table: { borderWidth: 1, borderColor: '#CCD9BA', borderRadius: 6, overflow: 'hidden' },
-  row: { flexDirection: 'row', backgroundColor: '#fff' },
+  table: { borderWidth: 1, borderColor: '#CCD9BA', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start' },
+  row: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#CCD9BA' },
   rowEven: { backgroundColor: '#F9FCF4' },
-  cell: { flex: 1, minWidth: 80, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#CCD9BA', paddingHorizontal: 10, paddingVertical: 7 },
+  rowLast: { borderBottomWidth: 0 },
+  cell: { flex: 1, borderRightWidth: 1, borderRightColor: '#CCD9BA', paddingHorizontal: 10, paddingVertical: 8, justifyContent: 'center' },
+  cellLast: { borderRightWidth: 0 },
   headerCell: { backgroundColor: '#F0F7E0' },
   cellText: { fontSize: 13, color: '#364153', lineHeight: 18 },
   headerText: { fontWeight: '700', textAlign: 'center' },
